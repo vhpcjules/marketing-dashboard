@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Versatile HPC — Marketing Dashboards</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e2e8f0 100%); color: #1a202c; line-height: 1.5; min-height: 100vh; padding: 40px 24px; }
+.container { max-width: 960px; margin: 0 auto; }
+.header { text-align: center; padding: 32px 0 48px; }
+.header .logo-mark { display: inline-block; width: 56px; height: 56px; background: #1F4E79; border-radius: 12px; color: white; font-size: 26px; font-weight: 700; line-height: 56px; margin-bottom: 16px; letter-spacing: -0.5px; }
+.header h1 { font-size: 36px; color: #1F4E79; margin-bottom: 10px; font-weight: 700; }
+.header .subtitle { color: #475569; font-size: 16px; max-width: 600px; margin: 0 auto; }
+.header .updated { color: #94a3b8; font-size: 13px; margin-top: 10px; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 24px; margin-bottom: 40px; }
+.card { background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; transition: all 0.2s ease; text-decoration: none; color: inherit; display: block; position: relative; overflow: hidden; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(31,78,121,0.15); border-color: #1F4E79; }
+.card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: #1F4E79; }
+.card.sales::before { background: #16a34a; }
+.card .badge { display: inline-block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #1F4E79; background: #eff6ff; padding: 4px 10px; border-radius: 4px; margin-bottom: 14px; }
+.card.sales .badge { color: #15803d; background: #dcfce7; }
+.card.social::before { background: #E1306C; }
+.card.social .badge { color: #831843; background: #fce7f3; }
+.card.social .cta { color: #E1306C; }
+.card.budget::before { background: #ca8a04; }
+.card.budget .badge { color: #78350f; background: #fef3c7; }
+.card.budget .cta { color: #ca8a04; }
+.card.yoy::before { background: #7c3aed; }
+.card.yoy .badge { color: #5b21b6; background: #ede9fe; }
+.card.yoy .cta { color: #7c3aed; }
+.card.activity::before { background: #f59e0b; }
+.card.activity .badge { color: #78350f; background: #fef3c7; }
+.card.activity .cta { color: #f59e0b; }
+.card h2 { font-size: 22px; color: #1F4E79; margin-bottom: 10px; font-weight: 700; }
+.card p { color: #475569; font-size: 14px; margin-bottom: 18px; line-height: 1.6; }
+.card .features { list-style: none; padding: 0; margin-bottom: 22px; }
+.card .features li { font-size: 13px; color: #64748b; padding: 4px 0 4px 22px; position: relative; }
+.card .features li::before { content: '✓'; position: absolute; left: 0; color: #16a34a; font-weight: 700; }
+.card .cta { display: inline-flex; align-items: center; gap: 8px; color: #1F4E79; font-weight: 600; font-size: 14px; }
+.card.sales .cta { color: #15803d; }
+.card .cta::after { content: '→'; font-size: 18px; transition: transform 0.2s ease; }
+.card:hover .cta::after { transform: translateX(4px); }
+.info-section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+.info-section h3 { color: #1F4E79; font-size: 16px; margin-bottom: 12px; }
+.info-section p { color: #475569; font-size: 13px; line-height: 1.6; margin-bottom: 8px; }
+.info-section ul { padding-left: 22px; color: #475569; font-size: 13px; line-height: 1.8; }
+.info-section ul li { margin-bottom: 4px; }
+.confidential-banner { background: #fef3c7; border-left: 4px solid #ca8a04; padding: 14px 18px; border-radius: 8px; color: #78350f; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 32px; }
+.footer { text-align: center; color: #64748b; font-size: 12px; padding: 24px; margin-top: 16px; }
+.footer a { color: #1F4E79; text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+@media(max-width: 640px) { .header h1 { font-size: 28px; } .card-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="header">
+<div class="logo-mark">V</div>
+<h1>Marketing Dashboards</h1>
+<div class="subtitle">Versatile High-Performance Coatings · Internal reporting hub for marketing performance, pipeline, and sales handoff</div>
+<div class="updated">Last data refresh: August 18, 2026 · Period covered: August 2025 – July 2026 (social + campaign data through Aug 18)</div>
+</div>
+
+<div class="confidential-banner">⚠ Confidential — Versatile High-Performance Coatings internal use only. Do not redistribute.</div>
+
+<div class="card-grid">
+
+<a href="Leadership_Dashboard.html" class="card">
+<span class="badge">Executive view</span>
+<h2>Leadership Dashboard</h2>
+<p>The full-company view of how marketing is performing. Growth, ROI, channel performance, and items needing attention — designed for leadership review.</p>
+<ul class="features">
+<li>Headline tiles: revenue, customers, conversion</li>
+<li>Are we growing? — cohort revenue + M1-3 quality</li>
+<li>Where customers come from (source + category)</li>
+<li>Are we spending wisely? — channel ROI</li>
+<li>Online presence trends (3/6/12 month)</li>
+<li>What needs attention</li>
+</ul>
+<span class="cta">Open dashboard</span>
+</a>
+
+<a href="Marketing_Pipeline_for_Sales.html" class="card sales">
+<span class="badge">Sales view</span>
+<h2>Marketing Pipeline for Sales</h2>
+<p>What marketing delivered to sales — last month, last quarter, and the full year. Built for sales reps and leadership to see what's flowing into each territory.</p>
+<ul class="features">
+<li>Leads assigned → converted, per rep</li>
+<li>14-month month picker</li>
+<li>12-month context with top 10 states</li>
+<li>Per-rep delivery (Alexis · Dan · Parker)</li>
+<li>104 unassigned records/month at 1% conversion</li>
+<li>Marketing + sales collaboration opportunities</li>
+</ul>
+<span class="cta">Open dashboard</span>
+</a>
+
+<a href="Social_Media_Performance.html" class="card social">
+<span class="badge">Social media view</span>
+<h2>Social Media Performance</h2>
+<p>Operational view across Instagram, LinkedIn, and Meta Ads. Last month, 3-month trend, 6-month trend. Built for the marketing team to make tactical decisions.</p>
+<ul class="features">
+<li>Latest month snapshot across all channels</li>
+<li>Instagram organic — 6-mo reach + engagement</li>
+<li>LinkedIn reactivation story (dormant pre-April)</li>
+<li>Meta Ads paid — FB vs IG split</li>
+<li>Top posts per platform with permalinks</li>
+<li>Watch items + recommendations</li>
+</ul>
+<span class="cta">Open dashboard</span>
+</a>
+
+<a href="Budget_Performance.html" class="card budget">
+<span class="badge">Finance view</span>
+<h2>Budget Performance</h2>
+<p>2026 budget versus actual, and what the 58% spend reduction actually bought. Channel-by-channel YoY, tied directly to customers and revenue.</p>
+<ul class="features">
+<li>Spend −58%, M1 revenue −1.7%</li>
+<li>Cost per customer $591 → $306</li>
+<li>Return per $1: $1.48 → $3.46</li>
+<li>Google absorbed 47% of the entire cut</li>
+<li>$33,177 under budget YTD</li>
+<li>ROIVENUE + SEO booking corrections flagged</li>
+</ul>
+<span class="cta">Open dashboard</span>
+</a>
+
+<a href="YoY_Performance.html" class="card yoy">
+<span class="badge">Year-over-year view</span>
+<h2>Year-over-Year Performance</h2>
+<p>Jan–Jul 2025 vs 2026, plus the structural picture — acquisition vintage, retention decomposition, lapsed accounts, and the largest declining accounts.</p>
+<ul class="features">
+<li>19% fewer customers, 21% higher NET value each</li>
+<li>Pre-2018 accounts: 10% of base, 34% of revenue</li>
+<li>A 2010–2012 account is worth 20× a 2025 one</li>
+<li>42% of established accounts stopped buying</li>
+<li>$2.78M at risk — $1.27M in 28 accounts</li>
+<li>Six recommendations, ranked by value</li>
+</ul>
+<span class="cta">Open dashboard</span>
+</a>
+
+<a href="Marketing_Activity.html" class="card activity">
+<span class="badge">Initiatives view</span>
+<h2>What Marketing Is Doing</h2>
+<p>Active initiatives with real results, plus the September budget decision. Contractor lead-gen, four email nurture flows, the August audience overhaul, and the search/AI visibility gap.</p>
+<ul class="features">
+<li>57 contractor leads at $22.80 each</li>
+<li>August lookalike performing at parity</li>
+<li>Email nurture live — 46.6% open, 3.8% click</li>
+<li>September ask: $1K/mo Google + $1,750 focus group</li>
+<li>GarageExperts exclusions + 1st-party data</li>
+<li>Focus group findings + AI visibility gap</li>
+</ul>
+<span class="cta">Open dashboard</span>
+</a>
+
+</div>
+
+<div class="info-section">
+<h3>About this hub</h3>
+<p>All three dashboards pull from the same underlying NetSuite + marketing data sources. They reflect the same rolling 12-month window (June 2025 – May 2026) but are tailored to different audiences. Methodology and data lineage are documented in the marketing analysis workbook.</p>
+</div>
+
+<div class="info-section">
+<h3>Data sources & filters applied</h3>
+<ul>
+<li>NetSuite — customers, revenue, lead quality, ship-to states</li>
+<li>Marketing Spend — NetSuite income statement (GL 66212)</li>
+<li>Google Search Console · Google Ads · GA4 · Google My Business · Hotjar</li>
+<li>Subsidiary = VHPC LLC. Customer Category excludes GarageExperts and Vendor.</li>
+<li>Customer = stage starts with "Customer-" AND has a first sale date populated.</li>
+<li>All revenue figures are NET — product only, excluding shipping and tax, with returns and credit memos deducted.</li>
+</ul>
+</div>
+
+<div class="info-section">
+<h3>Refresh cadence</h3>
+<p>Dashboards are refreshed monthly. URLs stay the same on each refresh — bookmark them once and the latest data will load each time.</p>
+</div>
+
+<div class="footer">
+Marketing analysis prepared by the Senior Marketing Analyst team · Questions: <a href="mailto:julianne@versatile.net">julianne@versatile.net</a>
+</div>
+
+</div>
+
+</body>
+</html>

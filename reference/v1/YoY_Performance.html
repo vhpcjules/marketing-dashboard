@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Versatile HPC — Year-over-Year Performance</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f7fa; color: #1a202c; line-height: 1.5; padding: 24px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.header { text-align: center; padding: 24px 0 32px; border-bottom: 3px solid #1F4E79; margin-bottom: 32px; }
+.header h1 { font-size: 28px; color: #1F4E79; margin-bottom: 8px; }
+.header .subtitle { color: #64748b; font-size: 14px; }
+.band-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin: 32px 0 10px; padding-left: 12px; border-left: 4px solid #1F4E79; color: #1F4E79; }
+.section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.section h2 { font-size: 20px; color: #1F4E79; margin-bottom: 8px; }
+.section h2 small { font-size: 13px; color: #64748b; font-weight: 400; margin-left: 8px; }
+.section .section-explain { color: #64748b; font-size: 13px; margin-bottom: 20px; font-style: italic; }
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; align-items: stretch; }
+.tile-grid.four { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.tile { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 18px; border-radius: 10px; border-left: 4px solid #1F4E79; display: flex; flex-direction: column; }
+.tile .label { min-height: 2.6em; display: flex; align-items: flex-start; }
+.tile .sub { margin-top: auto; padding-top: 4px; }
+.tile.good { border-left-color: #16a34a; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
+.tile.warn { border-left-color: #ca8a04; background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); }
+.tile.bad  { border-left-color: #dc2626; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
+.tile.hero { border-left-color: #1F4E79; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); }
+.tile .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.tile .value { font-size: 28px; font-weight: 700; color: #1F4E79; margin: 6px 0 2px; line-height: 1.1; }
+.tile.good .value { color: #166534; }
+.tile.warn .value { color: #92400e; }
+.tile.bad .value  { color: #991b1b; }
+.tile .sub { font-size: 12px; color: #64748b; line-height: 1.4; }
+.compare-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; table-layout: fixed; }
+.compare-table th { background: #1F4E79; color: white; padding: 12px 14px; text-align: left; font-weight: 600; font-size: 12px; }
+.compare-table th.right, .compare-table td.right { text-align: right; }
+.compare-table th.center, .compare-table td.center { text-align: center; }
+.compare-table td { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+.compare-table tr:nth-child(even) td { background: #f8fafc; }
+.compare-table td.metric { font-weight: 600; color: #1F4E79; width: 32%; }
+.compare-table td.val-25 { font-weight: 600; color: #64748b; width: 22%; }
+.compare-table td.val-26 { font-weight: 700; color: #1F4E79; font-size: 15px; width: 22%; }
+.compare-table td.delta { width: 24%; font-weight: 700; }
+.compare-table td.delta.good { color: #166534; background: #f0fdf4 !important; }
+.compare-table td.delta.bad  { color: #991b1b; background: #fef2f2 !important; }
+.compare-table td.delta.flat { color: #64748b; background: #f1f5f9 !important; }
+table.data { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+table.data th { background: #1F4E79; color: white; padding: 10px; text-align: left; font-weight: 600; font-size: 12px; }
+table.data th.right, table.data td.right { text-align: right; }
+table.data td { padding: 10px; border-bottom: 1px solid #e2e8f0; }
+table.data tr:nth-child(even) td { background: #f8fafc; }
+table.data tr.total td { background: #1F4E79 !important; color: white; font-weight: 700; }
+.chart-wrap { position: relative; height: 340px; margin-top: 16px; }
+.chart-wrap.short { height: 260px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch; }
+@media(max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+.callout { background: #e0f2fe; border-left: 4px solid #0284c7; padding: 14px 18px; border-radius: 6px; font-size: 13px; margin: 12px 0; line-height: 1.55; }
+.callout.good { background: #dcfce7; border-left-color: #16a34a; }
+.callout.warn { background: #fef3c7; border-left-color: #ca8a04; }
+.callout.hero { background: linear-gradient(90deg,#eff6ff,#dbeafe); border-left-color: #1F4E79; }
+.callout strong { color: #0c4a6e; }
+.callout.good strong { color: #14532d; }
+.callout.warn strong { color: #78350f; }
+.callout.hero strong { color: #1F4E79; }
+.big-stat { font-size: 44px; font-weight: 800; color: #1F4E79; line-height: 1; margin: 8px 0 4px; }
+.big-stat-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+.footer { text-align: center; padding: 20px; color: #64748b; font-size: 12px; margin-top: 20px; }
+.footer .conf { background: #fef3c7; padding: 10px 16px; border-radius: 6px; margin-bottom: 16px; color: #78350f; font-weight: 600; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: #1F4E79; text-decoration: none; font-size: 13px; font-weight: 600; padding: 8px 14px; background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 8px; border: 1px solid #e2e8f0; transition: all 0.15s ease; }
+.back-link:hover { background: #eff6ff; border-color: #1F4E79; box-shadow: 0 2px 6px rgba(31,78,121,0.12); }
+.exec-summary { background: linear-gradient(135deg, #1F4E79 0%, #2c6ba0 100%); color: white; border-radius: 12px; padding: 28px 32px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(31,78,121,0.15); }
+.exec-summary h2 { color: white; font-size: 18px; margin-bottom: 12px; letter-spacing: 0.3px; }
+.exec-summary .headline-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 14px; align-items: stretch; }
+.exec-summary .headline { background: rgba(255,255,255,0.10); border-radius: 8px; padding: 14px 16px; border-left: 3px solid #f59e0b; display: flex; flex-direction: column; }
+.exec-summary .headline .num { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.3px; line-height: 1.2; }
+.exec-summary .headline .desc { font-size: 12px; color: #dbeafe; line-height: 1.4; margin-top: auto; }
+@media(max-width: 900px) { .exec-summary .headline-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<a href="index.html" class="back-link">← All dashboards</a>
+
+<div class="header">
+<h1>Year-over-Year Performance</h1>
+<div class="subtitle">Versatile High-Performance Coatings &middot; January&ndash;July 2025 versus 2026, plus where the revenue actually comes from</div>
+</div>
+
+<!-- ================================================== -->
+<!-- EXECUTIVE SUMMARY -->
+<!-- ================================================== -->
+<div class="exec-summary">
+  <h2>The three things to take from this dashboard</h2>
+  <p style="font-size:13px;color:#dbeafe;margin-bottom:8px;">All revenue on this dashboard is <strong>NET</strong> — product only, excluding shipping and tax, with returns and credits deducted. Marketing generated 98% of last year's revenue from 19% fewer customers, and every $1 of marketing spend returned $3.46 in new-customer revenue.</p>
+  <div class="headline-row">
+    <div class="headline">
+      <div class="num">Revenue −1.7%, avg deal +21%</div>
+      <div class="desc"><strong>Higher-value customer base.</strong> First-seven-month NET product revenue landed at $473K vs $482K last year (−1.7%) — from 19% fewer customers (447 vs 552), each spending 21% more on first purchase ($1,059 vs $872).</div>
+    </div>
+    <div class="headline">
+      <div class="num">A legacy account is worth 20× a new one</div>
+      <div class="desc"><strong>$47,507 against $2,316 per year.</strong> The 275 accounts acquired before 2018 are 10% of the base and generate 34% of revenue. The 1,616 acquired in 2025&ndash;26 are 60% of the base and generate 13%. Volume cannot replace that.</div>
+    </div>
+    <div class="headline">
+      <div class="num">$2.78M sitting in quiet accounts</div>
+      <div class="desc"><strong>409 lapsed accounts, all Contractor &mdash; and $1.27M of it in just 28 of them.</strong> Two ordered every two to three days for years, then stopped. Nobody appears to have called.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================== -->
+<!-- THE STORY -->
+<!-- ================================================== -->
+<div class="band-label">The story so far this year</div>
+
+<div class="section">
+<h2>Fewer customers this year — but each one is bigger</h2>
+<p class="section-explain">Comparing January through July 2025 to January through July 2026 (same seven months, one year apart). Methodology: customer counted in the month created, revenue matched to that same month. All revenue is NET — product only (no shipping, no tax), with returns and credits deducted.</p>
+
+<div class="tile-grid four">
+  <div class="tile">
+    <div class="label">Customer count</div>
+    <div class="value">−19%</div>
+    <div class="sub">552 last year → 447 this year</div>
+  </div>
+  <div class="tile warn">
+    <div class="label">NET revenue from those customers</div>
+    <div class="value">−1.7%</div>
+    <div class="sub">$481,628 last year → $473,352 this year</div>
+  </div>
+  <div class="tile good">
+    <div class="label">Average NET value per customer</div>
+    <div class="value">+21%</div>
+    <div class="sub">$872 last year → $1,059 this year</div>
+  </div>
+  <div class="tile">
+    <div class="label">Total records (leads + customers)</div>
+    <div class="value">−24%</div>
+    <div class="sub">2,515 last year → 1,922 this year</div>
+  </div>
+</div>
+
+<div class="callout hero"><strong>The takeaway:</strong> We brought in <strong>19% fewer new customers this year</strong>, but the customers we did bring in are spending <strong>21% more each</strong> on product. NET revenue landed within 1.7% of last year — from a smaller group of higher-value customers. Marketing has been trading breadth for depth, and after seven months the trade is holding: essentially the same NET product revenue from a lighter marketing motion.</div>
+</div>
+
+<div class="section">
+<h2>Side-by-side comparison</h2>
+<p class="section-explain">Same seven months (January through July) — 2025 vs 2026, with the change shown on the right.</p>
+<table class="compare-table">
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th class="right">Jan–Jul 2025</th>
+      <th class="right">Jan–Jul 2026</th>
+      <th class="center">Year-over-year change</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="metric">New customers</td>
+      <td class="val-25 right">552</td>
+      <td class="val-26 right">447</td>
+      <td class="delta bad center">↓ 19% (−105)</td>
+    </tr>
+    <tr>
+      <td class="metric">Leads captured (non-converting)</td>
+      <td class="val-25 right">1,963</td>
+      <td class="val-26 right">1,475</td>
+      <td class="delta bad center">↓ 25% (−488)</td>
+    </tr>
+    <tr>
+      <td class="metric">Total records (leads + customers)</td>
+      <td class="val-25 right">2,515</td>
+      <td class="val-26 right">1,922</td>
+      <td class="delta bad center">↓ 24% (−593)</td>
+    </tr>
+    <tr>
+      <td class="metric">First-month NET revenue <span style="font-size:10px;color:#94a3b8;font-weight:400;">(product only, no shipping/tax, net of returns)</span></td>
+      <td class="val-25 right">$481,628</td>
+      <td class="val-26 right">$473,352</td>
+      <td class="delta bad center">↓ 1.7% (−$8,276)</td>
+    </tr>
+    <tr>
+      <td class="metric">Average NET value per customer</td>
+      <td class="val-25 right">$872</td>
+      <td class="val-26 right">$1,059</td>
+      <td class="delta good center">↑ 21% (+$187)</td>
+    </tr>
+    <tr>
+      <td class="metric">Lead → customer conversion</td>
+      <td class="val-25 right">21.9%</td>
+      <td class="val-26 right">23.3%</td>
+      <td class="delta good center">↑ 6%</td>
+    </tr>
+    <tr>
+      <td class="metric">Phone capture on records</td>
+      <td class="val-25 right">43.6%</td>
+      <td class="val-26 right">50.9%</td>
+      <td class="delta good center">↑ 17%</td>
+    </tr>
+    <tr>
+      <td class="metric">Contractor share of customers <span style="font-size:10px;color:#94a3b8;font-weight:400;">(see data note below)</span></td>
+      <td class="val-25 right">85%</td>
+      <td class="val-26 right">78%</td>
+      <td class="delta flat center">Data-cleaning effect</td>
+    </tr>
+    <tr>
+      <td class="metric">DIY share of customers <span style="font-size:10px;color:#94a3b8;font-weight:400;">(see data note below)</span></td>
+      <td class="val-25 right">14%</td>
+      <td class="val-26 right">22%</td>
+      <td class="delta flat center">Data-cleaning effect</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ================================================== -->
+<!-- MONTHLY TREND -->
+<!-- ================================================== -->
+<div class="band-label">How each month is trending</div>
+
+<div class="section">
+<h2>Month-by-month, 2025 vs 2026</h2>
+<p class="section-explain">Gray bars = 2025. Blue bars = 2026. Left chart shows customer count; right chart shows first-month NET revenue (product only, excluding shipping and tax, net of returns).</p>
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">New customers per month</h3>
+    <div class="chart-wrap"><canvas id="custTrend"></canvas></div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">First-month revenue per month</h3>
+    <div class="chart-wrap"><canvas id="revTrend"></canvas></div>
+  </div>
+</div>
+<div class="callout"><strong>What jumps out:</strong> 2025 NET revenue was highest in March–April ($90K/$89K). 2026's standout was <strong>June at $130,063 NET</strong> — 81% higher than June 2025 ($71,999) — driven by unusually large average purchases ($1,941/customer). <strong>July 2026 regressed to $710 average NET</strong> — the lowest month of 2026 — with customer count matching last July (72 = 72) and July 2026 NET landing 11% under July 2025 ($51K vs $57K). June was the outlier month, not July.</div>
+</div>
+
+<!-- ================================================== -->
+<!-- MARKETING EFFICIENCY -->
+<!-- ================================================== -->
+<div class="band-label">Are we getting our money's worth in 2026?</div>
+
+<div class="section">
+<h2>The marketing engine — return on investment</h2>
+<p class="section-explain">Return measured two ways: on first-month revenue, and on everything the current cohorts have spent so far. Time windows are noted on each tile because they are not interchangeable.</p>
+
+<div class="tile-grid">
+  <div class="tile good">
+    <div class="label">Marketing spend as % of NET new customer revenue</div>
+    <div class="value">29%</div>
+    <div class="sub"><strong>January through July 2026</strong> — $136,891 of marketing spend against $473,352 of first-month NET product revenue from customers newly acquired this year. In plain terms: it costs us 29 cents in marketing to generate every $1 of NET new customer revenue.</div>
+  </div>
+  <div class="tile hero">
+    <div class="label">Return per $1 of marketing spend</div>
+    <div class="value">3.5×</div>
+    <div class="sub"><strong>January through July 2026</strong> — the flip side of the 29% figure. Every $1 of marketing spend returned $3.46 in first-month NET product revenue from customers newly acquired in 2026.</div>
+  </div>
+  <div class="tile good">
+    <div class="label">Lifetime return per acquired customer</div>
+    <div class="value">7.2×</div>
+    <div class="sub"><strong>2025 cohort, spending through July 2026</strong> — a customer acquired in 2025 cost $529 to bring in and has already returned $3,809 in cumulative NET revenue. They are still buying.</div>
+  </div>
+</div>
+
+
+<h3 style="font-size:14px;color:#475569;margin:24px 0 8px;">Lifetime return so far on the 2026 customers</h3>
+<div class="tile-grid">
+  <div class="tile hero">
+    <div class="label">2026 cohorts — returned per $1 spent</div>
+    <div class="value">$6.65</div>
+    <div class="sub">505 activated customers from Jan&ndash;Jul 2026 have generated <strong>$910,447 NET to date</strong> against $136,891 of marketing spend. Average maturity is only about 4.5 months.</div>
+  </div>
+  <div class="tile good">
+    <div class="label">2025 cohorts — returned per $1 spent</div>
+    <div class="value">$9.01</div>
+    <div class="sub">627 customers from Jan&ndash;Jul 2025 have generated $2,938,560 NET against $326,229 of spend — but they have had roughly 16.5 months to do it.</div>
+  </div>
+  <div class="tile hero">
+    <div class="label">2026 pace against 2025</div>
+    <div class="value">74%</div>
+    <div class="sub">The 2026 cohorts have had <strong>27% of the elapsed time</strong> and have already delivered <strong>74% of the per-dollar return</strong>. On a time-adjusted basis this is the strongest signal on the page.</div>
+  </div>
+</div>
+
+<div class="callout good"><strong>How to read these two views together.</strong> The first-month view says every $1 of spend returned $3.46 this year against $1.48 last year. The lifetime view says the 2026 cohorts have had <strong>27% of the elapsed time</strong> and have already delivered <strong>74% of the per-dollar return</strong> the 2025 cohorts produced. Both point the same direction: acquisition got dramatically cheaper — $306 per customer versus $591 — and the revenue held. <strong>What to watch on the next refresh:</strong> the May and June 2026 cohorts were exceptional months ($87,841 and $130,063 first-month NET). Whether they keep spending at that rate through the autumn is what determines if 2026 is a genuinely better program or a well-timed one.</div>
+</div>
+
+<!-- ================================================== -->
+<!-- 2025 COHORT QUALITY -->
+<!-- ================================================== -->
+<div class="band-label">Last year's customers are still spending</div>
+
+<div class="section">
+<h2>The 2025 cohort is compounding — this is where marketing pays off long term</h2>
+<p class="section-explain">Last year we brought in 1,118 new customers. They've already come back and spent an additional $1.66 million NET through July 2026 — on top of what they spent in 2025.</p>
+
+<div class="tile-grid">
+  <div class="tile"><div class="label">Customers acquired in 2025</div><div class="value">1,118</div><div class="sub">The full 2025 acquisition class</div></div>
+  <div class="tile"><div class="label">Their NET spending during 2025</div><div class="value">$2.60M</div><div class="sub">What they bought in their acquisition year</div></div>
+  <div class="tile good"><div class="label">Their NET spending Jan–Jul 2026</div><div class="value">$1.66M</div><div class="sub">Already 64% of what they spent all of last year, with five months of 2026 still to go</div></div>
+  <div class="tile good"><div class="label">Repeat rate</div><div class="value">21.5%</div><div class="sub">240 of the 1,118 have already come back and spent again this year</div></div>
+  <div class="tile"><div class="label">Average NET value per repeat customer</div><div class="value">$6,903</div><div class="sub">Among the 240 who returned Jan–Jul 2026</div></div>
+  <div class="tile hero"><div class="label">Total NET value delivered by 2025 customers</div><div class="value">$4.26M</div><div class="sub">2025 spending + Jan–Jul 2026 spending combined. Every customer we acquired last year has now generated $3,809 NET on average.</div></div>
+</div>
+
+<div class="callout good"><strong>Why this matters:</strong> A first-month revenue number tells you what a customer spent when they walked in the door. But it doesn't tell you what they are worth to the business over time. Last year's customers are actively answering that question — they are worth substantially more than the initial sale, and marketing does not have to spend any additional acquisition dollars to earn that repeat revenue.</div>
+
+<h3 style="font-size:14px;color:#475569;margin:20px 0 8px;">2025 customers — how much they came back for in 2026 (NET)</h3>
+<table class="data">
+  <thead>
+    <tr>
+      <th>Acquisition month</th>
+      <th class="right">Customers acquired</th>
+      <th class="right">Came back in 2026</th>
+      <th class="right">Repeat rate</th>
+      <th class="right">NET Revenue Jan–Jul 2026</th>
+      <th class="right">Average per repeat customer</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>January 2025</td><td class="right">62</td><td class="right">14</td><td class="right">22.6%</td><td class="right">$123,033</td><td class="right">$8,788</td></tr>
+    <tr><td>February 2025</td><td class="right">65</td><td class="right">16</td><td class="right">24.6%</td><td class="right">$121,277</td><td class="right">$7,580</td></tr>
+    <tr><td>March 2025</td><td class="right">97</td><td class="right">22</td><td class="right">22.7%</td><td class="right">$295,271</td><td class="right">$13,421</td></tr>
+    <tr><td>April 2025</td><td class="right">109</td><td class="right">19</td><td class="right">17.4%</td><td class="right">$191,767</td><td class="right">$10,093</td></tr>
+    <tr><td>May 2025</td><td class="right">104</td><td class="right">14</td><td class="right">13.5%</td><td class="right">$108,595</td><td class="right">$7,757</td></tr>
+    <tr><td>June 2025</td><td class="right">99</td><td class="right">15</td><td class="right">15.2%</td><td class="right">$88,454</td><td class="right">$5,897</td></tr>
+    <tr><td>July 2025</td><td class="right">87</td><td class="right">18</td><td class="right">20.7%</td><td class="right">$39,801</td><td class="right">$2,211</td></tr>
+    <tr><td>August 2025</td><td class="right">90</td><td class="right">22</td><td class="right">24.4%</td><td class="right">$54,965</td><td class="right">$2,499</td></tr>
+    <tr><td>September 2025</td><td class="right">123</td><td class="right">27</td><td class="right">22.0%</td><td class="right">$103,485</td><td class="right">$3,833</td></tr>
+    <tr><td>October 2025</td><td class="right">127</td><td class="right">32</td><td class="right">25.2%</td><td class="right">$240,917</td><td class="right">$7,529</td></tr>
+    <tr><td>November 2025</td><td class="right">82</td><td class="right">19</td><td class="right">23.2%</td><td class="right">$97,180</td><td class="right">$5,115</td></tr>
+    <tr><td>December 2025</td><td class="right">73</td><td class="right">22</td><td class="right">30.1%</td><td class="right">$191,920</td><td class="right">$8,724</td></tr>
+    <tr class="total"><td>All 2025 cohorts</td><td class="right">1,118</td><td class="right">240</td><td class="right">21.5%</td><td class="right">$1,656,663</td><td class="right">$6,903</td></tr>
+  </tbody>
+</table>
+<div class="callout"><strong>Cohort standouts:</strong> The <strong>March 2025</strong> group is the strongest — 97 customers who have returned $295,271 NET through July 2026 (average of $13,421 per repeat customer). <strong>October 2025</strong> is second at $240,917 NET across 32 returners. <strong>December 2025</strong> has the highest repeat rate (30.1%), likely because those customers had less time to lapse. Early-year cohorts are still active more than a year later — evidence that once we win a customer, they tend to stay.</div>
+</div>
+
+<!-- ================================================== -->
+<!-- CATEGORY MIX -->
+<!-- ================================================== -->
+<div class="band-label">Who our customers are (data quality note)</div>
+
+<div class="section">
+<h2>The categorization is cleaner this year</h2>
+<p class="section-explain">Contractor customers (professional installers) vs DIY customers (homeowners installing themselves). The apparent shift year-over-year is a data-quality improvement, not a real change in the customer base.</p>
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;text-align:center;">January through July 2025</h3>
+    <div class="chart-wrap short"><canvas id="mix25"></canvas></div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;text-align:center;">January through July 2026</h3>
+    <div class="chart-wrap short"><canvas id="mix26"></canvas></div>
+  </div>
+</div>
+<div class="callout"><strong>Read this carefully — it's not a mix shift, it's cleaner data:</strong> The apparent move from 85% Contractor / 14% DIY to 78% Contractor / 22% DIY is <strong>not</strong> a change in who is buying from us. It reflects better categorization at the point of sale — the sales team has been more consistent in 2026 about tagging DIY customers correctly, so people who were previously mislabeled as Contractor (or left uncategorized and later defaulted) are now being recorded accurately. The underlying customer base has been more stable than these numbers make it look. <strong>Recommended next step:</strong> once we have a full clean year of 2026 data, we can re-baseline and start tracking a real year-over-year mix trend.</div>
+</div>
+
+<!-- ================================================== -->
+<!-- WHAT WE RECOMMEND -->
+<!-- ================================================== -->
+<!-- ================================================== -->
+<!-- HISTORICAL: WHERE REVENUE ACTUALLY COMES FROM -->
+<!-- ================================================== -->
+<div class="band-label">Where the revenue actually comes from</div>
+
+<div class="section">
+<h2>A 2010–2012 account is worth 20× a 2025 account</h2>
+<p class="section-explain">Revenue per active account, grouped by the era the account was acquired. Vintage dating comes from Sage created dates where available (52% of accounts from source records, 98.4% dated overall). Because year-level accuracy is about 96%, this is presented as era bands rather than single years.</p>
+
+<table class="data">
+  <thead>
+    <tr><th>Acquisition era</th><th class="right">Active accounts</th><th class="right">FY2025 revenue</th><th class="right">Revenue / account</th><th class="right">Share of revenue</th><th class="right">Share of accounts</th></tr>
+  </thead>
+  <tbody>
+    <tr style="background:#dbeafe !important;"><td><strong>2007–2009</strong></td><td class="right">76</td><td class="right">$2,502,888</td><td class="right"><strong>$32,933</strong></td><td class="right">12.2%</td><td class="right">2.8%</td></tr>
+    <tr style="background:#dbeafe !important;"><td><strong>2010–2012</strong></td><td class="right">36</td><td class="right">$1,710,260</td><td class="right"><strong>$47,507</strong></td><td class="right">8.3%</td><td class="right">1.3%</td></tr>
+    <tr><td>2013–2015</td><td class="right">74</td><td class="right">$960,081</td><td class="right">$12,974</td><td class="right">4.7%</td><td class="right">2.8%</td></tr>
+    <tr><td>2016–2017</td><td class="right">89</td><td class="right">$1,859,563</td><td class="right">$20,894</td><td class="right">9.1%</td><td class="right">3.3%</td></tr>
+    <tr><td>2018–2019</td><td class="right">141</td><td class="right">$2,114,409</td><td class="right">$14,996</td><td class="right">10.3%</td><td class="right">5.3%</td></tr>
+    <tr><td>2020–2021</td><td class="right">161</td><td class="right">$2,757,356</td><td class="right">$17,126</td><td class="right">13.5%</td><td class="right">6.0%</td></tr>
+    <tr><td>2022–2023</td><td class="right">197</td><td class="right">$2,693,883</td><td class="right">$13,675</td><td class="right">13.1%</td><td class="right">7.4%</td></tr>
+    <tr><td>late 2023 / 2024</td><td class="right">286</td><td class="right">$3,282,835</td><td class="right">$11,478</td><td class="right">16.0%</td><td class="right">10.7%</td></tr>
+    <tr style="background:#fef3c7 !important;"><td><strong>2025</strong></td><td class="right">1,126</td><td class="right">$2,608,348</td><td class="right"><strong>$2,316</strong></td><td class="right">12.7%</td><td class="right">42.1%</td></tr>
+    <tr style="background:#fef3c7 !important;"><td><strong>2026</strong></td><td class="right">490</td><td class="right">$7,196</td><td class="right"><strong>$15</strong></td><td class="right">0.0%</td><td class="right">18.3%</td></tr>
+  </tbody>
+</table>
+
+<div class="tile-grid" style="margin-top:16px;">
+  <div class="tile hero">
+    <div class="label">Pre-2018 accounts</div>
+    <div class="value">10% → 34%</div>
+    <div class="sub">275 accounts, just 10.3% of the active base, generate <strong>34.3% of FY2025 revenue</strong>. This is the concentration that carries the company.</div>
+  </div>
+  <div class="tile warn">
+    <div class="label">2025 + 2026 accounts</div>
+    <div class="value">60% → 13%</div>
+    <div class="sub">1,616 accounts — 60.4% of the base — generate <strong>12.7% of revenue</strong>. Volume without value.</div>
+  </div>
+  <div class="tile bad">
+    <div class="label">Accounts needed to replace one legacy account</div>
+    <div class="value">20×</div>
+    <div class="sub">$47,507 versus $2,316. Replacing a single 2010&ndash;2012 account requires roughly <strong>20 new 2025 accounts</strong>.</div>
+  </div>
+</div>
+
+<div class="callout bad"><strong>This is the finding that should change the marketing mandate.</strong> No realistic acquisition programme closes a 20× value gap. If we lose legacy accounts at the current rate, no volume of new customers replaces them — and the numbers earlier on this page show new customers arriving at 19% lower volume than last year. <strong>The implication is uncomfortable but clear: protecting the accounts we have is worth more than acquiring new ones, and marketing has almost no programme aimed at protection.</strong> The four email nurture flows are the first attempt; two of them have not fired yet.</div>
+</div>
+
+<div class="section">
+<h2>42% of established accounts stopped buying — and revenue held anyway</h2>
+<p class="section-explain">Trailing twelve months to July 28, 2026, versus the prior twelve. An account counts as churned if it bought in the prior window and not in the current one.</p>
+
+<table class="data">
+  <thead><tr><th>Cohort</th><th>Status</th><th class="right">Accounts</th><th class="right">Prior 12mo</th><th class="right">Current 12mo</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="3"><strong>Pre-2025</strong></td><td>Retained</td><td class="right">644</td><td class="right">$14,141,098</td><td class="right">$17,451,971</td></tr>
+    <tr style="background:#fee2e2 !important;"><td><strong>Churned</strong></td><td class="right"><strong>466</strong></td><td class="right"><strong>$818,336</strong></td><td class="right">$0</td></tr>
+    <tr><td>New or reactivated</td><td class="right">177</td><td class="right">$0</td><td class="right">$373,504</td></tr>
+    <tr><td rowspan="3"><strong>New 2025</strong></td><td>Retained</td><td class="right">177</td><td class="right">$686,913</td><td class="right">$1,740,139</td></tr>
+    <tr style="background:#fee2e2 !important;"><td><strong>Churned</strong></td><td class="right"><strong>416</strong></td><td class="right">$355,844</td><td class="right">$0</td></tr>
+    <tr><td>New or reactivated</td><td class="right">527</td><td class="right">$0</td><td class="right">$1,467,344</td></tr>
+  </tbody>
+</table>
+
+<div class="callout warn"><strong>Read the top block carefully.</strong> 466 of 1,110 established accounts that had revenue in the prior year — <strong>42%</strong> — bought nothing in the trailing twelve months. Yet retained-account revenue <em>rose</em> from $14.1M to $17.5M. Revenue held because the survivors spent more, not because the base was stable. That is a concentration risk: the same $17.5M now rests on 644 accounts instead of 1,110.<br><br>The workbook dates the onset of this to <strong>May&ndash;June 2025 — at peak advertising spend</strong>, which rules out the budget as a cause. Returns were also ruled out (under $2,032/month). <strong>Rep coverage was restructured in summer 2025, which is the closest match on timing and the most plausible candidate.</strong> That is a correlation, not proof, and it is worth investigating directly before the next planning cycle.</div>
+</div>
+
+<div class="section">
+<h2>$2.78M sits in accounts that have gone quiet — and $1.27M of it is in 28 of them</h2>
+<p class="section-explain">Accounts with no order for more than 90 days, and more than twice their own median ordering interval. Every account on this list is categorised Contractor.</p>
+
+<table class="data">
+  <thead><tr><th>Lifetime value tier</th><th class="right">Accounts</th><th class="right">Lifetime NET</th><th class="right">Orders</th><th class="right">Avg per account</th></tr></thead>
+  <tbody>
+    <tr style="background:#fee2e2 !important;"><td><strong>$100k+</strong></td><td class="right">4</td><td class="right">$444,029</td><td class="right">190</td><td class="right">$111,007</td></tr>
+    <tr style="background:#fee2e2 !important;"><td><strong>$50k–100k</strong></td><td class="right">5</td><td class="right">$278,115</td><td class="right">232</td><td class="right">$55,623</td></tr>
+    <tr style="background:#fef3c7 !important;"><td><strong>$20k–50k</strong></td><td class="right">19</td><td class="right">$542,974</td><td class="right">367</td><td class="right">$28,578</td></tr>
+    <tr><td>$5k–20k</td><td class="right">100</td><td class="right">$899,625</td><td class="right">860</td><td class="right">$8,996</td></tr>
+    <tr><td>$1k–5k</td><td class="right">227</td><td class="right">$584,739</td><td class="right">1,047</td><td class="right">$2,576</td></tr>
+    <tr><td>Under $1k</td><td class="right">54</td><td class="right">$32,031</td><td class="right">191</td><td class="right">$593</td></tr>
+    <tr class="total"><td>Total at risk</td><td class="right">409</td><td class="right">$2,781,513</td><td class="right">2,887</td><td class="right">$6,800</td></tr>
+  </tbody>
+</table>
+
+<h3 style="font-size:14px;color:#475569;margin:20px 0 8px;">The accounts to call first</h3>
+<table class="data">
+  <thead><tr><th>Account</th><th class="right">Lifetime NET</th><th class="right">Orders</th><th class="right">Normal gap</th><th class="right">Days silent</th><th>Why it stands out</th></tr></thead>
+  <tbody>
+    <tr><td>Granite Garage CO — Todd Carsten</td><td class="right">$130,549</td><td class="right">9</td><td class="right">45 d</td><td class="right">299</td><td>GRANITE cluster</td></tr>
+    <tr style="background:#fee2e2 !important;"><td><strong>Welborn Garage Doors</strong></td><td class="right">$109,167</td><td class="right">164</td><td class="right"><strong>3 d</strong></td><td class="right"><strong>223</strong></td><td><strong>Ordered every 3 days, 164 times. Then stopped.</strong></td></tr>
+    <tr><td>Renovia</td><td class="right">$102,721</td><td class="right">9</td><td class="right">54 d</td><td class="right">131</td><td></td></tr>
+    <tr><td>Granite Garage Floors — VA</td><td class="right">$101,594</td><td class="right">8</td><td class="right">66 d</td><td class="right">140</td><td>GRANITE cluster</td></tr>
+    <tr><td>5 Star Garage &amp; Concrete Coatings</td><td class="right">$63,235</td><td class="right">54</td><td class="right">10 d</td><td class="right">116</td><td></td></tr>
+    <tr><td>Norco Epoxy Floors Texas</td><td class="right">$56,999</td><td class="right">41</td><td class="right">14 d</td><td class="right">117</td><td></td></tr>
+    <tr><td>MACH ONE Epoxy Floors of Orlando</td><td class="right">$53,960</td><td class="right">38</td><td class="right">15 d</td><td class="right">97</td><td>MACH ONE network</td></tr>
+    <tr><td>Let's Floor It LLC</td><td class="right">$53,796</td><td class="right">68</td><td class="right">8 d</td><td class="right">147</td><td></td></tr>
+    <tr style="background:#fee2e2 !important;"><td><strong>Homestop Inc</strong></td><td class="right">$28,404</td><td class="right">108</td><td class="right"><strong>2 d</strong></td><td class="right"><strong>420</strong></td><td><strong>Ordered every 2 days, 108 times. Silent 14 months.</strong></td></tr>
+  </tbody>
+</table>
+
+<div class="callout bad"><strong>The two high-frequency accounts are the most alarming entries on this dashboard.</strong> Welborn Garage Doors placed 164 orders at an average gap of three days, then went completely silent 223 days ago. Homestop placed 108 orders every two days and has been silent for 420. An account ordering every two or three days is embedded in a workflow — that behaviour does not stop because of price. Something happened, and nobody appears to have called.<br><br><strong>The cheapest fix on this entire dashboard:</strong> an alert that flags any account exceeding twice its own median order interval. Both of these would have surfaced within a fortnight, while the relationship was still recoverable. It would also have caught the mid-2025 retention break as it began.</div>
+
+<div class="callout hero"><strong>The concentrated opportunity:</strong> $1.27M of the $2.78M at risk sits in just 28 named accounts. That is a call list, not a campaign — and the three GRANITE accounts alone hold $282k. This is where the dormant email flow should be pointed the moment its manual push runs.</div>
+</div>
+
+<div class="section">
+<h2>Ten accounts account for a $517,000 decline</h2>
+<p class="section-explain">Accounts whose year-over-year revenue fell most, Jan&ndash;Jul 2025 versus Jan&ndash;Jul 2026, on NET product revenue.</p>
+
+<table class="data">
+  <thead><tr><th>Account</th><th class="right">Jan–Jul 2025</th><th class="right">Jan–Jul 2026</th><th class="right">Change</th><th class="right">%</th></tr></thead>
+  <tbody>
+    <tr><td>Best In Show Garage</td><td class="right">$123,274</td><td class="right">$42,964</td><td class="right" style="color:#991b1b;font-weight:600;">−$80,310</td><td class="right" style="color:#991b1b;">−65%</td></tr>
+    <tr><td>Granite Garage CO — Todd Carsten</td><td class="right">$71,164</td><td class="right">$0</td><td class="right" style="color:#991b1b;font-weight:600;">−$71,164</td><td class="right" style="color:#991b1b;">−100%</td></tr>
+    <tr><td>Garage Floor Coating TN</td><td class="right">$115,293</td><td class="right">$52,091</td><td class="right" style="color:#991b1b;font-weight:600;">−$63,203</td><td class="right" style="color:#991b1b;">−55%</td></tr>
+    <tr><td>Superior Floor Coatings</td><td class="right">$126,045</td><td class="right">$65,701</td><td class="right" style="color:#991b1b;font-weight:600;">−$60,344</td><td class="right" style="color:#991b1b;">−48%</td></tr>
+    <tr><td>MACH ONE Epoxy Floors of York</td><td class="right">$82,897</td><td class="right">$26,036</td><td class="right" style="color:#991b1b;font-weight:600;">−$56,861</td><td class="right" style="color:#991b1b;">−69%</td></tr>
+    <tr><td>Welborn Garage Doors</td><td class="right">$54,365</td><td class="right">$0</td><td class="right" style="color:#991b1b;font-weight:600;">−$54,365</td><td class="right" style="color:#991b1b;">−100%</td></tr>
+    <tr><td>Ballistic Concrete</td><td class="right">$81,444</td><td class="right">$30,319</td><td class="right" style="color:#991b1b;font-weight:600;">−$51,125</td><td class="right" style="color:#991b1b;">−63%</td></tr>
+    <tr><td>MACH ONE of Plano</td><td class="right">$65,363</td><td class="right">$32,937</td><td class="right" style="color:#991b1b;font-weight:600;">−$32,426</td><td class="right" style="color:#991b1b;">−50%</td></tr>
+    <tr><td>Granite Garage Floors — VA</td><td class="right">$43,841</td><td class="right">$14,323</td><td class="right" style="color:#991b1b;font-weight:600;">−$29,519</td><td class="right" style="color:#991b1b;">−67%</td></tr>
+    <tr><td>MACH ONE Epoxy Floors of Natick</td><td class="right">$33,824</td><td class="right">$15,878</td><td class="right" style="color:#991b1b;font-weight:600;">−$17,946</td><td class="right" style="color:#991b1b;">−53%</td></tr>
+    <tr class="total"><td>These ten accounts</td><td class="right">$797,511</td><td class="right">$280,248</td><td class="right">−$517,262</td><td class="right">−65%</td></tr>
+  </tbody>
+</table>
+
+<div class="callout warn"><strong>Six of the ten belong to two franchise networks.</strong> Four are MACH ONE, two are GRANITE. At network level: MACH ONE went from $590,560 to $451,302 across 18 then 16 active accounts (−24%), and GRANITE from $324,345 to $269,375 across 8 then 7 (−17%). Losses inside a network tend to share a cause — a purchasing decision, a competitor agreement, or a corporate directive — so these are two conversations, not ten. Worth having them at network level rather than account by account.<br><br><strong>For scale:</strong> this $517,262 decline sits against total Jan&ndash;Jul NET revenue growth of roughly $595,000 in the 5020/5085 product pool. Ten accounts nearly cancelled out the product-level growth of the whole business.</div>
+</div>
+
+<div class="band-label">What we recommend</div>
+
+<div class="section">
+<h2>What the numbers say to do next</h2>
+<p class="section-explain">Ordered by expected value against effort, using the findings on this page.</p>
+
+<div class="tile-grid">
+  <div class="tile hero">
+    <div class="label">1 — Cheapest, highest value</div>
+    <div class="value" style="font-size:17px;line-height:1.3;">Build a lapse alert</div>
+    <div class="sub">Flag any account exceeding <strong>twice its own median order interval</strong>. One report. It would have caught Welborn Garage Doors (164 orders every 3 days) within a fortnight instead of 223 days, and would have surfaced the mid-2025 retention break as it started. This is the single best return on effort available.</div>
+  </div>
+  <div class="tile hero">
+    <div class="label">2 — Concentrated and named</div>
+    <div class="value" style="font-size:17px;line-height:1.3;">Work the 28-account call list</div>
+    <div class="sub">$1.27M of the $2.78M at risk sits in 28 named accounts. Start with the GRANITE cluster ($282k across 3) and the two high-frequency accounts. This is a call list for sales, not a campaign &mdash; and it should be the first target for the dormant email flow once its manual push runs.</div>
+  </div>
+  <div class="tile hero">
+    <div class="label">3 — Two conversations, not ten</div>
+    <div class="value" style="font-size:17px;line-height:1.3;">Escalate MACH ONE and GRANITE</div>
+    <div class="sub">Six of the ten largest declining accounts belong to these two networks. MACH ONE is down 24% and GRANITE 17% at network level. Losses inside a network usually share one cause, so these should be network-level conversations with whoever makes purchasing decisions.</div>
+  </div>
+  <div class="tile good">
+    <div class="label">4 — Reframe the mandate</div>
+    <div class="value" style="font-size:17px;line-height:1.3;">Account development over volume</div>
+    <div class="sub">A 20&times; value gap between legacy and new accounts cannot be closed by acquisition. Marketing currently has four email flows aimed at retention, two of which have never fired. That is the entire retention programme. It needs to be the priority, not the side project.</div>
+  </div>
+  <div class="tile good">
+    <div class="label">5 — Investigate, don't assume</div>
+    <div class="value" style="font-size:17px;line-height:1.3;">Confirm the summer-2025 cause</div>
+    <div class="sub">Order frequency began decaying May&ndash;June 2025, at peak ad spend. Rep coverage was restructured that summer, which matches on timing &mdash; but correlation is not proof. Returns are already ruled out. Worth confirming directly before the next planning cycle, because the answer changes what we fix.</div>
+  </div>
+  <div class="tile good">
+    <div class="label">6 — Redeploy available budget</div>
+    <div class="value" style="font-size:17px;line-height:1.3;">$65,630 unspent on Google</div>
+    <div class="sub">Google has $65,630 left against the annual plan and photo/video is almost untouched at $300 of a $30K line. The focus group asked specifically for real-garage installation video. Two underspent lines, one obvious use.</div>
+  </div>
+</div>
+
+<div class="callout hero"><strong>The single message for leadership:</strong> The in-year marketing engine is working &mdash; spend down 58%, revenue essentially flat, acquisition cost halved. But the numbers that matter more are structural: a legacy account is worth 20&times; a new one, 42% of established accounts stopped buying in the last twelve months, and $2.78M sits in accounts that have gone quiet. <strong>No budget level fixes those. The mandate needs to shift from acquisition volume to account development and retention</strong> &mdash; and today marketing has almost no programme aimed at either.</div>
+</div>
+
+<div class="footer">
+<div class="conf">⚠ Confidential — Versatile High-Performance Coatings internal use only. Do not redistribute.</div>
+Data sources: NetSuite line-level transactions (CustInvc, CashSale, CustCred, CustRfnd) joined to customer cohorts by datecreated. Structural sections (acquisition vintage, retention decomposition, lapsed register, declining accounts) derive from Versatile_YoY_Deep_Analysis_2026.xlsx. Vintage dating uses Sage created dates where available and is presented as era bands because year-level accuracy is about 96%. All revenue figures are NET — product items only, excluding shipping (FedEx / UPS / freight items) and tax, with returns and credit memos netted against sales. Subsidiary = VHPC LLC. Customer categories 2 (Vendor) and 14 (GarageExperts) excluded.<br>
+Prepared: August 10, 2026
+</div>
+
+</div>
+
+<script>
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, Arial, sans-serif';
+Chart.defaults.font.size = 11;
+
+const MONTHS_YTD = ['Jan','Feb','Mar','Apr','May','Jun','Jul'];
+const CUST_2025 = [55, 58, 91, 94, 94, 88, 72];
+const CUST_2026 = [44, 59, 73, 63, 69, 67, 72];
+const REV_2025  = [47649, 47672, 90201, 88785, 77932, 71999, 57390];
+const REV_2026  = [37328, 49840, 63240, 53952, 87841, 130063, 51088];
+
+new Chart(document.getElementById('custTrend'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS_YTD,
+    datasets: [
+      { label: '2025', data: CUST_2025, backgroundColor: '#94a3b8', borderRadius: 3 },
+      { label: '2026', data: CUST_2026, backgroundColor: '#1F4E79', borderRadius: 3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', labels: {boxWidth: 14, padding: 8} } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+new Chart(document.getElementById('revTrend'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS_YTD,
+    datasets: [
+      { label: '2025', data: REV_2025, backgroundColor: '#94a3b8', borderRadius: 3 },
+      { label: '2026', data: REV_2026, backgroundColor: '#1F4E79', borderRadius: 3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: {boxWidth: 14, padding: 8} },
+      tooltip: { callbacks: { label: c => c.dataset.label + ': $' + c.parsed.y.toLocaleString() } }
+    },
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+new Chart(document.getElementById('mix25'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Contractor (538)', 'DIY (90)', 'Other (2)'],
+    datasets: [{ data: [538, 90, 2], backgroundColor: ['#1F4E79', '#f59e0b', '#94a3b8'], borderWidth: 2, borderColor: '#fff' }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { padding: 12, boxWidth: 12 } },
+      tooltip: { callbacks: { label: c => c.label + ' — ' + ((c.parsed / 630) * 100).toFixed(0) + '%' } }
+    }
+  }
+});
+
+new Chart(document.getElementById('mix26'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Contractor (393)', 'DIY (113)'],
+    datasets: [{ data: [393, 113], backgroundColor: ['#1F4E79', '#f59e0b'], borderWidth: 2, borderColor: '#fff' }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { padding: 12, boxWidth: 12 } },
+      tooltip: { callbacks: { label: c => c.label + ' — ' + ((c.parsed / 506) * 100).toFixed(0) + '%' } }
+    }
+  }
+});
+</script>
+
+</body>
+</html>

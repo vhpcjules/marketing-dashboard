@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Versatile HPC — Marketing Pipeline for Sales</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f7fa; color: #1a202c; line-height: 1.5; padding: 24px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.header { text-align: center; padding: 24px 0 32px; border-bottom: 3px solid #1F4E79; margin-bottom: 32px; }
+.header h1 { font-size: 28px; color: #1F4E79; margin-bottom: 8px; }
+.header .subtitle { color: #64748b; font-size: 14px; }
+.band-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; color: #94a3b8; margin: 32px 0 10px; padding-left: 4px; border-left: 4px solid #1F4E79; padding-left: 12px; }
+.band-label.primary { color: #1F4E79; }
+.band-label.context { color: #64748b; }
+.section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.section.featured { border-top: 4px solid #1F4E79; }
+.section h2 { font-size: 20px; color: #1F4E79; margin-bottom: 8px; }
+.section h2 small { font-size: 13px; color: #64748b; font-weight: 400; margin-left: 8px; }
+.section .section-explain { color: #64748b; font-size: 13px; margin-bottom: 20px; font-style: italic; }
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; align-items: stretch; }
+.rep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.tile { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 18px; border-radius: 10px; border-left: 4px solid #1F4E79; display: flex; flex-direction: column; }
+.tile .label { min-height: 2.6em; display: flex; align-items: flex-start; }
+.tile .sub { margin-top: auto; padding-top: 4px; }
+.tile.featured { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left-color: #1F4E79; }
+.tile.alexis { border-left-color: #3b82f6; }
+.tile.dan { border-left-color: #16a34a; }
+.tile.parker { border-left-color: #a855f7; }
+.tile.untracked { border-left-color: #94a3b8; }
+.tile .name { font-size: 14px; font-weight: 700; color: #1F4E79; margin-bottom: 8px; display: flex; align-items: center; }
+.tile .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.tile .value { font-size: 26px; font-weight: 700; color: #1F4E79; margin: 4px 0; }
+.tile .sub { font-size: 11px; color: #64748b; }
+.tile .row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; }
+.tile .row span:last-child { font-weight: 600; }
+.tile .explain { font-size: 11px; color: #475569; margin-top: 8px; line-height: 1.4; font-style: italic; }
+.delta { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+.delta.up { background: #dcfce7; color: #166534; }
+.delta.down { background: #fee2e2; color: #991b1b; }
+.delta.flat { background: #e2e8f0; color: #475569; }
+.chart-wrap { position: relative; height: 320px; margin-top: 12px; }
+.chart-wrap.short { height: 220px; }
+.chart-wrap.tall { height: 380px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media(max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+th { background: #1F4E79; color: white; padding: 10px; text-align: left; font-weight: 600; font-size: 12px; }
+th.right, td.right { text-align: right; }
+td { padding: 10px; border-bottom: 1px solid #e2e8f0; }
+tr:nth-child(even) td { background: #f8fafc; }
+.compare-table th { background: #f1f5f9; color: #1F4E79; text-align: right; font-size: 11px; }
+.compare-table th.metric { text-align: left; }
+.compare-table td.metric { font-weight: 600; color: #1F4E79; }
+.compare-table td.month { font-weight: 700; font-size: 15px; background: #eff6ff !important; }
+.compare-table td.qtr { font-weight: 600; font-size: 14px; }
+.compare-table td.year { color: #64748b; font-size: 13px; }
+.compare-table .arrow { font-size: 11px; font-weight: 600; margin-left: 4px; }
+.compare-table .arrow.up { color: #16a34a; }
+.compare-table .arrow.down { color: #dc2626; }
+.flag-row { padding: 12px 16px; margin: 8px 0; border-radius: 8px; display: flex; align-items: start; gap: 12px; }
+.flag-row .icon { font-size: 18px; line-height: 1; flex-shrink: 0; }
+.flag-row .body { flex: 1; }
+.flag-row .body > strong:first-child { display: block; margin-bottom: 4px; }
+.flag-row.green { background: #dcfce7; border-left: 4px solid #16a34a; }
+.flag-row.blue { background: #e0f2fe; border-left: 4px solid #0284c7; }
+.flag-row.yellow { background: #fef3c7; border-left: 4px solid #ca8a04; }
+.callout { background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px 16px; border-radius: 6px; font-size: 13px; margin: 12px 0; }
+.callout strong { color: #0c4a6e; }
+.footer { text-align: center; padding: 20px; color: #64748b; font-size: 12px; margin-top: 20px; }
+.legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.state-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 13px; }
+@media(max-width: 768px) { .state-grid { grid-template-columns: 1fr; } }
+.state-row { display: flex; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border-left: 3px solid #1F4E79; }
+.state-row .rank { font-weight: 700; color: #1F4E79; width: 28px; }
+.state-row .state-name { font-weight: 600; flex: 1; }
+.state-row .state-count { font-weight: 600; color: #1F4E79; margin-right: 8px; }
+.state-row .state-rev { font-size: 11px; color: #64748b; }
+.divider { height: 1px; background: linear-gradient(to right, transparent, #cbd5e1, transparent); margin: 8px 0 0; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: #1F4E79; text-decoration: none; font-size: 13px; font-weight: 600; padding: 8px 14px; background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 8px; transition: all 0.15s ease; border: 1px solid #e2e8f0; }
+.back-link:hover { background: #eff6ff; border-color: #1F4E79; box-shadow: 0 2px 6px rgba(31,78,121,0.12); }
+.back-link:hover .back-arrow { transform: translateX(-3px); }
+.back-link .back-arrow { transition: transform 0.15s ease; display: inline-block; font-size: 16px; line-height: 1; }
+.month-picker { background: white; padding: 14px 18px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.month-picker-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 10px; }
+.month-picker-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.month-pill { padding: 7px 13px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: #64748b; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; white-space: nowrap; font-family: inherit; }
+.month-pill:hover { background: #eff6ff; border-color: #94a3b8; color: #1F4E79; }
+.month-pill.active { background: #1F4E79; border-color: #1F4E79; color: white; box-shadow: 0 2px 6px rgba(31,78,121,0.25); }
+.month-pill.active:hover { background: #173d61; }
+.exec-summary { background: linear-gradient(135deg, #1F4E79 0%, #2c6ba0 100%); color: white; border-radius: 12px; padding: 28px 32px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(31,78,121,0.15); }
+.exec-summary h2 { color: white; font-size: 18px; margin-bottom: 12px; letter-spacing: 0.3px; }
+.exec-summary .lede { font-size: 13px; color: #dbeafe; margin-bottom: 8px; }
+.exec-summary .headline-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 14px; align-items: stretch; }
+.exec-summary .headline { background: rgba(255,255,255,0.10); border-radius: 8px; padding: 14px 16px; border-left: 3px solid #f59e0b; display: flex; flex-direction: column; }
+.exec-summary .headline .num { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.3px; line-height: 1.2; }
+.exec-summary .headline .desc { font-size: 12px; color: #dbeafe; line-height: 1.4; margin-top: auto; }
+@media(max-width: 900px) { .exec-summary .headline-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<a href="index.html" class="back-link"><span class="back-arrow">←</span> All dashboards</a>
+
+<div class="header">
+<h1>Marketing Pipeline for Sales</h1>
+<div class="subtitle">Versatile High-Performance Coatings · How marketing performed for your team — last month, last quarter, and the full year · Updated August 1, 2026</div>
+</div>
+
+<div class="exec-summary">
+  <h2>The three things to take from this dashboard</h2>
+  <p class="lede">July: your team landed 72 new customers — the highest count in six months — with lead quality at a year-high. Revenue softened vs June's outlier, but the pipeline is strong.</p>
+  <div class="headline-row">
+    <div class="headline">
+      <div class="num">72 new customers in July</div>
+      <div class="desc"><strong>Above the 6-month average of 67.</strong> Parker was assigned the most leads (72) and converted 43%. Alexis converted best at 49% on 59 leads. Dan converted 36% on 42. Deal size was broadly softer than June across all three.</div>
+    </div>
+    <div class="headline">
+      <div class="num">Assigned leads carry a phone 87% of the time</div>
+      <div class="desc"><strong>The 55.7% blended phone-capture figure understates what reps receive.</strong> Of the 174 records routed to a rep in July, 153 had a phone number. The blended rate is dragged down by 104 unassigned, email-only records that never reach anyone.</div>
+    </div>
+    <div class="headline">
+      <div class="num">Contractor mix strengthening</div>
+      <div class="desc"><strong>Contractor was 93% of July customers</strong> (67 of 72), driving 94% of NET M1 revenue. Highest Contractor share we've seen in months — the ICP-fit of what marketing is delivering has tightened.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================== -->
+<!-- BAND 1 — LAST MONTH (PRIMARY) -->
+<!-- ====================================================== -->
+<div class="band-label primary">Pick any month — pre-loaded with all 12</div>
+
+<div class="month-picker">
+  <div class="month-picker-label">Showing data for</div>
+  <div class="month-picker-row" id="month-picker-row">
+    <button class="month-pill" data-month="2025-06" onclick="selectMonth('2025-06')">Jun 25</button>
+    <button class="month-pill" data-month="2025-07" onclick="selectMonth('2025-07')">Jul 25</button>
+    <button class="month-pill" data-month="2025-08" onclick="selectMonth('2025-08')">Aug 25</button>
+    <button class="month-pill" data-month="2025-09" onclick="selectMonth('2025-09')">Sep 25</button>
+    <button class="month-pill" data-month="2025-10" onclick="selectMonth('2025-10')">Oct 25</button>
+    <button class="month-pill" data-month="2025-11" onclick="selectMonth('2025-11')">Nov 25</button>
+    <button class="month-pill" data-month="2025-12" onclick="selectMonth('2025-12')">Dec 25</button>
+    <button class="month-pill" data-month="2026-01" onclick="selectMonth('2026-01')">Jan 26</button>
+    <button class="month-pill" data-month="2026-02" onclick="selectMonth('2026-02')">Feb 26</button>
+    <button class="month-pill" data-month="2026-03" onclick="selectMonth('2026-03')">Mar 26</button>
+    <button class="month-pill" data-month="2026-04" onclick="selectMonth('2026-04')">Apr 26</button>
+    <button class="month-pill" data-month="2026-05" onclick="selectMonth('2026-05')">May 26</button>
+    <button class="month-pill" data-month="2026-06" onclick="selectMonth('2026-06')">Jun 26</button>
+    <button class="month-pill active" data-month="2026-07" onclick="selectMonth('2026-07')">Jul 26</button>
+  </div>
+</div>
+
+<div class="section featured">
+<h2 id="mp-section-title">June 2026 — what landed in your pipeline last month <small id="mp-section-subtitle">(64 new customers, $131K M1)</small></h2>
+<p class="section-explain">The most current picture: who came in, how much they spent, and what's flowing into each rep's territory. Pick any month above to switch the view.</p>
+
+<div class="tile-grid" style="margin-bottom:16px;">
+  <div class="tile featured">
+    <div class="label">New customers</div>
+    <div class="value" id="mp-customers">74</div>
+    <div class="sub" id="mp-customers-sub">vs April 66 <span class="delta up">+12%</span></div>
+  </div>
+  <div class="tile featured">
+    <div class="label">Month-1 revenue</div>
+    <div class="value" id="mp-m1rev">$76K</div>
+    <div class="sub" id="mp-m1rev-sub">vs April $61K <span class="delta up">+24%</span></div>
+  </div>
+  <div class="tile featured">
+    <div class="label">Avg deal size</div>
+    <div class="value" id="mp-avgdeal">$1,026</div>
+    <div class="sub" id="mp-avgdeal-sub">12-mo avg $872 <span class="delta up">+18%</span></div>
+  </div>
+  <div class="tile featured">
+    <div class="label">Lead → customer</div>
+    <div class="value" id="mp-conv">32%</div>
+    <div class="sub" id="mp-conv-sub">12-mo avg 25% <span class="delta up">+7%</span></div>
+  </div>
+  <div class="tile featured">
+    <div class="label">Phone capture</div>
+    <div class="value" id="mp-phone">54%</div>
+    <div class="sub" id="mp-phone-sub">12-mo avg 42% <span class="delta up">+12%</span></div>
+  </div>
+  <div class="tile featured">
+    <div class="label">Total records (leads + customers)</div>
+    <div class="value" id="mp-records">232</div>
+    <div class="sub" id="mp-records-sub">158 leads + 74 customers</div>
+  </div>
+</div>
+
+<h3 id="mp-rep-heading" style="font-size:14px;color:#475569;margin:18px 0 10px;">What each rep received in June 2026</h3>
+<p style="font-size:12px;color:#64748b;font-style:italic;margin-bottom:10px;">Leads assigned is every record routed to that rep in the month. Converted counts those who have since placed a first order. Customers and M1 revenue count only those who ordered <em>within</em> their creation month, which is why converted can exceed customers.</p>
+<div class="rep-grid">
+  <div class="tile alexis">
+    <div class="name"><span class="legend-dot" style="background:#3b82f6;"></span>Alexis Garcia</div>
+    <div class="row"><span>Leads assigned</span><span id="mp-alexis-assigned">56</span></div>
+    <div class="row"><span>Converted</span><span id="mp-alexis-conv">29</span></div>
+    <div class="row" style="border-top:1px solid #cbd5e1;"><span><strong>Conversion rate</strong></span><span id="mp-alexis-cvr"><strong>52%</strong></span></div>
+    <div class="row"><span>Customers (M1)</span><span id="mp-alexis-cust">32</span></div>
+    <div class="row"><span>M1 revenue</span><span id="mp-alexis-rev">$29,236</span></div>
+    <div class="row"><span>Avg deal</span><span id="mp-alexis-avg">$914</span></div>
+  </div>
+  <div class="tile dan">
+    <div class="name"><span class="legend-dot" style="background:#16a34a;"></span><span id="mp-dan-name">Dan Newhard</span></div>
+    <div class="row"><span>Leads assigned</span><span id="mp-dan-assigned">47</span></div>
+    <div class="row"><span>Converted</span><span id="mp-dan-conv">21</span></div>
+    <div class="row" style="border-top:1px solid #cbd5e1;"><span><strong>Conversion rate</strong></span><span id="mp-dan-cvr"><strong>45%</strong></span></div>
+    <div class="row"><span>Customers (M1)</span><span id="mp-dan-cust">21</span></div>
+    <div class="row"><span>M1 revenue</span><span id="mp-dan-rev">$38,964</span></div>
+    <div class="row"><span>Avg deal</span><span id="mp-dan-avg">$1,855</span></div>
+  </div>
+  <div class="tile parker">
+    <div class="name"><span class="legend-dot" style="background:#a855f7;"></span>Parker Strong</div>
+    <div class="row"><span>Leads assigned</span><span id="mp-parker-assigned">40</span></div>
+    <div class="row"><span>Converted</span><span id="mp-parker-conv">21</span></div>
+    <div class="row" style="border-top:1px solid #cbd5e1;"><span><strong>Conversion rate</strong></span><span id="mp-parker-cvr"><strong>53%</strong></span></div>
+    <div class="row"><span>Customers (M1)</span><span id="mp-parker-cust">21</span></div>
+    <div class="row"><span>M1 revenue</span><span id="mp-parker-rev">$7,761</span></div>
+    <div class="row"><span>Avg deal</span><span id="mp-parker-avg">$370</span></div>
+  </div>
+</div>
+
+<div class="callout" id="mp-unassigned-callout" style="background:#fef3c7;border-left-color:#ca8a04;margin-top:14px;"><strong>Plus <span id="mp-unassigned-n">136</span> records that reached no rep at all this month</strong> — and <span id="mp-unassigned-conv">0</span> of them converted. These arrive email-only with almost no phone number, so nobody can call them. This is a NetSuite routing-automation gap, not a rep issue. Across the last 14 months it accounts for <strong>2,582 records and 8 conversions — a 0.31% rate</strong> against 40–70% for assigned leads. It also drags the blended phone-capture number down: assigned leads carry a phone about 87% of the time.</div>
+
+<div class="two-col" style="margin-top:18px;">
+  <div>
+    <h3 id="mp-mix-heading" style="font-size:14px;color:#475569;margin-bottom:10px;">May 2026 customer mix</h3>
+    <table>
+      <thead><tr><th>Category</th><th class="right">Customers</th><th class="right">% of total</th><th class="right">M1 Rev</th><th class="right">% of rev</th></tr></thead>
+      <tbody>
+        <tr><td>Contractor</td><td class="right" id="mp-mix-contractor-cust">60</td><td class="right" id="mp-mix-contractor-pct">81%</td><td class="right" id="mp-mix-contractor-rev">$68,288</td><td class="right" id="mp-mix-contractor-revpct">90%</td></tr>
+        <tr><td>DIY</td><td class="right" id="mp-mix-diy-cust">14</td><td class="right" id="mp-mix-diy-pct">19%</td><td class="right" id="mp-mix-diy-rev">$7,674</td><td class="right" id="mp-mix-diy-revpct">10%</td></tr>
+        <tr style="background:#eff6ff;"><td><strong>Total</strong></td><td class="right"><strong id="mp-mix-total-cust">74</strong></td><td class="right"><strong>100%</strong></td><td class="right"><strong id="mp-mix-total-rev">$75,962</strong></td><td class="right"><strong>100%</strong></td></tr>
+      </tbody>
+    </table>
+    <p id="mp-mix-note" style="font-size:11px;color:#64748b;margin-top:6px;font-style:italic;">Contractor mix held: 81% of customers, 90% of revenue — same shape as the 12-month average.</p>
+  </div>
+  <div>
+    <h3 id="mp-compare-heading" style="font-size:14px;color:#475569;margin-bottom:10px;">Where May lands vs the year</h3>
+    <table class="compare-table">
+      <thead><tr><th class="metric">Metric</th><th id="mp-compare-monthcol">May</th><th>12-mo avg</th></tr></thead>
+      <tbody>
+        <tr><td class="metric">Customers</td><td class="month" id="mp-compare-cust">74</td><td class="year">86</td></tr>
+        <tr><td class="metric">M1 revenue</td><td class="month" id="mp-compare-m1">$76K</td><td class="year">$68K</td></tr>
+        <tr><td class="metric">Avg deal</td><td class="month" id="mp-compare-avg">$1,026</td><td class="year">$791</td></tr>
+        <tr><td class="metric">Conv rate</td><td class="month" id="mp-compare-conv">32%</td><td class="year">25%</td></tr>
+        <tr><td class="metric">Phone capture</td><td class="month" id="mp-compare-phone">54%</td><td class="year">44%</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="callout" style="background:#dcfce7;border-left-color:#16a34a;"><strong>Quick read:</strong> June was the strongest revenue month of the year — <strong>$131K M1 revenue</strong> on 64 new customers, with a <strong>$2,044 avg deal size</strong> (year-high). Parker Strong had the biggest single-rep month of the year ($84K M1). Dan and Alexis pulled solid volume at more typical deal sizes.</div>
+</div>
+
+<!-- ====================================================== -->
+<!-- BAND 2 — LAST 3 MONTHS -->
+<!-- ====================================================== -->
+<div class="band-label primary">Last 3 months — quarter look-back</div>
+
+<div class="section">
+<h2>Apr–Jun 2026 — the quality of what marketing delivered <small>(197 customers, $277K M1)</small></h2>
+<p class="section-explain">A look at the last three months as a whole, so you can see whether the recent run-rate is improving or sliding. Includes the March volume spike, April normalization, and May's quality climb.</p>
+
+<div class="tile-grid" style="margin-bottom:16px;">
+  <div class="tile">
+    <div class="label">Customers (3 mo)</div>
+    <div class="value">226</div>
+    <div class="sub">66/mo avg</div>
+  </div>
+  <div class="tile">
+    <div class="label">Month-1 revenue</div>
+    <div class="value">$277K</div>
+    <div class="sub">$92K/mo avg</div>
+  </div>
+  <div class="tile">
+    <div class="label">Avg deal</div>
+    <div class="value">$1,406</div>
+    <div class="sub">vs $1,180 12-mo <span class="delta up">+19%</span></div>
+  </div>
+  <div class="tile">
+    <div class="label">Avg conv rate</div>
+    <div class="value">28%</div>
+    <div class="sub">range: 24% (Jun) → 32% (May)</div>
+  </div>
+  <div class="tile">
+    <div class="label">Avg phone capture</div>
+    <div class="value">49%</div>
+    <div class="sub">range: 44% (Jun) → 54% (May)</div>
+  </div>
+  <div class="tile">
+    <div class="label">Months 1-3 revenue*</div>
+    <div class="value">$328K+</div>
+    <div class="sub">*May & Jun cohort tails still ahead</div>
+  </div>
+</div>
+
+<h3 style="font-size:14px;color:#475569;margin:18px 0 10px;">What each rep received over the last 3 months</h3>
+<div class="rep-grid">
+  <div class="tile parker">
+    <div class="name"><span class="legend-dot" style="background:#a855f7;"></span>Parker Strong ⭐</div>
+    <div class="row"><span>3-mo customers</span><span>57</span></div>
+    <div class="row"><span>M1 revenue</span><span>$109,909</span></div>
+    <div class="row"><span>Avg deal</span><span>$1,928</span></div>
+    <div class="row"><span>June contribution</span><span>19 cust · $84K</span></div>
+    <div class="explain">June was his biggest revenue month of the year and biggest single-rep month of the team.</div>
+  </div>
+  <div class="tile dan">
+    <div class="name"><span class="legend-dot" style="background:#16a34a;"></span>Dan Newhard</div>
+    <div class="row"><span>3-mo customers</span><span>57</span></div>
+    <div class="row"><span>M1 revenue</span><span>$86,296</span></div>
+    <div class="row"><span>Avg deal</span><span>$1,514</span></div>
+    <div class="row"><span>June contribution</span><span>19 cust · $22K</span></div>
+    <div class="explain">Highest avg deal alongside Parker. May was his standout revenue month; June returned to a more typical pattern.</div>
+  </div>
+  <div class="tile alexis">
+    <div class="name"><span class="legend-dot" style="background:#3b82f6;"></span>Alexis Garcia</div>
+    <div class="row"><span>3-mo customers</span><span>81</span></div>
+    <div class="row"><span>M1 revenue</span><span>$80,600</span></div>
+    <div class="row"><span>Avg deal</span><span>$995</span></div>
+    <div class="row"><span>June contribution</span><span>26 cust · $25K</span></div>
+    <div class="explain">Highest volume on the team every month. Consistent, broad-base deliverer.</div>
+  </div>
+</div>
+
+<div class="two-col" style="margin-top:18px;">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:10px;">Conversion & phone-capture — last 6 months</h3>
+    <div class="chart-wrap short"><canvas id="qualityTrend"></canvas></div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:10px;">3-month customer mix (Mar–May)</h3>
+    <table>
+      <thead><tr><th>Category</th><th class="right">Customers</th><th class="right">% of total</th><th class="right">M1 Rev</th><th class="right">% of rev</th></tr></thead>
+      <tbody>
+        <tr><td>Contractor</td><td class="right">176</td><td class="right">78%</td><td class="right">$178,768</td><td class="right">83%</td></tr>
+        <tr><td>DIY</td><td class="right">50</td><td class="right">22%</td><td class="right">$37,252</td><td class="right">17%</td></tr>
+        <tr style="background:#eff6ff;"><td><strong>Total</strong></td><td class="right"><strong>226</strong></td><td class="right"><strong>100%</strong></td><td class="right"><strong>$216,020</strong></td><td class="right"><strong>100%</strong></td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:#64748b;margin-top:8px;font-style:italic;">Contractor mix held at ~78% of customers and ~83% of M1 — slightly DIY-heavier than the 12-month average (which is 81/19 cust split).</p>
+  </div>
+</div>
+
+<div class="callout"><strong>Bottom line for the last 3 months:</strong> Quality kept climbing. Conversion went 21% → 28% → 32% across Mar-Apr-May. Avg deal climbed too ($807 → $957 → $1,026). May was the highest-quality month of the year on almost every marker. Dan's $39K May revenue month is the standout. If sales can flag which May accounts already placed repeat orders, marketing can lean into similar profiles.</div>
+</div>
+
+<!-- ====================================================== -->
+<!-- BAND 3 — 12-MONTH CONTEXT (DEMOTED) -->
+<!-- ====================================================== -->
+<div class="band-label context">For context — the full 12 months</div>
+
+<div class="section">
+<h2>Full-year delivery — July 2025 to June 2026</h2>
+<p class="section-explain">The backdrop. Rolling 12-month context for the snapshots above. Useful for planning, forecasting, and seeing how the recent quarter fits the bigger picture.</p>
+<div class="tile-grid">
+  <div class="tile">
+    <div class="label">Leads delivered</div>
+    <div class="value">2,958</div>
+    <div class="sub">total marketing-sourced</div>
+  </div>
+  <div class="tile">
+    <div class="label">New customers</div>
+    <div class="value">885</div>
+    <div class="sub">by created-date cohort</div>
+  </div>
+  <div class="tile">
+    <div class="label">Month-1 revenue</div>
+    <div class="value">$1.04M</div>
+    <div class="sub">first-month spend</div>
+  </div>
+  <div class="tile">
+    <div class="label">Avg customer value (M1)</div>
+    <div class="value">$1,180</div>
+    <div class="sub">first-month account value</div>
+  </div>
+  <div class="tile">
+    <div class="label">Avg phone capture</div>
+    <div class="value">45%</div>
+    <div class="sub">stable — Jun 44%</div>
+  </div>
+  <div class="tile">
+    <div class="label">States reached</div>
+    <div class="value">48+</div>
+    <div class="sub">national footprint</div>
+  </div>
+</div>
+</div>
+
+<div class="section">
+<h2>Where new business is being created — top 10 states (12 mo)</h2>
+<p class="section-explain">Customer count and Months 1-3 revenue by state — based on customer ship-to address. Use this to spot strong territories and identify where to push for more reach.</p>
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Top 10 by customer count</h3>
+    <div class="state-grid">
+      <div class="state-row"><span class="rank">1</span><span class="state-name">Texas</span><span class="state-count">232</span><span class="state-rev">$230,179</span></div>
+      <div class="state-row"><span class="rank">2</span><span class="state-name">California</span><span class="state-count">209</span><span class="state-rev">$224,672</span></div>
+      <div class="state-row"><span class="rank">3</span><span class="state-name">Florida</span><span class="state-count">67</span><span class="state-rev">$66,704</span></div>
+      <div class="state-row"><span class="rank">4</span><span class="state-name">North Carolina</span><span class="state-count">36</span><span class="state-rev">$25,643</span></div>
+      <div class="state-row"><span class="rank">5</span><span class="state-name">Colorado</span><span class="state-count">30</span><span class="state-rev">$38,607</span></div>
+      <div class="state-row"><span class="rank">6</span><span class="state-name">New York</span><span class="state-count">25</span><span class="state-rev">$10,592</span></div>
+      <div class="state-row"><span class="rank">7</span><span class="state-name">Arizona</span><span class="state-count">24</span><span class="state-rev">$48,001</span></div>
+      <div class="state-row"><span class="rank">8</span><span class="state-name">Pennsylvania</span><span class="state-count">24</span><span class="state-rev">$19,786</span></div>
+      <div class="state-row"><span class="rank">9</span><span class="state-name">Georgia</span><span class="state-count">24</span><span class="state-rev">$23,601</span></div>
+      <div class="state-row"><span class="rank">10</span><span class="state-name">Tennessee ⭐ new</span><span class="state-count">20</span><span class="state-rev">$9,924</span></div>
+    </div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Customer concentration</h3>
+    <div class="chart-wrap"><canvas id="stateChart"></canvas></div>
+  </div>
+</div>
+<div class="callout"><strong>What this means for sales:</strong> Texas and California are doing 43% of all new business between them (441 of 1,028 customers). Florida, North Carolina, and Colorado are mid-tier with steady volume. <strong>New entry:</strong> Tennessee broke into the top 10 this window — replaces Washington. States 11-50 each contribute under 20 customers — that's where there's room to grow. <strong>Conversation starter:</strong> Are there states where you're seeing strong demand that aren't getting matching marketing support? Let's map that together.</div>
+</div>
+
+<div class="section">
+<h2>How the pipeline has flowed — full year</h2>
+<p class="section-explain">Month-by-month volume and conversion. Useful to see seasonal shape and how the recent quarter fits the broader pattern.</p>
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">New leads & customers per month</h3>
+    <div class="chart-wrap"><canvas id="leadVolume"></canvas></div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Lead → customer conversion rate</h3>
+    <div class="chart-wrap"><canvas id="convRate"></canvas></div>
+  </div>
+</div>
+<div class="callout"><strong>The trend:</strong> Conversion has improved from ~22% mid-2025 to ~28-34% in recent months. Even as paid spend (and therefore volume) dropped, the leads sent to sales convert at a higher rate. Marketing is delivering fewer but higher-quality leads.</div>
+</div>
+
+<div class="section">
+<h2>Quality of the leads landing in your pipeline — full year</h2>
+<p class="section-explain">Email capture is near-universal, but phone is the gating factor for outbound follow-up. Monthly percentage of leads with valid contact info.</p>
+<div class="chart-wrap tall"><canvas id="leadQuality"></canvas></div>
+<div class="callout"><strong>How we close the phone gap:</strong> March 2026 hit 55% phone capture — the year's high — then April dropped back to 48%. We want to consider requiring a phone number field on new form entries so the rate stops swinging month to month. Every 1% of phone capture gained means more outbound reach for your team, so locking this in at the form level would put a stable floor under the pipeline you receive.</div>
+</div>
+
+<div class="section">
+<h2>Where your customers are coming from — full year</h2>
+<p class="section-explain">The marketing channel that converted to a customer. Helps prioritize which incoming leads to lean into — and shows where each dollar of marketing spend is delivering business.</p>
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Customers delivered, by source</h3>
+    <div class="chart-wrap"><canvas id="customerSource"></canvas></div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Avg M1 deal size, by source</h3>
+    <div class="chart-wrap"><canvas id="aovBySource"></canvas></div>
+  </div>
+</div>
+<div class="callout"><strong>What this tells us together:</strong> Organic Search and Paid Google bring high volume at solid deal sizes ($708-$1,014) — these are the workhorse channels. Direct customers come in at $805 avg — these likely include word-of-mouth and repeat-customer accounts worth nurturing. <strong>Collaboration opportunity:</strong> when you talk to a customer, asking how they heard about us helps marketing know which channels deserve more investment.</div>
+</div>
+
+<div class="section">
+<h2>What each book is made of — rolling 12 months (Jul 2025 – Jun 2026)</h2>
+<p class="section-explain">The cumulative customer mix marketing has delivered to each rep's territory over the past 12 months.</p>
+<div class="rep-grid">
+  <div class="tile parker">
+    <div class="name"><span class="legend-dot" style="background:#a855f7;"></span>Parker Strong's book ⭐</div>
+    <div class="row"><span>Customers delivered</span><span>260</span></div>
+    <div class="row"><span>12-mo M1 revenue</span><span>$313,659</span></div>
+    <div class="row"><span>Avg M1 deal</span><span>$1,206</span></div>
+    <div class="row"><span>Latest month (Jun)</span><span>19 customers · $83,638</span></div>
+    <div class="explain">Highest 12-month revenue on the team, and had a standout June ($84K M1 — biggest single-rep month of the year). Deal sizes trending up.</div>
+  </div>
+  <div class="tile alexis">
+    <div class="name"><span class="legend-dot" style="background:#3b82f6;"></span>Alexis Garcia's book</div>
+    <div class="row"><span>Customers delivered</span><span>380</span></div>
+    <div class="row"><span>12-mo M1 revenue</span><span>$309,243</span></div>
+    <div class="row"><span>Avg M1 deal</span><span>$814</span></div>
+    <div class="row"><span>Latest month (Jun)</span><span>26 customers · $25,230</span></div>
+    <div class="explain">Highest-volume book on the team — 380 customers over 12 months. Deal sizes smaller on average but more consistent volume.</div>
+  </div>
+  <div class="tile dan">
+    <div class="name"><span class="legend-dot" style="background:#16a34a;"></span>Dan Newhard's book</div>
+    <div class="row"><span>Customers delivered</span><span>241</span></div>
+    <div class="row"><span>12-mo M1 revenue</span><span>$270,054</span></div>
+    <div class="row"><span>Avg M1 deal</span><span>$1,120</span></div>
+    <div class="row"><span>Latest month (Jun)</span><span>19 customers · $21,958</span></div>
+    <div class="explain">Solid middle book — mid-volume with higher-than-average deal sizes. June was quieter than May's record month.</div>
+  </div>
+</div>
+<div class="callout"><strong>How to use this:</strong> Every customer in your book likely has 60-70% more spending coming in months 2-3 (Contractor customers especially). When you forecast a month, look at how many accounts you closed in the prior 2 months — that's the tail revenue you can plan for.</div>
+</div>
+
+<div class="section">
+<h2>Who these customers are — and what to expect from them</h2>
+<p class="section-explain">Contractor customers continue buying past Month 1 at 1.69x the M1 spend; DIY customers tend to be more one-and-done at 1.22x. Knowing the mix helps with forecasting and nurturing strategy.</p>
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Customer mix (12 months)</h3>
+    <div class="chart-wrap"><canvas id="customerMix"></canvas></div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">M1 vs M1-3 revenue by category ($)</h3>
+    <div class="chart-wrap"><canvas id="revByCategory"></canvas></div>
+  </div>
+</div>
+<div class="callout"><strong>The compounding story:</strong> A Contractor customer worth $908 in their first month becomes worth ~$1,538 by month 3 — that's $630 of follow-on revenue per account that sales has the opportunity to grow. DIY customers stay closer to flat at month 3. <strong>Implication:</strong> Marketing investment in Contractor channels (Google paid search, organic, industry listings) compounds harder than DIY-focused spend.</div>
+</div>
+
+<div class="section">
+<h2>Where marketing and sales can grow business together</h2>
+<p class="section-explain">Opportunities the data surfaces. Less "watch items," more "things we could improve together." Green = working well, Blue = collaboration opportunity, Yellow = needs attention.</p>
+<div class="flag-row green"><div class="icon">🟢</div><div class="body"><strong>Marketing is delivering more leads that convert</strong><span>Conversion rate climbed from ~22% to ~28% over the year. Marketing's source mix is improving — fewer junk leads, more buyers. Worth celebrating and continuing the trend.</span></div></div>
+<div class="flag-row green"><div class="icon">🟢</div><div class="body"><strong>Your books compound past Month 1</strong><span>Team average: customers spend 1.68x their M1 revenue by Month 3. That's ~$560 extra per customer in months 2-3 across all reps. Marketing's job is to bring you accounts that come back — and the data shows that's working.</span></div></div>
+<div class="flag-row blue"><div class="icon">🔵</div><div class="body"><strong>270 customers are coming in somewhere we can't see — let's close that gap together</strong><span>About 1 in 4 customers (270 of 1,055) shows up with no marketing source attached. They're finding us somewhere — word of mouth, an old conversation, a referral — but we can't tell which channel sent them. <strong>One small ask:</strong> when you talk to a new customer, asking "how did you hear about us?" and dropping the answer into NetSuite helps marketing know where to invest more. Closing this loop means we can push harder on the channels that actually bring you the best customers.</span></div></div>
+<div class="flag-row blue"><div class="icon">🔵</div><div class="body"><strong>Help us figure out what worked in March</strong><span>Phone capture jumped to 55% in March (the year's high) before dropping back to 48% in April. If you noticed a form change, a campaign push, or a specific lead source that drove that surge, share it with marketing — we want to replicate whatever worked. More phone numbers = more outbound reach for you.</span></div></div>
+<div class="flag-row blue"><div class="icon">🔵</div><div class="body"><strong>Where there's geographic opportunity</strong><span>Texas and California are doing 43% of all new customers between them. Outside the top 10 states, each state contributes fewer than 20 customers. If you're seeing demand or referrals in mid-tier states (FL, NC, GA, CO, etc.), that's a signal marketing can amplify with targeted campaigns. Let's swap notes.</span></div></div>
+<div class="flag-row yellow"><div class="icon">🟡</div><div class="body"><strong>Phone capture is the #1 unlock for outbound</strong><span>Only ~39-48% of leads include a phone number most months. The other half can only be emailed. Every 1% gained means more accounts you can call. Worth a joint marketing+sales conversation on form requirements and lead-gen channels that capture more contact info.</span></div></div>
+</div>
+
+<div class="footer">
+<div style="background:#fef3c7; padding:10px 16px; border-radius:6px; margin-bottom:16px; color:#78350f; font-weight:600;">⚠ Confidential — Versatile High-Performance Coatings internal use only. Do not redistribute.</div>
+Data sources: NetSuite (customers, revenue, lead quality, ship-to states) · Marketing Spend (NetSuite income statement). All revenue is NET — product only, excluding shipping and tax, with returns and credit memos deducted.<br>
+Filters applied: Subsidiary = VHPC LLC. Customer Category excludes GarageExperts and Vendor. Customer = stage starts with "Customer-" AND has a first sale date populated.<br>
+Designed as a collaborative view between Marketing and Sales. Cadence: monthly review. Full methodology in <em>methodology.md</em>.
+</div>
+
+</div>
+
+<script>
+const MONTHS = ['Jul 25','Aug 25','Sep 25','Oct 25','Nov 25','Dec 25','Jan 26','Feb 26','Mar 26','Apr 26','May 26','Jun 26'];
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, Arial, sans-serif';
+Chart.defaults.font.size = 11;
+
+// Quality trend - last 6 months
+new Chart(document.getElementById('qualityTrend'), {
+  type: 'line',
+  data: {
+    labels: ['Jan 26','Feb 26','Mar 26','Apr 26','May 26','Jun 26'],
+    datasets: [
+      {label: 'Conv rate %', data: [26.5, 24.0, 21.4, 28.2, 31.9, 23.5], borderColor: '#1F4E79', backgroundColor: 'rgba(31,78,121,0.08)', borderWidth: 2.5, tension: 0.3, fill: false, pointRadius: 4, pointBackgroundColor: '#1F4E79', yAxisID: 'y'},
+      {label: 'Phone capture %', data: [50.5, 42.8, 54.7, 48.3, 53.9, 44.4], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)', borderWidth: 2.5, tension: 0.3, fill: false, pointRadius: 4, pointBackgroundColor: '#f59e0b', yAxisID: 'y'}
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {legend: {position: 'top', labels: {boxWidth: 14, padding: 8}}, tooltip:{callbacks:{label: c=>c.dataset.label+': '+c.parsed.y+'%'}}},
+    scales: { y: { beginAtZero: false, min: 15, max: 65, grid: { color: '#e2e8f0' }, ticks: {callback: v => v+'%'} }, x: { grid: { display: false } } }
+  }
+});
+
+// State chart
+new Chart(document.getElementById('stateChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Texas','California','Florida','N. Carolina','Colorado','New York','Arizona','Pennsylvania','Georgia','Tennessee'],
+    datasets: [{ label: 'Customers', data: [232, 209, 67, 36, 30, 25, 24, 24, 24, 20], backgroundColor: '#1F4E79', borderRadius: 4 }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: {legend:{display:false}, tooltip:{callbacks:{label: c=>c.parsed.x+' customers'}}},
+    scales: { x: { beginAtZero: true, grid: { color: '#e2e8f0' } }, y: { grid: { display: false } } }
+  }
+});
+
+// Lead volume + customers stacked
+// Rolling 12-month: Jul 2025 - Jun 2026
+const CUSTOMERS_TOTAL = [72, 78, 111, 116, 68, 66, 45, 59, 73, 63, 70, 64];
+const LEADS_TOTAL = [371, 322, 409, 333, 155, 155, 144, 215, 316, 168, 158, 212];
+const TOTAL_RECORDS = [443, 400, 520, 449, 223, 221, 189, 274, 389, 231, 228, 276];
+
+new Chart(document.getElementById('leadVolume'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS,
+    datasets: [
+      {label: 'Customers closed', data: CUSTOMERS_TOTAL, backgroundColor: '#1F4E79', borderRadius: 3, stack: 'a'},
+      {label: 'Leads (not yet customers)', data: LEADS_TOTAL, backgroundColor: '#94a3b8', borderRadius: 3, stack: 'a'}
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {legend: {position: 'top', labels: {boxWidth: 14, padding: 8}}},
+    scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' }, stacked: true }, x: { grid: { display: false }, stacked: true } }
+  }
+});
+
+// Conversion rate
+const CONV_RATE = CUSTOMERS_TOTAL.map((c, i) => (c / TOTAL_RECORDS[i] * 100).toFixed(1));
+new Chart(document.getElementById('convRate'), {
+  type: 'line',
+  data: {
+    labels: MONTHS,
+    datasets: [{
+      label: 'Conversion Rate %', data: CONV_RATE,
+      borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.1)',
+      borderWidth: 2.5, tension: 0.3, fill: true,
+      pointRadius: 4, pointBackgroundColor: '#16a34a'
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {legend: {display: false}, tooltip:{callbacks:{label: c=>'Conversion: '+c.parsed.y+'%'}}},
+    scales: { y: { beginAtZero: true, max: 40, grid: { color: '#e2e8f0' }, ticks: {callback: v => v+'%'} }, x: { grid: { display: false } } }
+  }
+});
+
+// Lead quality
+const PHONE_RATE = [32.5, 31.2, 33.6, 39.3, 53.4, 58.5, 50.5, 42.8, 54.7, 48.3, 53.9, 44.4];
+const EMAIL_RATE = [98.9, 99.0, 98.9, 99.8, 98.3, 99.6, 99.5, 98.9, 98.0, 96.6, 97.4, 97.5];
+
+new Chart(document.getElementById('leadQuality'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS,
+    datasets: [
+      {label: 'Has Email (%)', data: EMAIL_RATE, backgroundColor: '#1F4E79', borderRadius: 3},
+      {label: 'Has Phone (%)', data: PHONE_RATE, backgroundColor: '#f59e0b', borderRadius: 3}
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {legend: {position: 'top', labels: {boxWidth: 14, padding: 8}}, tooltip:{callbacks:{label: c=>c.dataset.label+': '+c.parsed.y+'%'}}},
+    scales: { y: { beginAtZero: true, max: 100, grid: { color: '#e2e8f0' }, ticks: {callback: v => v+'%'} }, x: { grid: { display: false } } }
+  }
+});
+
+// ============================================================
+// MONTH PICKER — switch the "Last month" section to any of 12 months
+// ============================================================
+// All revenue values (m1, per-rep m1, category m1) are NET — product only, excludes shipping and tax, net of returns/credits
+const MONTH_DATA = {
+  "2025-06": { label:"June 2025",      shortPrev:"May 25", custPrev:94, m1Prev:77932,
+    cust:88, m1:71999, avg:818, conv:21.3, phone:26.4, total:459, leads:371, m13:148245,
+    alexis:{cust:38,m1:31826,avg:837}, dan:{cust:16,m1:17022,avg:1064}, parker:{cust:34,m1:23151,avg:681}, untracked:{cust:0,m1:0,avg:0},
+    contractor:{cust:77,m1:66747}, diy:{cust:11,m1:5252} },
+  "2025-07": { label:"July 2025",      shortPrev:"Jun 25", custPrev:88, m1Prev:71999,
+    cust:72, m1:57390, avg:797, conv:19.2, phone:32.5, total:443, leads:371, m13:85946,
+    alexis:{cust:38,m1:23887,avg:629}, dan:{cust:19,m1:16870,avg:888}, parker:{cust:15,m1:16632,avg:1109}, untracked:{cust:0,m1:0,avg:0},
+    contractor:{cust:66,m1:57037}, diy:{cust:6,m1:353} },
+  "2025-08": { label:"August 2025",    shortPrev:"Jul 25", custPrev:72, m1Prev:57390,
+    cust:77, m1:72992, avg:948, conv:22.0, phone:31.2, total:400, leads:322, m13:100033,
+    alexis:{cust:35,m1:23846,avg:681}, dan:{cust:23,m1:32698,avg:1422}, parker:{cust:19,m1:16448,avg:866}, untracked:{cust:0,m1:0,avg:0},
+    contractor:{cust:65,m1:69697}, diy:{cust:12,m1:3295} },
+  "2025-09": { label:"September 2025", shortPrev:"Aug 25", custPrev:77, m1Prev:72992,
+    cust:110, m1:102088, avg:928, conv:23.1, phone:33.6, total:520, leads:409, m13:275000,
+    alexis:{cust:56,m1:48366,avg:864}, dan:{cust:21,m1:16046,avg:764}, parker:{cust:33,m1:37676,avg:1142}, untracked:{cust:0,m1:0,avg:0},
+    contractor:{cust:90,m1:90140}, diy:{cust:20,m1:11948} },
+  "2025-10": { label:"October 2025",   shortPrev:"Sep 25", custPrev:110, m1Prev:102088,
+    cust:115, m1:118602, avg:1031, conv:27.3, phone:39.3, total:449, leads:333, m13:179376,
+    alexis:{cust:44,m1:38591,avg:877}, dan:{cust:37,m1:51561,avg:1394}, parker:{cust:34,m1:28450,avg:837}, untracked:{cust:0,m1:0,avg:0},
+    contractor:{cust:100,m1:109179}, diy:{cust:15,m1:9423} },
+  "2025-11": { label:"November 2025",  shortPrev:"Oct 25", custPrev:115, m1Prev:118602,
+    cust:68, m1:53948, avg:793, conv:34.3, phone:53.4, total:223, leads:155, m13:79886,
+    alexis:{cust:24,m1:16157,avg:673}, dan:{cust:22,m1:15596,avg:709}, parker:{cust:22,m1:22196,avg:1009}, untracked:{cust:0,m1:0,avg:0},
+    contractor:{cust:58,m1:48493}, diy:{cust:10,m1:5455} },
+  "2025-12": { label:"December 2025",  shortPrev:"Nov 25", custPrev:68, m1Prev:53948,
+    cust:65, m1:48840, avg:751, conv:32.3, phone:58.5, total:221, leads:155, m13:94872,
+    alexis:{cust:28,m1:20380,avg:728}, dan:{cust:13,m1:11393,avg:876}, parker:{cust:24,m1:17067,avg:711}, untracked:{cust:0,m1:0,avg:0},
+    contractor:{cust:58,m1:48398}, diy:{cust:7,m1:442} },
+  "2026-01": { label:"January 2026",   shortPrev:"Dec 25", custPrev:65, m1Prev:48840,
+    cust:44, m1:37328, avg:848, conv:26.5, phone:50.5, total:189, leads:144, m13:64853,
+    alexis:{cust:13,m1:9366,avg:721}, dan:{cust:10,m1:8868,avg:887}, parker:{cust:20,m1:15931,avg:797}, untracked:{cust:1,m1:3163,avg:3163},
+    contractor:{cust:31,m1:32110}, diy:{cust:13,m1:5219} },
+  "2026-02": { label:"February 2026",  shortPrev:"Jan 26", custPrev:44, m1Prev:37328,
+    cust:59, m1:49840, avg:845, conv:24.0, phone:42.8, total:274, leads:215, m13:102347,
+    alexis:{cust:26,m1:19272,avg:741}, dan:{cust:16,m1:13062,avg:816}, parker:{cust:17,m1:17506,avg:1030}, untracked:{cust:0,m1:0,avg:0},
+    contractor:{cust:39,m1:41696}, diy:{cust:20,m1:8144} },
+  "2026-03": { label:"March 2026",     shortPrev:"Feb 26", custPrev:59, m1Prev:49840,
+    cust:73, m1:63240, avg:866, conv:21.4, phone:54.7, total:389, leads:316, m13:123212,
+    alexis:{cust:34,m1:23753,avg:699}, dan:{cust:20,m1:12265,avg:613}, parker:{cust:19,m1:27221,avg:1432}, untracked:{cust:0,m1:0,avg:0},
+    contractor:{cust:53,m1:38174}, diy:{cust:20,m1:25066} },
+  "2026-04": { label:"April 2026",     shortPrev:"Mar 26", custPrev:73, m1Prev:63240,
+    cust:63, m1:53952, avg:856, conv:28.2, phone:48.3, total:231, leads:168, m13:65453,
+    alexis:{cust:23,m1:23189,avg:1008}, dan:{cust:20,m1:18124,avg:906}, parker:{cust:18,m1:12458,avg:692}, untracked:{cust:2,m1:181,avg:91},
+    contractor:{cust:48,m1:42241}, diy:{cust:15,m1:11711} },
+  "2026-05": { label:"May 2026",       shortPrev:"Apr 26", custPrev:63, m1Prev:53952,
+    cust:69, m1:87841, avg:1273, conv:31.9, phone:53.9, total:228, leads:158, m13:87841,
+    alexis:{cust:32,m1:29722,avg:929}, dan:{cust:17,m1:45018,avg:2648}, parker:{cust:20,m1:13100,avg:655}, untracked:{cust:0,m1:0,avg:0},
+    contractor:{cust:54,m1:77851}, diy:{cust:15,m1:9990} },
+  "2026-06": { label:"June 2026",      shortPrev:"May 26", custPrev:69, m1Prev:87841,
+    cust:67, m1:130063, avg:1941, conv:26.0, phone:45.6, total:281, leads:214, m13:130063,
+    alexis:{cust:27,m1:24940,avg:924}, dan:{cust:21,m1:21814,avg:1039}, parker:{cust:19,m1:83310,avg:4385}, untracked:{cust:0,m1:0,avg:0},
+    contractor:{cust:47,m1:115381}, diy:{cust:20,m1:14683} },
+  "2026-07": { label:"July 2026",      shortPrev:"Jun 26", custPrev:67, m1Prev:130063,
+    cust:72, m1:51088, avg:710, conv:26.5, phone:55.7, total:287, leads:211, m13:51088,
+    alexis:{cust:27,m1:20941,avg:776}, dan:{cust:14,m1:12079,avg:863}, parker:{cust:30,m1:17798,avg:593}, untracked:{cust:1,m1:270,avg:270},
+    contractor:{cust:67,m1:48043}, diy:{cust:5,m1:3045} }
+};
+
+// Lead routing: records assigned per rep per month, and how many have since placed a first order.
+// Source: NetSuite customer records by datecreated + salesrep, categories 2/14 excluded. Pulled 2026-08-18.
+const LEAD_ROUTING = {
+  "2025-06": { alexis:[62,46], dan:[21,17], parker:[45,37], unassigned:[341,0] },
+  "2025-07": { alexis:[63,42], dan:[41,24], parker:[37,22], unassigned:[318,1] },
+  "2025-08": { alexis:[56,43], dan:[37,27], parker:[31,21], unassigned:[271,0] },
+  "2025-09": { alexis:[85,62], dan:[40,24], parker:[52,36], unassigned:[355,1] },
+  "2025-10": { alexis:[66,45], dan:[57,40], parker:[57,41], unassigned:[277,0] },
+  "2025-11": { alexis:[45,27], dan:[38,30], parker:[42,25], unassigned:[110,0] },
+  "2025-12": { alexis:[46,31], dan:[22,15], parker:[68,27], unassigned:[93,1] },
+  "2026-01": { alexis:[38,16], dan:[24,12], parker:[52,26], unassigned:[81,1] },
+  "2026-02": { alexis:[64,32], dan:[30,17], parker:[37,20], unassigned:[151,1] },
+  "2026-03": { alexis:[113,40], dan:[72,25], parker:[64,23], unassigned:[152,0] },
+  "2026-04": { alexis:[55,24], dan:[41,22], parker:[33,20], unassigned:[104,2] },
+  "2026-05": { alexis:[67,35], dan:[39,22], parker:[36,21], unassigned:[89,0] },
+  "2026-06": { alexis:[56,29], dan:[47,21], parker:[40,21], unassigned:[136,0] },
+  "2026-07": { alexis:[59,29], dan:[42,15], parker:[72,31], unassigned:[104,1] }
+};
+
+// 12-month averages (Jul 2025 – Jun 2026)
+const YR_AVG = { cust:74, m1k:87, avg:1180, conv:25, phone:45 };
+
+function fmt$(n) { return '$' + Math.round(n).toLocaleString(); }
+function fmt$k(n) { return '$' + Math.round(n/1000) + 'K'; }
+function fmtDelta(curr, prev, isPct, isPP) {
+  if (prev === 0 && curr === 0) return '<span class="delta flat">— flat</span>';
+  if (prev === 0) return '<span class="delta up">new</span>';
+  const diff = curr - prev;
+  const sign = diff > 0 ? '+' : (diff < 0 ? '−' : '');
+  const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+  if (isPP || isPct) {
+    const pct = (diff/prev) * 100;
+    return `<span class="delta ${cls}">${sign}${Math.abs(pct).toFixed(0)}%</span>`;
+  }
+  return '';
+}
+
+function selectMonth(monthKey) {
+  const d = MONTH_DATA[monthKey];
+  if (!d) return;
+
+  // Activate the right pill
+  document.querySelectorAll('.month-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.month === monthKey);
+  });
+
+  // Section title + subtitle
+  document.getElementById('mp-section-title').innerHTML = `${d.label} — what landed in your pipeline <small id="mp-section-subtitle">(${d.cust} new customers, ${fmt$k(d.m1)} M1)</small>`;
+
+  // Headline tiles
+  document.getElementById('mp-customers').textContent = d.cust;
+  document.getElementById('mp-customers-sub').innerHTML = `vs ${d.shortPrev} ${d.custPrev} ${fmtDelta(d.cust, d.custPrev, true)}`;
+  document.getElementById('mp-m1rev').textContent = fmt$k(d.m1);
+  document.getElementById('mp-m1rev-sub').innerHTML = `vs ${d.shortPrev} ${fmt$k(d.m1Prev)} ${fmtDelta(d.m1, d.m1Prev, true)}`;
+  document.getElementById('mp-avgdeal').textContent = fmt$(d.avg);
+  document.getElementById('mp-avgdeal-sub').innerHTML = `12-mo avg ${fmt$(YR_AVG.avg)} ${fmtDelta(d.avg, YR_AVG.avg, true)}`;
+  document.getElementById('mp-conv').textContent = d.conv.toFixed(0) + '%';
+  document.getElementById('mp-conv-sub').innerHTML = `12-mo avg ${YR_AVG.conv}% ${fmtDelta(d.conv, YR_AVG.conv, false, true)}`;
+  document.getElementById('mp-phone').textContent = d.phone.toFixed(0) + '%';
+  document.getElementById('mp-phone-sub').innerHTML = `12-mo avg ${YR_AVG.phone}% ${fmtDelta(d.phone, YR_AVG.phone, false, true)}`;
+  document.getElementById('mp-records').textContent = d.total.toLocaleString();
+  document.getElementById('mp-records-sub').textContent = `${d.leads} leads + ${d.cust} customers`;
+
+  // Per-rep heading
+  document.getElementById('mp-rep-heading').textContent = `What each rep received in ${d.label}`;
+
+  // Per-rep tiles
+  const setRep = (prefix, rep) => {
+    const custEl = document.getElementById(`mp-${prefix}-cust`);
+    if (!custEl) return; // tile not in DOM
+    custEl.textContent = rep.cust;
+    document.getElementById(`mp-${prefix}-rev`).textContent = fmt$(rep.m1);
+    document.getElementById(`mp-${prefix}-avg`).textContent = rep.cust > 0 ? fmt$(rep.avg) : '—';
+  };
+  setRep('alexis', d.alexis);
+  setRep('dan', d.dan);
+  setRep('parker', d.parker);
+
+  // Lead routing: assigned / converted / conversion rate per rep, plus the unassigned bucket
+  const lr = LEAD_ROUTING[monthKey];
+  if (lr) {
+    ['alexis','dan','parker'].forEach(k => {
+      const [assigned, conv] = lr[k];
+      const aEl = document.getElementById(`mp-${k}-assigned`);
+      if (!aEl) return;
+      aEl.textContent = assigned;
+      document.getElementById(`mp-${k}-conv`).textContent = conv;
+      document.getElementById(`mp-${k}-cvr`).innerHTML =
+        `<strong>${assigned > 0 ? Math.round(conv/assigned*100) : 0}%</strong>`;
+    });
+    const un = document.getElementById('mp-unassigned-n');
+    if (un) {
+      un.textContent = lr.unassigned[0];
+      document.getElementById('mp-unassigned-conv').textContent = lr.unassigned[1];
+    }
+  }
+
+  // Dynamically star the rep with the biggest M1 revenue this month
+  const repRevs = [
+    { key: 'alexis', name: 'Alexis Garcia', color: '#3b82f6', m1: d.alexis.m1, elId: 'mp-alexis-cust' },
+    { key: 'dan',    name: 'Dan Newhard',   color: '#16a34a', m1: d.dan.m1,    elId: 'mp-dan-name' },
+    { key: 'parker', name: 'Parker Strong', color: '#a855f7', m1: d.parker.m1, elId: 'mp-parker-cust' }
+  ];
+  const topRep = repRevs.reduce((max, r) => r.m1 > max.m1 ? r : max, repRevs[0]);
+  const danEl = document.getElementById('mp-dan-name');
+  if (danEl) danEl.textContent = topRep.key === 'dan' ? 'Dan Newhard ⭐' : 'Dan Newhard';
+
+  // Customer mix
+  document.getElementById('mp-mix-heading').textContent = `${d.label} customer mix`;
+  const totalCust = d.contractor.cust + d.diy.cust;
+  const totalM1 = d.contractor.m1 + d.diy.m1;
+  document.getElementById('mp-mix-contractor-cust').textContent = d.contractor.cust;
+  document.getElementById('mp-mix-contractor-pct').textContent = totalCust > 0 ? Math.round(d.contractor.cust/totalCust*100) + '%' : '—';
+  document.getElementById('mp-mix-contractor-rev').textContent = fmt$(d.contractor.m1);
+  document.getElementById('mp-mix-contractor-revpct').textContent = totalM1 > 0 ? Math.round(d.contractor.m1/totalM1*100) + '%' : '—';
+  document.getElementById('mp-mix-diy-cust').textContent = d.diy.cust;
+  document.getElementById('mp-mix-diy-pct').textContent = totalCust > 0 ? Math.round(d.diy.cust/totalCust*100) + '%' : '—';
+  document.getElementById('mp-mix-diy-rev').textContent = fmt$(d.diy.m1);
+  document.getElementById('mp-mix-diy-revpct').textContent = totalM1 > 0 ? Math.round(d.diy.m1/totalM1*100) + '%' : '—';
+  document.getElementById('mp-mix-total-cust').textContent = totalCust;
+  document.getElementById('mp-mix-total-rev').textContent = fmt$(totalM1);
+
+  const contractorPct = totalCust > 0 ? Math.round(d.contractor.cust/totalCust*100) : 0;
+  document.getElementById('mp-mix-note').textContent = `Contractor mix: ${contractorPct}% of customers in ${d.label}. 12-month average is roughly 80% Contractor / 20% DIY.`;
+
+  // Comparison table
+  document.getElementById('mp-compare-heading').textContent = `Where ${d.label} lands vs the year`;
+  document.getElementById('mp-compare-monthcol').textContent = d.label.split(' ')[0].slice(0,3);
+  document.getElementById('mp-compare-cust').textContent = d.cust;
+  document.getElementById('mp-compare-m1').textContent = fmt$k(d.m1);
+  document.getElementById('mp-compare-avg').textContent = fmt$(d.avg);
+  document.getElementById('mp-compare-conv').textContent = d.conv.toFixed(0) + '%';
+  document.getElementById('mp-compare-phone').textContent = d.phone.toFixed(0) + '%';
+}
+
+// Initialize to June 2026 on page load
+selectMonth('2026-07');
+
+// Customer source
+const SOURCE_LABELS = ['Organic Search', 'Untracked', 'Direct', 'Paid Google', 'Paid Meta', 'Referral', 'Other Tracked', 'Industry/Trade', 'Email', 'Web Unspec.'];
+const SOURCE_CUSTOMERS = [285, 270, 199, 189, 42, 38, 10, 8, 8, 6];
+
+new Chart(document.getElementById('customerSource'), {
+  type: 'bar',
+  data: {
+    labels: SOURCE_LABELS,
+    datasets: [{ data: SOURCE_CUSTOMERS, backgroundColor: '#1F4E79', borderRadius: 4 }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: {legend:{display:false}, tooltip:{callbacks:{label: c=>c.parsed.x+' customers'}}},
+    scales: { x: { beginAtZero: true, grid: { color: '#e2e8f0' } }, y: { grid: { display: false } } }
+  }
+});
+
+const SOURCE_AOV = [Math.round(201683/285), Math.round(274973/270), Math.round(160326/199), Math.round(191561/189), Math.round(19468/42), Math.round(29418/38), Math.round(7771/10), Math.round((3261+433)/8), Math.round(5524/8), Math.round(4320/6)];
+
+new Chart(document.getElementById('aovBySource'), {
+  type: 'bar',
+  data: {
+    labels: SOURCE_LABELS,
+    datasets: [{ data: SOURCE_AOV, backgroundColor: '#16a34a', borderRadius: 4 }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: {legend:{display:false}, tooltip:{callbacks:{label: c=>'$'+c.parsed.x.toLocaleString()+' per customer'}}},
+    scales: { x: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { callback: v => '$' + v } }, y: { grid: { display: false } } }
+  }
+});
+
+// Customer mix donut
+new Chart(document.getElementById('customerMix'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Contractor','DIY','CA Will Call'],
+    datasets: [{
+      data: [900, 154, 1],
+      backgroundColor: ['#1F4E79','#f59e0b','#94a3b8'],
+      borderWidth: 2, borderColor: '#fff'
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: {position: 'bottom', labels: {boxWidth: 14, padding: 10}},
+      tooltip: {callbacks:{label: function(c){const total = c.dataset.data.reduce((a,b)=>a+b,0); return c.label + ': ' + c.parsed + ' ('+ (c.parsed/total*100).toFixed(1) +'%)'}}}
+    }
+  }
+});
+
+// Rev by category M1 vs M1-3
+new Chart(document.getElementById('revByCategory'), {
+  type: 'bar',
+  data: {
+    labels: ['Contractor','DIY','CA Will Call'],
+    datasets: [
+      {label: 'M1 Revenue', data: [816815, 81644, 2243], backgroundColor: '#94a3b8', borderRadius: 4},
+      {label: 'M1-3 Revenue', data: [1383900, 99323, 2243], backgroundColor: '#1F4E79', borderRadius: 4}
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {legend: {position: 'top'}, tooltip:{callbacks:{label: c=>c.dataset.label+': $'+c.parsed.y.toLocaleString()}}},
+    scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' } }, x: { grid: { display: false } } }
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Versatile HPC — Budget Performance</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f7fa; color: #1a202c; line-height: 1.5; padding: 24px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.header { text-align: center; padding: 24px 0 32px; border-bottom: 3px solid #1F4E79; margin-bottom: 32px; }
+.header h1 { font-size: 28px; color: #1F4E79; margin-bottom: 8px; }
+.header .subtitle { color: #64748b; font-size: 14px; }
+.band-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin: 32px 0 10px; padding-left: 12px; border-left: 4px solid #1F4E79; color: #1F4E79; }
+.section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.section h2 { font-size: 20px; color: #1F4E79; margin-bottom: 8px; }
+.section h2 small { font-size: 13px; color: #64748b; font-weight: 400; margin-left: 8px; }
+.section .section-explain { color: #64748b; font-size: 13px; margin-bottom: 20px; font-style: italic; }
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; align-items: stretch; }
+.tile { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 18px; border-radius: 10px; border-left: 4px solid #1F4E79; display: flex; flex-direction: column; }
+.tile .label { min-height: 2.6em; display: flex; align-items: flex-start; }
+.tile .sub { margin-top: auto; padding-top: 4px; }
+.tile.good { border-left-color: #16a34a; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
+.tile.warn { border-left-color: #ca8a04; background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); }
+.tile.bad  { border-left-color: #dc2626; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
+.tile .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.tile .value { font-size: 26px; font-weight: 700; color: #1F4E79; margin: 6px 0 2px; }
+.tile.good .value { color: #166534; }
+.tile.warn .value { color: #92400e; }
+.tile.bad .value  { color: #991b1b; }
+.tile .sub { font-size: 12px; color: #64748b; line-height: 1.35; }
+table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+th { background: #1F4E79; color: white; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 12px; white-space: nowrap; }
+th.right, td.right { text-align: right; }
+td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+td.right { white-space: nowrap; }
+tr:nth-child(even) td { background: #f8fafc; }
+tr.total td { background: #1F4E79 !important; color: white; font-weight: 700; }
+tr.consolidated td { background: #fef3c7 !important; font-weight: 600; }
+tr.offbudget td { background: #fef3c7 !important; }
+table.variance-table { table-layout: fixed; }
+table.variance-table th:nth-child(1), table.variance-table td:nth-child(1) { width: 30%; }
+table.variance-table th:nth-child(2), table.variance-table td:nth-child(2) { width: 12%; }
+table.variance-table th:nth-child(3), table.variance-table td:nth-child(3) { width: 12%; }
+table.variance-table th:nth-child(4), table.variance-table td:nth-child(4) { width: 13%; }
+table.variance-table th:nth-child(5), table.variance-table td:nth-child(5) { width: 9%; }
+table.variance-table th:nth-child(6), table.variance-table td:nth-child(6) { width: 24%; white-space: normal; }
+.exec-summary { background: linear-gradient(135deg, #1F4E79 0%, #2c6ba0 100%); color: white; border-radius: 12px; padding: 28px 32px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(31,78,121,0.15); }
+.exec-summary h2 { color: white; font-size: 18px; margin-bottom: 12px; letter-spacing: 0.3px; }
+.exec-summary .headline-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 14px; align-items: stretch; }
+.exec-summary .headline { background: rgba(255,255,255,0.10); border-radius: 8px; padding: 14px 16px; border-left: 3px solid #f59e0b; display: flex; flex-direction: column; }
+.exec-summary .headline .num { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.3px; line-height: 1.2; }
+.exec-summary .headline .desc { font-size: 12px; color: #dbeafe; line-height: 1.4; margin-top: auto; }
+@media(max-width: 900px) { .exec-summary .headline-row { grid-template-columns: 1fr; } }
+.var-good { color: #166534; font-weight: 600; }
+.var-warn { color: #92400e; font-weight: 600; }
+.var-bad  { color: #991b1b; font-weight: 600; }
+.chart-wrap { position: relative; height: 520px; margin-top: 16px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+@media(max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+.callout { background: #e0f2fe; border-left: 4px solid #0284c7; padding: 14px 18px; border-radius: 6px; font-size: 13px; margin: 12px 0; line-height: 1.55; }
+.callout.good { background: #dcfce7; border-left-color: #16a34a; }
+.callout.warn { background: #fef3c7; border-left-color: #ca8a04; }
+.callout.bad { background: #fee2e2; border-left-color: #dc2626; }
+.callout strong { color: #0c4a6e; }
+.callout.good strong { color: #14532d; }
+.callout.warn strong { color: #78350f; }
+.callout.bad strong { color: #7f1d1d; }
+.note-inline { display: block; font-size: 11px; color: #64748b; margin-top: 4px; font-style: italic; }
+.footer { text-align: center; padding: 20px; color: #64748b; font-size: 12px; margin-top: 20px; }
+.footer .conf { background: #fef3c7; padding: 10px 16px; border-radius: 6px; margin-bottom: 16px; color: #78350f; font-weight: 600; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: #1F4E79; text-decoration: none; font-size: 13px; font-weight: 600; padding: 8px 14px; background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 8px; border: 1px solid #e2e8f0; transition: all 0.15s ease; }
+.back-link:hover { background: #eff6ff; border-color: #1F4E79; box-shadow: 0 2px 6px rgba(31,78,121,0.12); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<a href="index.html" class="back-link">← All dashboards</a>
+
+<div class="header">
+<h1>Budget Performance</h1>
+<div class="subtitle">Versatile High-Performance Coatings &middot; 2026 budget versus actual, and what the 58% spend reduction actually bought &middot; Jan&ndash;Jul, NET basis</div>
+</div>
+
+<!-- ================================================== -->
+<!-- EXECUTIVE SUMMARY -->
+<!-- ================================================== -->
+<div class="exec-summary">
+  <h2>The three things to take from this dashboard</h2>
+  <p style="font-size:13px;color:#dbeafe;margin-bottom:8px;">Spend is down 58% year-over-year and first-month revenue is down 1.7%. Acquisition cost roughly halved. There is real headroom left in the back half.</p>
+  <div class="headline-row">
+    <div class="headline">
+      <div class="num">58% less spend, 1.7% less revenue</div>
+      <div class="desc"><strong>The cut did not cost us revenue.</strong> $189,338 less spent Jan&ndash;Jul versus 2025, for $8,276 less in first-month NET revenue. Cost per new customer fell from $591 to $306.</div>
+    </div>
+    <div class="headline">
+      <div class="num">$33,177 under YTD</div>
+      <div class="desc"><strong>2026 is pacing efficiently through July.</strong> Spent $136,891 against a $170,068 seven-month budget — 20% under. Full-year projection: roughly $235K vs $291K plan, ~$56K of unused budget.</div>
+    </div>
+    <div class="headline">
+      <div class="num">$3.46 back per $1 spent</div>
+      <div class="desc"><strong>Up from $1.48 in 2025.</strong> Every marketing dollar now works 2.3× harder on first-month revenue. Google has $65,630 unspent against the annual plan, and photo/video is almost untouched — both are places to put money back to work.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================== -->
+<!-- YOY SPEND VS PERFORMANCE -->
+<!-- ================================================== -->
+<div class="band-label">Did cutting the budget cost us anything?</div>
+
+<div class="section">
+<h2>Spend versus performance — Jan&ndash;Jul 2025 against Jan&ndash;Jul 2026</h2>
+<p class="section-explain">The question leadership actually asks about a 58% budget cut. Same seven months, one year apart, on identical NET revenue methodology.</p>
+
+<table class="variance-table" style="table-layout:auto;">
+  <thead>
+    <tr><th>Metric</th><th class="right">Jan&ndash;Jul 2025</th><th class="right">Jan&ndash;Jul 2026</th><th class="right">Change</th><th>What it means</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Marketing spend</strong></td>
+      <td class="right">$326,229</td><td class="right">$136,891</td>
+      <td class="right var-good">&minus;58%</td>
+      <td>We spent $189,338 less</td>
+    </tr>
+    <tr>
+      <td><strong>New customers acquired</strong></td>
+      <td class="right">552</td><td class="right">447</td>
+      <td class="right var-warn">&minus;19%</td>
+      <td>105 fewer customers</td>
+    </tr>
+    <tr>
+      <td><strong>M1 NET revenue</strong></td>
+      <td class="right">$481,628</td><td class="right">$473,352</td>
+      <td class="right var-warn">&minus;1.7%</td>
+      <td>Essentially flat on 58% less spend</td>
+    </tr>
+    <tr style="background:#dcfce7 !important;">
+      <td><strong>Cost per new customer</strong></td>
+      <td class="right">$591</td><td class="right"><strong>$306</strong></td>
+      <td class="right var-good"><strong>&minus;48%</strong></td>
+      <td><strong>Acquisition cost roughly halved</strong></td>
+    </tr>
+    <tr style="background:#dcfce7 !important;">
+      <td><strong>Spend as % of M1 revenue</strong></td>
+      <td class="right">67.7%</td><td class="right"><strong>28.9%</strong></td>
+      <td class="right var-good"><strong>&minus;57%</strong></td>
+      <td>From 68 cents per revenue dollar to 29</td>
+    </tr>
+    <tr style="background:#dcfce7 !important;">
+      <td><strong>Return per $1 spent (M1)</strong></td>
+      <td class="right">$1.48</td><td class="right"><strong>$3.46</strong></td>
+      <td class="right var-good"><strong>+134%</strong></td>
+      <td>Every marketing dollar works 2.3&times; harder</td>
+    </tr>
+    <tr>
+      <td>Lifetime-to-date returned per $1</td>
+      <td class="right">$9.01</td><td class="right">$6.65</td>
+      <td class="right">—</td>
+      <td>2026 at 27% of the elapsed time, 74% of the return</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout good"><strong>The answer is no — the cut did not cost us revenue.</strong> We spent <strong>$189,338 less</strong> and brought in <strong>$8,276 less</strong> in first-month revenue. Cost per new customer fell from $591 to $306, and every dollar now returns $3.46 instead of $1.48. On these numbers the 2025 spend level was substantially inefficient, and the reduction removed waste rather than demand.<br><br><strong>What the cut did cost us is volume:</strong> 105 fewer new customers. That matters over years, not months, because those customers are the base that compounds. The workbook's finding that a 2010&ndash;2012 account is worth 20&times; a 2025 account is the reason volume still deserves attention even when efficiency looks this good.</div>
+
+<h3 style="font-size:14px;color:#475569;margin:24px 0 8px;">Where the money moved, channel by channel</h3>
+<table class="variance-table" style="table-layout:auto;">
+  <thead>
+    <tr><th>Channel</th><th class="right">Jan&ndash;Jul 2025</th><th class="right">Jan&ndash;Jul 2026</th><th class="right">Δ$</th><th class="right">Δ%</th><th>Note</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Google</strong></td><td class="right">$110,404</td><td class="right">$21,370</td><td class="right var-good">&minus;$89,034</td><td class="right var-good">&minus;81%</td><td>The single largest reduction. $65,630 still unspent against the annual plan.</td></tr>
+    <tr><td>Advertising (broad channel)</td><td class="right">$73,148</td><td class="right">$25,879</td><td class="right var-good">&minus;$47,268</td><td class="right var-good">&minus;65%</td><td>2026 postings all Jan&ndash;Mar, before the account split.</td></tr>
+    <tr><td>Meta</td><td class="right">$49,043</td><td class="right">$20,368</td><td class="right var-good">&minus;$28,675</td><td class="right var-good">&minus;58%</td><td>Now includes the contractor lead-gen campaign at $22.80 per lead.</td></tr>
+    <tr><td>Agency Fees</td><td class="right">$36,179</td><td class="right">$12,279</td><td class="right var-good">&minus;$23,900</td><td class="right var-good">&minus;66%</td><td>Scales with media spend.</td></tr>
+    <tr class="consolidated"><td><strong>Trade Show + Events</strong> ⚑</td><td class="right">$27,800</td><td class="right">$40,257</td><td class="right var-bad">+$12,457</td><td class="right var-bad">+45%</td><td>The only material increase. All posted Jan&ndash;Mar (World of Concrete).</td></tr>
+    <tr><td>Research</td><td class="right">$16,750</td><td class="right">$0</td><td class="right var-good">&minus;$16,750</td><td class="right var-good">&minus;100%</td><td>2025 had mid-year persona work; none booked in 2026 yet.</td></tr>
+    <tr><td>Media (Photo &amp; Video)</td><td class="right">$3,934</td><td class="right">$300</td><td class="right var-good">&minus;$3,634</td><td class="right var-good">&minus;92%</td><td>Focus group asked specifically for real-garage video. Budget is available.</td></tr>
+    <tr><td>Trade Advertising</td><td class="right">$2,623</td><td class="right">$3,444</td><td class="right var-warn">+$821</td><td class="right var-warn">+31%</td><td>Small line, on plan.</td></tr>
+    <tr class="offbudget"><td>SEO ✻</td><td class="right">$265</td><td class="right">$9,454</td><td class="right var-bad">+$9,188</td><td class="right var-bad">+3,462%</td><td>Scorpion posting that belongs to GarageExperts, not VHPC. Needs correction.</td></tr>
+    <tr class="offbudget"><td>Portal Fees ✻</td><td class="right">$0</td><td class="right">$3,000</td><td class="right var-bad">+$3,000</td><td class="right var-bad">new</td><td>ROIVENUE, discontinued after March. No further spend expected.</td></tr>
+    <tr><td>Other + Promotional + Professional</td><td class="right">$6,083</td><td class="right">$539</td><td class="right var-good">&minus;$5,544</td><td class="right var-good">&minus;91%</td><td>Housekeeping lines.</td></tr>
+    <tr class="total"><td>Total Jan&ndash;Jul</td><td class="right">$326,229</td><td class="right">$136,891</td><td class="right">&minus;$189,338</td><td class="right">&minus;58%</td><td>&mdash;</td></tr>
+  </tbody>
+</table>
+
+<div class="callout"><strong>Reading the channel shifts.</strong> Google absorbed 47% of the total reduction on its own. Trade Show is the only line that grew materially, and it grew 45% — worth a decision on whether that is the right allocation given it is the least measurable channel we have. Two lines are corrections rather than choices: the $9,454 of SEO belongs to GarageExperts, and the $3,000 of Portal Fees is a discontinued subscription. Removing both would put true 2026 marketing spend nearer <strong>$124,437</strong>, which improves every efficiency figure above.</div>
+
+<h3 style="font-size:14px;color:#475569;margin:24px 0 8px;">Monthly spend — the April cliff</h3>
+<div class="chart-wrap" style="height:320px;"><canvas id="spendYoY"></canvas></div>
+
+<div class="callout warn"><strong>The timing pattern matters more than the total.</strong> Spend was actually <em>up</em> year-over-year in January (+54%) and March (+101%), then fell 78&ndash;90% every month from April onward. The cut was not gradual — it was a cliff in April. That is why the M1 revenue comparison holds up: the strong revenue months of May and June 2026 came <em>after</em> the spend had already been cut, which is difficult to reconcile with a story where spend drives near-term revenue.</div>
+</div>
+
+<!-- ================================================== -->
+<!-- 2026 YTD -->
+<!-- ================================================== -->
+<div class="band-label">2026 — where we are through July</div>
+
+<div class="section">
+<h2>Are we on track this year?</h2>
+<p class="section-explain">Seven months into the year (58% of calendar), we're running 20% under the pro-rated budget with $33,000 of headroom.</p>
+
+<div class="tile-grid">
+  <div class="tile">
+    <div class="label">Budget for the first seven months</div>
+    <div class="value">$170,068</div>
+    <div class="sub">7 of 12 months of the $291,545 approved annual plan</div>
+  </div>
+  <div class="tile">
+    <div class="label">Actual through July 31</div>
+    <div class="value">$136,891</div>
+    <div class="sub">Booked in NetSuite (all marketing GL accounts)</div>
+  </div>
+  <div class="tile good">
+    <div class="label">Under budget YTD</div>
+    <div class="value">−$33,177</div>
+    <div class="sub">Spending 20% less than planned through July</div>
+  </div>
+  <div class="tile">
+    <div class="label">Trade Show spend YTD</div>
+    <div class="value">$40,257</div>
+    <div class="sub">All posted Jan–Mar (WOC). No trade show cost drag in second half.</div>
+  </div>
+</div>
+
+<div class="callout good">Seven months into the year, we have spent roughly $33,000 less than the pro-rated plan. That headroom is real money we can either redeploy in the remaining five months or hold as savings — a decision for leadership. The biggest underspend is still <strong>Google paid search</strong> ($21,370 spent YTD vs $87K annual plan — $65,630 available), followed by <strong>Photo &amp; Video production</strong> ($300 spent against a $30K annual plan). Meta and Trade Show are running right on plan.</div>
+</div>
+
+<div class="section">
+<h2>2026 Budget vs Actual — line-item view <small>(January through July)</small></h2>
+<p class="section-explain">Directly comparable — both 2026 budget and 2026 actual are tracked against the same NetSuite GL accounts.</p>
+<table class="variance-table">
+  <thead>
+    <tr>
+      <th>GL Account</th>
+      <th class="right">Budget</th>
+      <th class="right">Actual</th>
+      <th class="right">Variance</th>
+      <th class="right">%</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Google (paid search)</td>
+      <td class="right">$50,631</td>
+      <td class="right">$21,370</td>
+      <td class="right var-good">−$29,261</td>
+      <td class="right var-good">−58%</td>
+      <td>Significantly under-spent
+        <span class="note-inline">July added $5,850. Annual plan $87K — $65,630 still available for the last 5 months.</span>
+      </td>
+    </tr>
+    <tr class="consolidated">
+      <td>Trade Show (Promotions + Events) ⚑</td>
+      <td class="right">$39,500</td>
+      <td class="right">$40,257</td>
+      <td class="right var-warn">+$757</td>
+      <td class="right var-warn">+2%</td>
+      <td>Right on plan
+        <span class="note-inline">Includes a final payout for the prior year's World of Concrete plus the current year's WOC — not just the WOC we were planning for next year.</span>
+      </td>
+    </tr>
+    <tr>
+      <td>Advertising (broad channel)</td>
+      <td class="right">$19,000</td>
+      <td class="right">$25,879</td>
+      <td class="right var-bad">+$6,879</td>
+      <td class="right var-bad">+36%</td>
+      <td>Over the plan</td>
+    </tr>
+    <tr>
+      <td>Meta (Facebook / Instagram)</td>
+      <td class="right">$21,000</td>
+      <td class="right">$20,368</td>
+      <td class="right var-good">−$632</td>
+      <td class="right var-good">−3%</td>
+      <td>Right on plan
+        <span class="note-inline">July added $2,428 (includes $1,001 contractor lead-gen test — first week generated 42 leads at $23.83 CPL).</span>
+      </td>
+    </tr>
+    <tr>
+      <td>Media (Photo &amp; Video)</td>
+      <td class="right">$17,500</td>
+      <td class="right">$300</td>
+      <td class="right var-good">−$17,200</td>
+      <td class="right var-good">−98%</td>
+      <td>Not yet executed
+        <span class="note-inline">Photo/video production scheduled for the second half of the year. Full budget still available.</span>
+      </td>
+    </tr>
+    <tr>
+      <td>Agency Fees</td>
+      <td class="right">$14,326</td>
+      <td class="right">$12,279</td>
+      <td class="right var-good">−$2,047</td>
+      <td class="right var-good">−14%</td>
+      <td>Under-spent
+        <span class="note-inline">July added $1,700 — steady monthly pace.</span>
+      </td>
+    </tr>
+    <tr>
+      <td>Other (misc)</td>
+      <td class="right">$4,667</td>
+      <td class="right">$540</td>
+      <td class="right var-good">−$4,127</td>
+      <td class="right var-good">−88%</td>
+      <td>Under-spent
+        <span class="note-inline">Includes $195 reclassified from Promotional Products. July added $26.</span>
+      </td>
+    </tr>
+    <tr>
+      <td>Trade Advertising</td>
+      <td class="right">$3,444</td>
+      <td class="right">$3,444</td>
+      <td class="right">$0</td>
+      <td class="right">0%</td>
+      <td>Exact match</td>
+    </tr>
+    <tr class="offbudget">
+      <td>SEO ✻</td>
+      <td class="right">$0</td>
+      <td class="right">$9,454</td>
+      <td class="right var-bad">+$9,454</td>
+      <td class="right var-bad">off-budget</td>
+      <td>Booking error
+        <span class="note-inline">Missed Scorpion posting — this expense should have been booked to GarageExperts (GE), not VHPC. Needs correction from accounting.</span>
+      </td>
+    </tr>
+    <tr class="offbudget">
+      <td>Portal Fees ✻</td>
+      <td class="right">$0</td>
+      <td class="right">$3,000</td>
+      <td class="right var-bad">+$3,000</td>
+      <td class="right var-bad">off-budget</td>
+      <td>ROIVENUE — discontinued
+        <span class="note-inline">Multi-touch attribution reporting software. Approved through March 2026, then removed because return didn't justify the monthly subscription. No further spend expected.</span>
+      </td>
+    </tr>
+    <tr class="total"><td>Total Jan–Jul 2026</td><td class="right">$170,068</td><td class="right">$136,891</td><td class="right">−$33,177</td><td class="right">−20%</td><td>Under budget</td></tr>
+  </tbody>
+</table>
+<p style="font-size:11px;color:#64748b;margin-top:8px;font-style:italic;">⚑ Trade Show combined = GL accounts 66212.0007 (Trade Show Promotions) + 66215.001 (Events : Tradeshow) + 66215.002 (Events : Trade Shows) treated as a single line. · ✻ Off-budget = expense booked with no budget line allocated — needs to be addressed in the next reforecast.</p>
+</div>
+
+<div class="section">
+<h2>What we recommend for the second half of the year</h2>
+<p class="section-explain">Three actions the CMO is asking leadership to greenlight.</p>
+<div class="callout good"><strong>If July's ~$10K/month pace holds, 2026 will land at roughly $187K vs the $291K plan — 36% under for the full year, or about $104K of headroom.</strong> That's meaningful capital available to be deployed in the remaining five months or held as savings. Three specific actions worth discussing:
+<ul style="margin:10px 0 0 22px;">
+  <li><strong>Re-engage Google paid search.</strong> At just 25% of the annual budget spent through July ($21K of $87K), we have significant room to increase Google spend. Note that Google absorbed 47% of the entire year-over-year reduction on its own — $89,034 of the $189,338 — so this is where the cut was concentrated, not where it was spread.</li>
+  <li><strong>Fund the photo &amp; video production.</strong> $15K was budgeted, $300 has been spent. This work is planned for the back half of the year and the money is still available.</li>
+  <li><strong>Correct the SEO booking.</strong> The $9,454 charged to VHPC for the missed Scorpion posting should be moved to GarageExperts. Once reclassified, our real year-to-date spend drops by roughly $9,500 — improving the efficiency picture even further.</li>
+</ul></div>
+</div>
+
+<div class="footer">
+<div class="conf">⚠ Confidential — Versatile High-Performance Coatings internal use only. Do not redistribute.</div>
+Data sources: 2026 budget.xlsx &middot; NetSuite GL, accounts 66212.* and 66215.*, posted transactions only, through July 31, 2026. Revenue and customer figures are NET &mdash; product only, excluding shipping and tax, net of returns and credits. Prior-year comparison uses NetSuite for both years, so it is like-for-like; no Sage data was required because both Jan&ndash;Jul windows fall after the October 2024 go-live.<br>
+Trade Show items consolidated: GL 66212.0007 + 66215.001 + 66215.002 = one line. Promotional Products reclassified into "Other".<br>
+Prepared: August 10, 2026
+</div>
+
+</div>
+
+<script>
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, Arial, sans-serif';
+Chart.defaults.font.size = 11;
+
+const SPEND_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul'];
+const SPEND_2025 = [24458, 21186, 17904, 90332, 77908, 45265, 49176];
+const SPEND_2026 = [37613, 23870, 35920, 9223, 10367, 9894, 10004];
+
+new Chart(document.getElementById('spendYoY'), {
+  type: 'bar',
+  data: {
+    labels: SPEND_MONTHS,
+    datasets: [
+      { label: '2025 spend', data: SPEND_2025, backgroundColor: '#94a3b8', borderRadius: 3 },
+      { label: '2026 spend', data: SPEND_2026, backgroundColor: '#1F4E79', borderRadius: 3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { boxWidth: 14, padding: 8 } },
+      tooltip: { callbacks: { label: c => c.dataset.label + ': $' + c.parsed.y.toLocaleString() } }
+    },
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+</script>
+
+</body>
+</html>

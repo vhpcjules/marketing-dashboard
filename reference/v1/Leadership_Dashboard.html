@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Versatile HPC — Marketing Performance Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f7fa; color: #1a202c; line-height: 1.5; padding: 24px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.header { text-align: center; padding: 24px 0 32px; border-bottom: 3px solid #1F4E79; margin-bottom: 32px; }
+.header h1 { font-size: 28px; color: #1F4E79; margin-bottom: 8px; }
+.header .subtitle { color: #64748b; font-size: 14px; }
+.section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.section h2 { font-size: 20px; color: #1F4E79; margin-bottom: 8px; }
+.section .section-explain { color: #64748b; font-size: 13px; margin-bottom: 20px; font-style: italic; }
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: stretch; }
+.tile { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #1F4E79; display: flex; flex-direction: column; }
+.tile .label { min-height: 2.6em; display: flex; align-items: flex-start; }
+.tile .sub { margin-top: auto; padding-top: 4px; }
+.tile .label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.tile .value { font-size: 28px; font-weight: 700; color: #1F4E79; margin: 6px 0; }
+.tile .delta { font-size: 13px; font-weight: 600; }
+.tile .delta.up { color: #16a34a; }
+.tile .delta.down { color: #dc2626; }
+.tile .delta.neutral { color: #64748b; }
+.tile .explain { font-size: 11px; color: #475569; margin-top: 8px; line-height: 1.4; font-style: italic; }
+.chart-wrap { position: relative; height: 320px; margin-top: 12px; }
+.chart-wrap.tall { height: 360px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media(max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+th { background: #1F4E79; color: white; padding: 10px; text-align: left; font-weight: 600; font-size: 12px; }
+th.right, td.right { text-align: right; }
+td { padding: 10px; border-bottom: 1px solid #e2e8f0; }
+tr:nth-child(even) td { background: #f8fafc; }
+tr.warn td { background: #fef3c7; }
+tr.danger td { background: #fee2e2; }
+tr.good td { background: #dcfce7; }
+.flag-row { padding: 12px 16px; margin: 8px 0; border-radius: 8px; display: flex; align-items: start; gap: 12px; }
+.flag-row .icon { font-size: 18px; line-height: 1; flex-shrink: 0; }
+.flag-row .body { flex: 1; }
+.flag-row .body > strong:first-child { display: block; margin-bottom: 4px; }
+.flag-row .body span strong { display: inline; }
+.flag-row .body span p { margin: 8px 0; }
+.flag-row .body span { font-size: 13px; color: #475569; }
+.flag-row.red { background: #fee2e2; border-left: 4px solid #dc2626; }
+.flag-row.yellow { background: #fef3c7; border-left: 4px solid #ca8a04; }
+.flag-row.green { background: #dcfce7; border-left: 4px solid #16a34a; }
+.flag-row.blue { background: #e0f2fe; border-left: 4px solid #0284c7; }
+.footer { text-align: center; padding: 20px; color: #64748b; font-size: 12px; margin-top: 20px; }
+.callout { background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px 16px; border-radius: 6px; font-size: 13px; margin: 12px 0; }
+.callout strong { color: #0c4a6e; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: #1F4E79; text-decoration: none; font-size: 13px; font-weight: 600; padding: 8px 14px; background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 8px; transition: all 0.15s ease; border: 1px solid #e2e8f0; }
+.back-link:hover { background: #eff6ff; border-color: #1F4E79; box-shadow: 0 2px 6px rgba(31,78,121,0.12); }
+.back-link:hover .arrow { transform: translateX(-3px); }
+.back-link .arrow { transition: transform 0.15s ease; display: inline-block; font-size: 16px; line-height: 1; }
+.month-picker { background: white; padding: 14px 18px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.month-picker-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 10px; }
+.month-picker-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.month-pill { padding: 7px 13px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: #64748b; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; white-space: nowrap; font-family: inherit; }
+.month-pill:hover { background: #eff6ff; border-color: #94a3b8; color: #1F4E79; }
+.month-pill.active { background: #1F4E79; border-color: #1F4E79; color: white; box-shadow: 0 2px 6px rgba(31,78,121,0.25); }
+.month-pill.active:hover { background: #173d61; }
+.exec-summary { background: linear-gradient(135deg, #1F4E79 0%, #2c6ba0 100%); color: white; border-radius: 12px; padding: 28px 32px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(31,78,121,0.15); }
+.exec-summary h2 { color: white; font-size: 18px; margin-bottom: 12px; letter-spacing: 0.3px; }
+.exec-summary .lede { font-size: 13px; color: #dbeafe; margin-bottom: 8px; }
+.exec-summary .headline-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 14px; align-items: stretch; }
+.exec-summary .headline { background: rgba(255,255,255,0.10); border-radius: 8px; padding: 14px 16px; border-left: 3px solid #f59e0b; display: flex; flex-direction: column; }
+.exec-summary .headline .num { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.3px; line-height: 1.2; }
+.exec-summary .headline .desc { font-size: 12px; color: #dbeafe; line-height: 1.4; margin-top: auto; }
+@media(max-width: 900px) { .exec-summary .headline-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<a href="index.html" class="back-link"><span class="arrow">←</span> All dashboards</a>
+
+<div class="header">
+<h1>Marketing Performance Dashboard</h1>
+<div class="subtitle">Versatile High-Performance Coatings · 12 months ending July 31, 2026 · Updated August 18, 2026 · All revenue NET</div>
+</div>
+
+<div class="exec-summary">
+  <h2>The three things to take from this dashboard</h2>
+  <p class="lede">July: customer volume up, lead quality up, but average deal regressed to below-mean after June's outlier. Volume and pipeline are healthy — deal-size variance is a specialty-coatings reality.</p>
+  <div class="headline-row">
+    <div class="headline">
+      <div class="num">72 customers, $51K NET M1</div>
+      <div class="desc"><strong>Volume grew 7% MoM (72 vs 67), NET revenue softened to $51K.</strong> July's $710 avg NET deal is 34% below the 6-month baseline of $1,082. June's $1,941 avg was the outlier — 79% above baseline. Both months sit inside normal variance for our business.</div>
+    </div>
+    <div class="headline">
+      <div class="num">Lead quality at year-high</div>
+      <div class="desc"><strong>Phone capture 55.7% (tied year-high), email 97.9%, lead-to-customer conversion 26.5%.</strong> The funnel is healthier than any month in the last six.</div>
+    </div>
+    <div class="headline">
+      <div class="num">$5.11 back per $1 spent</div>
+      <div class="desc"><strong>Marketing efficiency still strong.</strong> Even in July's soft revenue month, every $1 of marketing spend ($10,004) returned $5.11 in NET new-customer revenue. YTD blended: <strong>$3.46 per $1</strong>, up from $1.48 in the same period last year.</div>
+    </div>
+  </div>
+</div>
+
+<div class="month-picker">
+  <div class="month-picker-label">Showing data for</div>
+  <div class="month-picker-row">
+    <button class="month-pill" data-month="2025-06" onclick="selectMonth('2025-06')">Jun 25</button>
+    <button class="month-pill" data-month="2025-07" onclick="selectMonth('2025-07')">Jul 25</button>
+    <button class="month-pill" data-month="2025-08" onclick="selectMonth('2025-08')">Aug 25</button>
+    <button class="month-pill" data-month="2025-09" onclick="selectMonth('2025-09')">Sep 25</button>
+    <button class="month-pill" data-month="2025-10" onclick="selectMonth('2025-10')">Oct 25</button>
+    <button class="month-pill" data-month="2025-11" onclick="selectMonth('2025-11')">Nov 25</button>
+    <button class="month-pill" data-month="2025-12" onclick="selectMonth('2025-12')">Dec 25</button>
+    <button class="month-pill" data-month="2026-01" onclick="selectMonth('2026-01')">Jan 26</button>
+    <button class="month-pill" data-month="2026-02" onclick="selectMonth('2026-02')">Feb 26</button>
+    <button class="month-pill" data-month="2026-03" onclick="selectMonth('2026-03')">Mar 26</button>
+    <button class="month-pill" data-month="2026-04" onclick="selectMonth('2026-04')">Apr 26</button>
+    <button class="month-pill" data-month="2026-05" onclick="selectMonth('2026-05')">May 26</button>
+    <button class="month-pill" data-month="2026-06" onclick="selectMonth('2026-06')">Jun 26</button>
+    <button class="month-pill active" data-month="2026-07" onclick="selectMonth('2026-07')">Jul 26</button>
+  </div>
+</div>
+
+<!-- SECTION A: Headline Tiles -->
+<div class="section">
+<h2 id="ld-section-title">How are we doing right now?</h2>
+<p class="section-explain" id="ld-section-explain">Latest month (May 2026) vs. previous month (April 2026). "New customers" only — existing customers excluded.</p>
+<div class="tile-grid">
+  <div class="tile">
+    <div class="label">New Customers</div>
+    <div class="value" id="ld-customers">74</div>
+    <div class="delta up" id="ld-customers-delta">↑ 7.5% vs June</div>
+    <div class="explain">Number of people/businesses who bought from us for the first time this month.</div>
+  </div>
+  <div class="tile">
+    <div class="label">New-Customer Revenue (Month 1)</div>
+    <div class="value" id="ld-m1rev">$75,962</div>
+    <div class="delta up" id="ld-m1rev-delta">↑ 26.0% vs April</div>
+    <div class="explain">Total $ those new customers spent in their first month with us.</div>
+  </div>
+  <div class="tile">
+    <div class="label">Avg. New Customer Value</div>
+    <div class="value" id="ld-avgdeal">$1,026</div>
+    <div class="delta down" id="ld-avgdeal-delta">↓ 63.4% vs June</div>
+    <div class="explain">How much an average new customer is worth in their first month. Higher = bigger deals.</div>
+  </div>
+  <div class="tile">
+    <div class="label">Conversion rate</div>
+    <div class="value" id="ld-conv">31.9%</div>
+    <div class="delta up" id="ld-conv-delta">↑ 1.9% vs June</div>
+    <div class="explain">Share of leads + records that became customers.</div>
+  </div>
+  <div class="tile">
+    <div class="label">Phone capture rate</div>
+    <div class="value" id="ld-phone">53.9%</div>
+    <div class="delta up" id="ld-phone-delta">↑ 22.1% vs June</div>
+    <div class="explain">Share of records with a phone number. Sales' ability to do outbound follow-up.</div>
+  </div>
+</div>
+<div class="callout" style="background:#e0f2fe;border-left-color:#0284c7;"><strong>July 2026 — volume up, deal size regressed:</strong> <strong>72 new customers</strong> (up 7% vs June, above the 6-month avg of 67), <strong>$51K NET M1 revenue</strong>, <strong>$710 avg NET deal</strong> (34% below 6-month avg of $1,082). Lead quality hit a year-high — phone capture 55.7%, email 97.9%, conversion 26.5%. Read: June was the outlier at $1,941 avg deal; July regressed to below-mean but the funnel is healthy.</div>
+</div>
+
+<!-- SECTION B: Are We Growing? -->
+<div class="section">
+<h2>Are we growing?</h2>
+<p class="section-explain">Monthly trend in new customers and the revenue they generate. The grouped chart on the right shows both Month-1 revenue (what they spend right away) and Months 1-3 revenue (how much they spend in their first 3 months) — together, they tell us whether new customers are getting traction or fading.</p>
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">New Customers per Cohort Month</h3>
+    <div class="chart-wrap"><canvas id="custTrend"></canvas></div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Revenue per Cohort: Month 1 vs Months 1-3 ($)</h3>
+    <div class="chart-wrap"><canvas id="revTrend"></canvas></div>
+  </div>
+</div>
+<div class="callout"><strong>What's the story?</strong> Sept–Oct 2025 was the peak (110 and 115 new customers; $102K and $119K NET Month-1 revenue) — driven by elevated Google Ads spend. From November onward, paid spend was cut roughly 60%, and customer count fell with it. 2026 has settled at roughly 60–70 new customers a month.</div>
+<div class="callout" style="background:#dcfce7;border-left-color:#16a34a;"><strong>Quality signal — are new customers getting traction?</strong> The ratio above each dark-blue bar shows how much each cohort grew beyond Month 1. <strong>Mature cohorts (Jul 25 – Apr 26)</strong> show strong follow-on spending — Months 1-3 revenue is typically 1.4-2.1x the Month-1 figure. <strong>Feb 2026 cohort</strong> hit a 2.12x multiple — customers coming back hard for months 2 and 3. <strong>May and Jun 26 bars are faded</strong> because their 3-month window isn't complete yet.</div>
+</div>
+
+<!-- SECTION C: Where do customers come from? -->
+<div class="section">
+<h2>Where are customers coming from?</h2>
+<p class="section-explain">When someone first finds out about Versatile, this is the channel that brought them. Combined view of last 12 months.</p>
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">% of New Customers by Source</h3>
+    <div class="chart-wrap"><canvas id="channelDonut"></canvas></div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Month-1 Revenue by Source ($)</h3>
+    <div class="chart-wrap"><canvas id="channelRevBar"></canvas></div>
+  </div>
+</div>
+<div class="callout"><strong>Quick read:</strong> "Direct & Other" includes customers who came in by phone, walk-in, or directly to our website without going through a marketing channel. "Organic Search" = found us by searching on Google without us paying for the click.</div>
+</div>
+
+<!-- SECTION D: Are we spending wisely? -->
+<div class="section">
+<h2>Are we spending wisely?</h2>
+<p class="section-explain">Top section: paid channels with direct spend attribution. Bottom section: earned and unattributed customers — no direct spend, but often influenced by past marketing investments (SEO, content, brand awareness).</p>
+<table>
+<thead>
+<tr>
+  <th>Channel</th>
+  <th class="right">Spent (12 mo)</th>
+  <th class="right">New Customers</th>
+  <th class="right">M1 Revenue</th>
+  <th class="right">M1-3 Revenue</th>
+  <th class="right">Cost per Customer</th>
+  <th class="right">Revenue per $ Spent (M1)</th>
+</tr>
+</thead>
+<tbody>
+<tr style="background:#1F4E79;color:white;font-weight:600;"><td colspan="7" style="padding:8px 10px;">PAID CHANNELS — Direct spend attribution</td></tr>
+<tr class="warn"><td>Paid Search (Google Ads)</td><td class="right">$150,524</td><td class="right">189</td><td class="right">$191,561</td><td class="right">$245,132</td><td class="right">$797</td><td class="right">$1.27</td></tr>
+<tr><td>Paid Social (Meta - Facebook/Instagram) <em style="font-size:11px;color:#64748b;">— brand awareness / top-of-funnel</em></td><td class="right">$90,211</td><td class="right">42</td><td class="right">$19,468</td><td class="right">$42,525</td><td class="right">$2,148</td><td class="right">$0.22</td></tr>
+<tr class="danger"><td>Trade Shows</td><td class="right">$43,864</td><td class="right">1</td><td class="right">$433</td><td class="right">$433</td><td class="right">$43,864</td><td class="right">$0.01</td></tr>
+<tr><td>Trade Advertising (print pubs)</td><td class="right">$16,210</td><td class="right">0</td><td class="right">$0</td><td class="right">$0</td><td class="right">n/a</td><td class="right">$0.00</td></tr>
+<tr><td>Industry Listings (other)</td><td class="right">$105,446</td><td class="right">7</td><td class="right">$3,261</td><td class="right">$3,993</td><td class="right">$15,064</td><td class="right">$0.03</td></tr>
+<tr><td>Agency Fees (TRU support)</td><td class="right">$57,662</td><td class="right">n/a</td><td class="right">n/a</td><td class="right">n/a</td><td class="right" colspan="2">Supports all channels</td></tr>
+<tr style="font-weight:700;background:#e2e8f0;"><td>Paid Subtotal</td><td class="right">$463,917</td><td class="right">239</td><td class="right">$214,723</td><td class="right">$292,083</td><td class="right">$1,941</td><td class="right">$0.46</td></tr>
+<tr style="background:#16a34a;color:white;font-weight:600;"><td colspan="7" style="padding:8px 10px;">EARNED & UNATTRIBUTED — Customers we likely influenced but can't tie to spend</td></tr>
+<tr class="good"><td>Organic Search <em style="font-size:11px;color:#64748b;">— free Google results</em></td><td class="right">$0 direct</td><td class="right">285</td><td class="right">$201,683</td><td class="right">$317,933</td><td class="right">—</td><td class="right">Earned</td></tr>
+<tr class="warn"><td>Untracked (no lead source recorded)</td><td class="right">$0 attributed</td><td class="right">361</td><td class="right">$367,160</td><td class="right">$700,138</td><td class="right">—</td><td class="right">—</td></tr>
+<tr style="font-weight:700;background:#e2e8f0;"><td>Earned + Untracked Subtotal</td><td class="right">$0</td><td class="right">646</td><td class="right">$568,843</td><td class="right">$1,018,071</td><td class="right">—</td><td class="right">—</td></tr>
+<tr style="font-weight:700;background:#1F4E79;color:white;"><td style="padding:10px;">OVERALL — All channels combined</td><td class="right" style="padding:10px;">$463,917</td><td class="right" style="padding:10px;">885</td><td class="right" style="padding:10px;">$1,043,816</td><td class="right" style="padding:10px;">$1,310,154</td><td class="right" style="padding:10px;">$524</td><td class="right" style="padding:10px;">$2.25</td></tr>
+</tbody>
+</table>
+<div class="callout" style="background:#dcfce7;border-left-color:#16a34a;"><strong>Why Organic & Untracked matter:</strong> Together they represent <strong>73% of our customers (646 of 885)</strong> and <strong>55% of M1 revenue ($569K of $1.04M)</strong> — more than all paid channels combined. They don't have direct spend attached, but they're not "free":
+<ul style="margin:8px 0 0 18px;font-size:13px;">
+<li><strong>Organic Search</strong> is influenced by historical SEO investments, content production, technical site health, and brand awareness built by paid channels.</li>
+<li><strong>Untracked</strong> records are customers whose source we never captured — a mix of direct, word-of-mouth, and returning customers. There has been a sustained loss in tracking information — reducing this bucket should be a marketing operations priority.</li>
+</ul></div>
+<div class="callout"><strong>TL;DR:</strong> "Revenue per $ Spent" is the simplest way to read paid performance. <strong>$1.00 means we're breaking even.</strong> Above $1 = making money; below $1 = losing money in Month 1. When you combine paid + earned + untracked, <strong>every $1 spent on marketing returns $2.25 in Month 1 revenue</strong> (see OVERALL row).</div>
+</div>
+
+<!-- SECTION E: Who are our customers? -->
+<div class="section">
+<h2>Who are our customers?</h2>
+<p class="section-explain">Split between Contractor customers (professional installers, designers, engineers) and DIY customers (homeowners installing themselves).</p>
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Customer Mix (12 months)</h3>
+    <div class="chart-wrap"><canvas id="customerMix"></canvas></div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">M1 vs M1-3 Revenue by Type ($)</h3>
+    <div class="chart-wrap"><canvas id="revByType"></canvas></div>
+  </div>
+</div>
+<div class="callout"><strong>What this tells us:</strong> Contractor customers are 85% of our customer count and generate 91% of revenue. Critically, Contractors continue to buy in months 2-3 (M1-3 revenue is 69% higher than M1 alone). DIY customers tend to be one-and-done — their M1-3 revenue is only 22% higher than M1. <strong>Bottom line: focus marketing on Contractors for compounding returns.</strong></div>
+</div>
+
+<!-- SECTION F: Customer engagement trends -->
+<div class="section">
+<h2>Are we connecting with people online?</h2>
+<p class="section-explain">Indirect indicators of brand health — how many people see us online, click through, and engage when they land on our website. Three trend windows so you can see if things are improving, getting worse, or holding.</p>
+<table>
+<thead>
+<tr>
+  <th>Metric</th>
+  <th class="right">July 2026</th>
+  <th class="right">Last 3 months<br>(May-Jul 26)</th>
+  <th class="right">Last 6 months<br>(Feb-Jul 26)</th>
+  <th>What the trend tells us</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>Google Ad impressions (total)</td><td class="right">285,357</td><td class="right">1,058,889</td><td class="right">2,167,394</td><td>July down 46% MoM. Meaningful drop in top-of-funnel exposure despite flat spend.</td></tr>
+<tr><td>Google Ad clicks (total)</td><td class="right">3,978</td><td class="right">18,940</td><td class="right">37,796</td><td>Clicks halved in July as CPC doubled ($0.65 → $1.47). Fewer, more competitive auctions.</td></tr>
+<tr class="warn"><td>Google Ad click rate (CTR)</td><td class="right">1.39%</td><td class="right">1.79%</td><td class="right">1.75%</td><td>CTR slipped in July — from 2.42% (May) to 1.39%. Still above the 0.85% 12-mo baseline.</td></tr>
+<tr class="good"><td>Google Ad conversion value <em style="color:#64748b;font-size:11px;">(platform-reported)</em></td><td class="right">$336,469</td><td class="right">$683,249</td><td class="right">$1.48M</td><td><strong>↑ +50% MoM despite fewer clicks.</strong> Fewer but higher-intent conversions on Google.</td></tr>
+<tr><td>Free Google search appearances</td><td class="right">240,355</td><td class="right">276,084</td><td class="right">284,692</td><td>July impressions -13% MoM. First material decline in 6 months.</td></tr>
+<tr class="good"><td>Google organic CTR</td><td class="right">1.25%</td><td class="right">1.16%</td><td class="right">1.16%</td><td><strong>↑ Best CTR of the year.</strong> Fewer impressions but higher click-through.</td></tr>
+<tr><td>Average ranking on Google (organic, lower = better)</td><td class="right">#16.5</td><td class="right">#15.6</td><td class="right">#16.9</td><td>Slight dip from June's #15.43. Still well ahead of #18 baseline from earlier this year.</td></tr>
+<tr><td>Website visits to versatile.net</td><td class="right">25,309</td><td class="right">27,069</td><td class="right">27,882</td><td>July -14% MoM (25,309 vs 29,293 in June). Lowest in 6 months.</td></tr>
+<tr class="good"><td>Engagement rate (visitors who interact, not bounce)</td><td class="right">52.4%</td><td class="right">51.7%</td><td class="right">51.4%</td><td><strong>↑ Steady near 52%.</strong> Fewer visitors but same engagement quality.</td></tr>
+<tr class="warn"><td>Google Business Profile interactions</td><td class="right">514</td><td class="right">—</td><td class="right">—</td><td><strong>↓ 17% YoY (vs Jul 2025).</strong> Rolls up all three action types below.</td></tr>
+<tr class="warn"><td>GMB website clicks from search</td><td class="right">237</td><td class="right">—</td><td class="right">—</td><td>Down 18.8% YoY. Largest single GMB action type.</td></tr>
+<tr class="warn"><td>GMB direction requests</td><td class="right">166</td><td class="right">—</td><td class="right">—</td><td>Down 14.0% YoY.</td></tr>
+<tr class="warn"><td>GMB phone calls from search</td><td class="right">111</td><td class="right">—</td><td class="right">—</td><td>Down 17.8% YoY.</td></tr>
+</tbody>
+</table>
+<div class="callout"><strong>The July story for online presence:</strong> Top-of-funnel exposure softened across every channel — Google Ads impressions -46% MoM, Google Ads clicks -56%, organic impressions -13%, website sessions -14%, GMB interactions -17% YoY. <strong>The one bright spot: Google Ads platform-reported conversion value rose 50% ($224K → $336K) even as clicks halved</strong> — the conversions we did drive were higher intent. Organic CTR hit a year-high (1.25%). Engagement rate held steady around 52%. The funnel is contracting at the top but the visitors who arrive are still engaging.</div>
+</div>
+
+<!-- SECTION G: Watch items -->
+<div class="section">
+<h2>What needs attention?</h2>
+<p class="section-explain">Issues or opportunities surfaced from the data. Red = urgent. Yellow = monitor. Green = working well. Blue = change we made, result still pending.</p>
+<div class="flag-row green"><div class="icon">🟢</div><div class="body"><strong>Instagram giveaway drove a year-high in follower growth</strong><span>+155 net new IG followers in July (7,015 total, up from 6,860). Profile views hit 29,755 — highest of the year, +34% MoM. Plus 2 contractor UGC posts amplified VHPC to their audiences. $40 boosted spend drove 176 of 203 profile visits at $0.23 each. The Yeti giveaway earned reach far beyond what paid alone would have.</span></div></div>
+<div class="flag-row yellow"><div class="icon">🟡</div><div class="body"><strong>Top-of-funnel softened across every channel in July</strong><span>Google Ads impressions -46%, Google Ads clicks -56% (CPC doubled to $1.47), organic search -13%, website sessions -14%, GMB total interactions -17% YoY. Could be summer seasonality (contractor slow season) or algorithm-driven auction dynamics. Watch August closely — this is the pattern we most need to see reverse or hold steady.</span></div></div>
+<div class="flag-row green"><div class="icon">🟢</div><div class="body"><strong>Google Ads conversion value rose 50% even as clicks halved</strong><span>$336K July vs $224K June in Google's platform-reported conversion value — despite 56% fewer clicks. Fewer, higher-intent conversions. When paired with $65K of untapped Google budget, this is a signal we can lean back into Google in August.</span></div></div>
+<div class="flag-row blue"><div class="icon">🔵</div><div class="body"><strong>Google Ads now bids higher on new customers &mdash; changed July 27</strong><span>We raised the value assigned to a new customer inside Google's bidding model, so the algorithm bids more aggressively on first-time buyers instead of spreading budget across returning traffic. This went live around <strong>July 27</strong>, which means only four days of July sit behind it &mdash; July's numbers above do not reflect the change. <strong>August is the first clean read.</strong></span></div></div>
+<div class="flag-row blue"><div class="icon">🔵</div><div class="body"><strong>80% of Google budget is now in Performance Max &mdash; being evaluated in August</strong><span>Performance Max has been delivering more conversions at lower cost than our search campaigns, so we moved the majority of Google budget into it. We are evaluating through August to confirm it is still working. <strong>If it stops performing, the plan is to move new-user acquisition back to a search-based campaign and reserve Performance Max for retargeting recent purchasers</strong> &mdash; which pairs directly with the $1K retargeting ask on the initiatives dashboard.</span></div></div>
+<div class="flag-row green"><div class="icon">🟢</div><div class="body"><strong>Phone capture at year-high — 55.7% in July</strong><span>Up from 45.6% in June, tied with the year-high set in May. Sales can now reach more than half of leads by phone. Email capture is essentially perfect at 97.9%. Lead quality has never been better on either dimension.</span></div></div>
+<div class="flag-row green"><div class="icon">🟢</div><div class="body"><strong>Google ranking improved meaningfully — from #22 to ~#15-16</strong><span>Customers searching for our products are finding us faster. This is "free traffic" — the foundation of low-cost growth.</span></div></div>
+<div class="flag-row green"><div class="icon">🟢</div><div class="body"><strong>Website engagement rate climbed 36.9% → 52.0%</strong><span>Visitors are spending more time on the site and interacting more. Quality of incoming traffic is improving.</span></div></div>
+<div class="flag-row green"><div class="icon">🟢</div><div class="body"><strong>Contractor customers continue buying in months 2-3 (1.69x M1)</strong><span>Strong validation that the Contractor segment generates compounding revenue. Marketing efforts that bring in more Contractors pay back over time.</span></div></div>
+</div>
+
+<div class="footer">
+<div style="background:#fef3c7; padding:10px 16px; border-radius:6px; margin-bottom:16px; color:#78350f; font-weight:600;">⚠ Confidential — Versatile High-Performance Coatings internal use only. Do not redistribute.</div>
+Data sources: NetSuite (customers & revenue) · Google Ads · Google Search Console · Google Analytics 4 (versatile.net) · Google Business Profile · Hotjar · Marketing Spend (NetSuite income statement). All revenue is NET — product only, excluding shipping and tax, with returns and credit memos deducted.<br>
+Filters applied: Subsidiary = VHPC LLC. Customer Category excludes GarageExperts and Vendor. Customer = stage starts with "Customer-" AND has a first sale date populated.<br>
+Full methodology in <em>methodology.md</em>. Source workbook: <em>Versatile_Marketing_Performance_v1.xlsx</em>.
+</div>
+
+</div>
+
+<script>
+// Rolling 12-month window: Jul 2025 — Jun 2026. All revenue is NET (product only, excl. shipping/tax, net of returns).
+const MONTHS = ['Jul 25','Aug 25','Sep 25','Oct 25','Nov 25','Dec 25','Jan 26','Feb 26','Mar 26','Apr 26','May 26','Jun 26'];
+const CUSTOMERS = [72, 77, 110, 115, 68, 65, 44, 59, 73, 63, 69, 67];
+const REV_M1   = [57390, 72992, 102088, 118602, 53948, 48840, 37328, 49840, 63240, 53952, 87841, 130063];
+
+const COLORS_PRIMARY = '#1F4E79';
+const COLORS_SECONDARY = '#4ade80';
+
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, Arial, sans-serif';
+Chart.defaults.font.size = 11;
+
+// New Customers per Month
+new Chart(document.getElementById('custTrend'), {
+  type: 'line',
+  data: {
+    labels: MONTHS,
+    datasets: [{
+      label: 'New Customers',
+      data: CUSTOMERS,
+      borderColor: COLORS_PRIMARY,
+      backgroundColor: 'rgba(31,78,121,0.1)',
+      borderWidth: 2.5,
+      tension: 0.3,
+      fill: true,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      pointBackgroundColor: COLORS_PRIMARY,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {legend: {display: false}, tooltip:{callbacks:{label:function(c){return c.parsed.y+' new customers'}}}},
+    scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' } }, x: { grid: { display: false } } }
+  }
+});
+
+// M1 vs M1-3 Revenue per Cohort (grouped bars)
+// Cohorts Jul25 through Apr26 are complete (3 months elapsed). May26 has 2 months. Jun26 has 1 month.
+const REV_M13 = [82631, 112083, 308048, 188566, 83765, 88614, 67837, 107934, 124566, 79511, 116821, 131536];
+const M13_COLORS = REV_M13.map((v, i) => i >= 10 ? 'rgba(31,78,121,0.5)' : '#1F4E79');
+const M13_BORDER = REV_M13.map((v, i) => i >= 10 ? 'rgba(31,78,121,0.7)' : '#1F4E79');
+// Compute M1-3 to M1 ratios for chart labels
+const M13_RATIOS = REV_M13.map((v, i) => (v / REV_M1[i]).toFixed(2) + 'x');
+
+// Plugin to draw ratio labels above M1-3 bars
+const ratioLabelPlugin = {
+  id: 'ratioLabels',
+  afterDatasetsDraw(chart) {
+    const {ctx, data} = chart;
+    const dsIndex = 1; // Month 1-3 dataset
+    const meta = chart.getDatasetMeta(dsIndex);
+    ctx.save();
+    ctx.font = 'bold 10px -apple-system, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    meta.data.forEach((bar, i) => {
+      const isIncomplete = i >= 10;
+      ctx.fillStyle = isIncomplete ? '#94a3b8' : '#1F4E79';
+      const label = isIncomplete ? '' : M13_RATIOS[i];
+      if (label) ctx.fillText(label, bar.x, bar.y - 4);
+    });
+    ctx.restore();
+  }
+};
+
+new Chart(document.getElementById('revTrend'), {
+  type: 'bar',
+  plugins: [ratioLabelPlugin],
+  data: {
+    labels: MONTHS,
+    datasets: [
+      {
+        label: 'Month 1 Revenue',
+        data: REV_M1,
+        backgroundColor: '#94a3b8',
+        borderRadius: 3,
+      },
+      {
+        label: 'Months 1-3 Revenue',
+        data: REV_M13,
+        backgroundColor: M13_COLORS,
+        borderColor: M13_BORDER,
+        borderWidth: 1,
+        borderRadius: 3,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { boxWidth: 14, padding: 8, font: { size: 11 } } },
+      tooltip: {
+        callbacks: {
+          label: function(c) {
+            let label = c.dataset.label + ': $' + c.parsed.y.toLocaleString();
+            if (c.dataset.label === 'Months 1-3 Revenue' && c.dataIndex >= 10) {
+              label += ' (partial — cohort not yet mature)';
+            }
+            return label;
+          }
+        }
+      }
+    },
+    scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' } }, x: { grid: { display: false } } }
+  }
+});
+
+// Channel donut — customer mix
+const CHANNEL_LABELS = ['Direct & Other','Organic Search','Paid Google','Paid Meta','Referrals','Email','Industry Listings','Trade Show'];
+const CHANNEL_CUSTOMERS = [328, 285, 193, 48, 28, 27, 7, 2];
+new Chart(document.getElementById('channelDonut'), {
+  type: 'doughnut',
+  data: {
+    labels: CHANNEL_LABELS,
+    datasets: [{
+      data: CHANNEL_CUSTOMERS,
+      backgroundColor: ['#1F4E79','#4ade80','#3b82f6','#f59e0b','#a855f7','#06b6d4','#ec4899','#94a3b8'],
+      borderWidth: 2, borderColor: '#fff'
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {position: 'right', labels: {boxWidth: 14, padding: 8, font:{size:11}}},
+      tooltip: {callbacks:{label: function(c){const total = c.dataset.data.reduce((a,b)=>a+b,0); return c.label + ': ' + c.parsed + ' ('+ (c.parsed/total*100).toFixed(1) +'%)'}}}
+    }
+  }
+});
+
+// Channel revenue bar
+const CHANNEL_REV = [186138, 201683, 191561, 19468, 16715, 4500, 3261, 433];
+new Chart(document.getElementById('channelRevBar'), {
+  type: 'bar',
+  data: {
+    labels: CHANNEL_LABELS,
+    datasets: [{ data: CHANNEL_REV, backgroundColor: '#1F4E79', borderRadius: 4 }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {legend:{display:false}, tooltip:{callbacks:{label: c=>'$'+c.parsed.x.toLocaleString()}}},
+    scales: { x: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' } }, y: { grid: { display: false } } }
+  }
+});
+
+// Customer mix donut
+new Chart(document.getElementById('customerMix'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Contractor (incl. all professional)','DIY','CA Will Call (1 customer)'],
+    datasets: [{
+      data: [900, 154, 1],
+      backgroundColor: ['#1F4E79','#f59e0b','#94a3b8'],
+      borderWidth: 2, borderColor: '#fff'
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {position: 'bottom', labels: {boxWidth: 14, padding: 10}},
+      tooltip: {callbacks:{label: function(c){const total = c.dataset.data.reduce((a,b)=>a+b,0); return c.label + ': ' + c.parsed + ' ('+ (c.parsed/total*100).toFixed(1) +'%)'}}}
+    }
+  }
+});
+
+// Revenue by type bar — M1 vs M1-3
+new Chart(document.getElementById('revByType'), {
+  type: 'bar',
+  data: {
+    labels: ['Contractor','DIY','CA Will Call'],
+    datasets: [
+      {label: 'Month 1 Revenue', data: [816815, 81644, 2243], backgroundColor: '#94a3b8', borderRadius: 4},
+      {label: 'Months 1-3 Revenue', data: [1383900, 99323, 2243], backgroundColor: '#1F4E79', borderRadius: 4}
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {legend: {position: 'top'}, tooltip:{callbacks:{label: c=>c.dataset.label+': $'+c.parsed.y.toLocaleString()}}},
+    scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' } }, x: { grid: { display: false } } }
+  }
+});
+
+// ============================================================
+// MONTH PICKER — Leadership headline tiles
+// ============================================================
+// All m1 values are NET (product only, excludes shipping and tax, net of returns/credits)
+const LD_DATA = {
+  "2025-06": { label:"June 2025",      prev:"May",     custPrev:94,  m1Prev:77932, avgPrev:829,  convPrev:23.3, phonePrev:32.7,
+    cust:88,  m1:71999,  avg:818,  conv:21.3, phone:26.4 },
+  "2025-07": { label:"July 2025",      prev:"June",    custPrev:88,  m1Prev:71999, avgPrev:818,  convPrev:21.3, phonePrev:26.4,
+    cust:72,  m1:57390,  avg:797,  conv:19.2, phone:32.5 },
+  "2025-08": { label:"August 2025",    prev:"July",    custPrev:72,  m1Prev:57390, avgPrev:797,  convPrev:19.2, phonePrev:32.5,
+    cust:77,  m1:72992,  avg:948,  conv:22.0, phone:31.2 },
+  "2025-09": { label:"September 2025", prev:"Aug",     custPrev:77,  m1Prev:72992, avgPrev:948,  convPrev:22.0, phonePrev:31.2,
+    cust:110, m1:102088, avg:928,  conv:23.1, phone:33.6 },
+  "2025-10": { label:"October 2025",   prev:"Sept",    custPrev:110, m1Prev:102088, avgPrev:928, convPrev:23.1, phonePrev:33.6,
+    cust:115, m1:118602, avg:1031, conv:27.3, phone:39.3 },
+  "2025-11": { label:"November 2025",  prev:"Oct",     custPrev:115, m1Prev:118602, avgPrev:1031, convPrev:27.3, phonePrev:39.3,
+    cust:68,  m1:53948,  avg:793,  conv:34.3, phone:53.4 },
+  "2025-12": { label:"December 2025",  prev:"Nov",     custPrev:68,  m1Prev:53948,  avgPrev:793,  convPrev:34.3, phonePrev:53.4,
+    cust:65,  m1:48840,  avg:751,  conv:32.3, phone:58.5 },
+  "2026-01": { label:"January 2026",   prev:"Dec",     custPrev:65,  m1Prev:48840,  avgPrev:751,  convPrev:32.3, phonePrev:58.5,
+    cust:44,  m1:37328,  avg:848,  conv:26.5, phone:50.5 },
+  "2026-02": { label:"February 2026",  prev:"Jan",     custPrev:44,  m1Prev:37328,  avgPrev:848,  convPrev:26.5, phonePrev:50.5,
+    cust:59,  m1:49840,  avg:845,  conv:24.0, phone:42.8 },
+  "2026-03": { label:"March 2026",     prev:"Feb",     custPrev:59,  m1Prev:49840,  avgPrev:845,  convPrev:24.0, phonePrev:42.8,
+    cust:73,  m1:63240,  avg:866,  conv:21.4, phone:54.7 },
+  "2026-04": { label:"April 2026",     prev:"March",   custPrev:73,  m1Prev:63240,  avgPrev:866,  convPrev:21.4, phonePrev:54.7,
+    cust:63,  m1:53952,  avg:856,  conv:28.2, phone:48.3 },
+  "2026-05": { label:"May 2026",       prev:"April",   custPrev:63,  m1Prev:53952,  avgPrev:856,  convPrev:28.2, phonePrev:48.3,
+    cust:69,  m1:87841,  avg:1273, conv:31.9, phone:53.9 },
+  "2026-06": { label:"June 2026",      prev:"May",     custPrev:69,  m1Prev:87841,  avgPrev:1273, convPrev:31.9, phonePrev:53.9,
+    cust:67,  m1:130063, avg:1941, conv:26.0, phone:45.6 },
+  "2026-07": { label:"July 2026",      prev:"June",    custPrev:67,  m1Prev:130063, avgPrev:1941, convPrev:26.0, phonePrev:45.6,
+    cust:72,  m1:51088,  avg:710,  conv:26.5, phone:55.7 }
+};
+
+function ldFmt$(n) { return '$' + Math.round(n).toLocaleString(); }
+function ldFmt$k(n) { return '$' + Math.round(n/1000) + 'K'; }
+function ldDeltaText(curr, prev, prevLabel, isPct, isPP) {
+  if (prev === 0) return '— vs ' + prevLabel;
+  const diff = curr - prev;
+  const arrow = diff > 0 ? '↑' : (diff < 0 ? '↓' : '→');
+  if (isPP || isPct) {
+    const pct = (diff/prev) * 100;
+    return `${arrow} ${Math.abs(pct).toFixed(1)}% vs ${prevLabel}`;
+  }
+  return '';
+}
+function ldDeltaClass(curr, prev) {
+  if (curr > prev) return 'delta up';
+  if (curr < prev) return 'delta down';
+  return 'delta flat';
+}
+
+function selectMonth(monthKey) {
+  const d = LD_DATA[monthKey];
+  if (!d) return;
+  document.querySelectorAll('.month-pill').forEach(p => p.classList.toggle('active', p.dataset.month === monthKey));
+
+  document.getElementById('ld-section-explain').textContent = `${d.label} vs. previous month (${d.prev} ${monthKey.startsWith('2025') || (monthKey === '2026-01') ? (monthKey === '2026-01' ? '2025' : '2025') : '2026'}). "New customers" only — existing customers excluded.`;
+
+  // Customers
+  const elCust = document.getElementById('ld-customers');
+  elCust.textContent = d.cust.toLocaleString();
+  const dCust = document.getElementById('ld-customers-delta');
+  dCust.className = ldDeltaClass(d.cust, d.custPrev);
+  dCust.textContent = ldDeltaText(d.cust, d.custPrev, d.prev, true);
+
+  // M1 revenue
+  document.getElementById('ld-m1rev').textContent = ldFmt$(d.m1);
+  const dM1 = document.getElementById('ld-m1rev-delta');
+  dM1.className = ldDeltaClass(d.m1, d.m1Prev);
+  dM1.textContent = ldDeltaText(d.m1, d.m1Prev, d.prev, true);
+
+  // Avg deal
+  document.getElementById('ld-avgdeal').textContent = ldFmt$(d.avg);
+  const dAvg = document.getElementById('ld-avgdeal-delta');
+  dAvg.className = ldDeltaClass(d.avg, d.avgPrev);
+  dAvg.textContent = ldDeltaText(d.avg, d.avgPrev, d.prev, true);
+
+  // Conv
+  document.getElementById('ld-conv').textContent = d.conv.toFixed(1) + '%';
+  const dConv = document.getElementById('ld-conv-delta');
+  dConv.className = ldDeltaClass(d.conv, d.convPrev);
+  dConv.textContent = ldDeltaText(d.conv, d.convPrev, d.prev, false, true);
+
+  // Phone
+  document.getElementById('ld-phone').textContent = d.phone.toFixed(1) + '%';
+  const dPhone = document.getElementById('ld-phone-delta');
+  dPhone.className = ldDeltaClass(d.phone, d.phonePrev);
+  dPhone.textContent = ldDeltaText(d.phone, d.phonePrev, d.prev, false, true);
+}
+
+// Initialize with July 2026
+selectMonth('2026-07');
+</script>
+
+</body>
+</html>

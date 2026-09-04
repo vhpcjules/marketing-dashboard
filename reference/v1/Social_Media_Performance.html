@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Versatile HPC — Social Media Performance</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f7fa; color: #1a202c; line-height: 1.5; padding: 24px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.header { text-align: center; padding: 24px 0 32px; border-bottom: 3px solid #1F4E79; margin-bottom: 32px; }
+.header h1 { font-size: 28px; color: #1F4E79; margin-bottom: 8px; }
+.header .subtitle { color: #64748b; font-size: 14px; }
+.band-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin: 32px 0 10px; padding-left: 12px; border-left: 4px solid #1F4E79; }
+.band-label.primary { color: #1F4E79; }
+.band-label.platform-ig { color: #E1306C; border-left-color: #E1306C; }
+.band-label.platform-li { color: #0A66C2; border-left-color: #0A66C2; }
+.band-label.platform-meta { color: #1877F2; border-left-color: #1877F2; }
+.band-label.context { color: #64748b; }
+.section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.section.featured { border-top: 4px solid #1F4E79; }
+.section.ig { border-top: 4px solid #E1306C; }
+.section.li { border-top: 4px solid #0A66C2; }
+.section.meta { border-top: 4px solid #1877F2; }
+.section h2 { font-size: 20px; color: #1F4E79; margin-bottom: 8px; }
+.section h2 small { font-size: 13px; color: #64748b; font-weight: 400; margin-left: 8px; }
+.section h2 .platform-tag { display: inline-block; font-size: 10px; padding: 3px 8px; border-radius: 4px; vertical-align: middle; margin-left: 8px; color: white; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.section h2 .platform-tag.ig { background: linear-gradient(135deg, #F58529 0%, #E1306C 50%, #C13584 100%); }
+.section h2 .platform-tag.li { background: #0A66C2; }
+.section h2 .platform-tag.meta { background: #1877F2; }
+.section .section-explain { color: #64748b; font-size: 13px; margin-bottom: 20px; font-style: italic; }
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; align-items: stretch; }
+.tile { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 18px; border-radius: 10px; border-left: 4px solid #1F4E79; display: flex; flex-direction: column; }
+.tile .label { min-height: 2.6em; display: flex; align-items: flex-start; }
+.tile .sub { margin-top: auto; padding-top: 4px; }
+.tile.ig { border-left-color: #E1306C; }
+.tile.li { border-left-color: #0A66C2; }
+.tile.meta { border-left-color: #1877F2; }
+.tile.featured { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); }
+.tile.ig.featured { background: linear-gradient(135deg, #fef3f6 0%, #fce7f3 100%); }
+.tile.li.featured { background: linear-gradient(135deg, #eff6ff 0%, #cde1f5 100%); }
+.tile.meta.featured { background: linear-gradient(135deg, #eff6ff 0%, #c7ddfa 100%); }
+.tile .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.tile .value { font-size: 26px; font-weight: 700; color: #1F4E79; margin: 4px 0; }
+.tile .sub { font-size: 11px; color: #64748b; }
+.delta { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+.delta.up { background: #dcfce7; color: #166534; }
+.delta.down { background: #fee2e2; color: #991b1b; }
+.delta.flat { background: #e2e8f0; color: #475569; }
+.chart-wrap { position: relative; height: 280px; margin-top: 12px; }
+.chart-wrap.tall { height: 360px; }
+.chart-wrap.short { height: 220px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media(max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+th { background: #1F4E79; color: white; padding: 10px; text-align: left; font-weight: 600; font-size: 12px; }
+th.right, td.right { text-align: right; }
+td { padding: 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+tr:nth-child(even) td { background: #f8fafc; }
+.flag-row { padding: 12px 16px; margin: 8px 0; border-radius: 8px; display: flex; align-items: start; gap: 12px; }
+.flag-row .icon { font-size: 18px; line-height: 1; flex-shrink: 0; }
+.flag-row .body { flex: 1; }
+.flag-row .body > strong:first-child { display: block; margin-bottom: 4px; }
+.flag-row.green { background: #dcfce7; border-left: 4px solid #16a34a; }
+.flag-row.blue { background: #e0f2fe; border-left: 4px solid #0284c7; }
+.flag-row.yellow { background: #fef3c7; border-left: 4px solid #ca8a04; }
+.flag-row.red { background: #fee2e2; border-left: 4px solid #dc2626; }
+.flag-row.gray { background: #f1f5f9; border-left: 4px solid #94a3b8; }
+.callout { background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px 16px; border-radius: 6px; font-size: 13px; margin: 12px 0; }
+.callout.ig { background: #fef3f6; border-left-color: #E1306C; }
+.callout.li { background: #eff6ff; border-left-color: #0A66C2; }
+.callout.meta { background: #eff6ff; border-left-color: #1877F2; }
+.callout strong { color: #0c4a6e; }
+.callout.ig strong { color: #831843; }
+.callout.li strong { color: #1e3a8a; }
+.callout.meta strong { color: #1e3a8a; }
+.footer { text-align: center; padding: 20px; color: #64748b; font-size: 12px; margin-top: 20px; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: #1F4E79; text-decoration: none; font-size: 13px; font-weight: 600; padding: 8px 14px; background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 8px; transition: all 0.15s ease; border: 1px solid #e2e8f0; }
+.back-link:hover { background: #eff6ff; border-color: #1F4E79; box-shadow: 0 2px 6px rgba(31,78,121,0.12); }
+.back-link:hover .back-arrow { transform: translateX(-3px); }
+.back-link .back-arrow { transition: transform 0.15s ease; display: inline-block; font-size: 16px; line-height: 1; }
+.legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.note-banner { background: #f1f5f9; border-radius: 8px; padding: 12px 16px; font-size: 12px; color: #475569; margin: 12px 0; }
+.note-banner strong { color: #1F4E79; }
+.dormancy-note { background: linear-gradient(90deg, #f1f5f9 0%, #cde1f5 100%); padding: 14px 16px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+.dormancy-note strong { color: #0A66C2; }
+.month-picker { background: white; padding: 14px 18px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.month-picker-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 10px; }
+.month-picker-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.month-pill { padding: 7px 13px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: #64748b; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; white-space: nowrap; font-family: inherit; }
+.month-pill:hover { background: #eff6ff; border-color: #94a3b8; color: #1F4E79; }
+.month-pill.active { background: #1F4E79; border-color: #1F4E79; color: white; box-shadow: 0 2px 6px rgba(31,78,121,0.25); }
+.month-pill.active:hover { background: #173d61; }
+.exec-summary { background: linear-gradient(135deg, #1F4E79 0%, #2c6ba0 100%); color: white; border-radius: 12px; padding: 28px 32px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(31,78,121,0.15); }
+.exec-summary h2 { color: white; font-size: 18px; margin-bottom: 12px; letter-spacing: 0.3px; }
+.exec-summary .lede { font-size: 13px; color: #dbeafe; margin-bottom: 8px; }
+.exec-summary .headline-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 14px; align-items: stretch; }
+.exec-summary .headline { background: rgba(255,255,255,0.10); border-radius: 8px; padding: 14px 16px; border-left: 3px solid #f59e0b; display: flex; flex-direction: column; }
+.exec-summary .headline .num { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.3px; line-height: 1.2; }
+.exec-summary .headline .desc { font-size: 12px; color: #dbeafe; line-height: 1.4; margin-top: auto; }
+@media(max-width: 900px) { .exec-summary .headline-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<a href="index.html" class="back-link"><span class="back-arrow">←</span> All dashboards</a>
+
+<div class="header">
+<h1>Social Media Performance</h1>
+<div class="subtitle">Versatile High-Performance Coatings · Marketing operations view · Last month, 3-month trend, 6-month trend · Updated August 1, 2026</div>
+</div>
+
+<div class="exec-summary">
+  <h2>The three things to take from this dashboard</h2>
+  <p class="lede">July: the giveaway delivered organic reach and follower growth we haven't seen all year. Meta Ads spend held flat but delivery softened. LinkedIn cooled after June's peak.</p>
+  <div class="headline-row">
+    <div class="headline">
+      <div class="num">Giveaway drove +155 followers</div>
+      <div class="desc"><strong>Instagram profile views hit 29,755 — year-high, +34% MoM.</strong> The July 1–31 YETI giveaway pulled follower count from 6,860 to 7,015 and picked up 2 contractor UGC posts amplifying VHPC to their audiences.</div>
+    </div>
+    <div class="headline">
+      <div class="num">Meta Ads delivery softened</div>
+      <div class="desc"><strong>Spend held at $2,462</strong> but reach dropped 17%, impressions -17%, CPM rose to $13.78 (+19%). Same budget, fewer eyeballs. Contractor lead-gen campaign launched Jul 21 — full impact in August.</div>
+    </div>
+    <div class="headline">
+      <div class="num">LinkedIn reach down 3 months straight</div>
+      <div class="desc"><strong>Impressions 1,097 in July — down 48% from June, 58% off the May peak.</strong> Engagement rate is holding at 7.75%, still 3× the February baseline, so the content is working — reach and posting cadence are the constraint. New followers 13, after June's 189 spike.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================== -->
+<!-- BAND 1 — MONTHLY AT A GLANCE -->
+<!-- ====================================================== -->
+<div class="band-label primary">Pick any month — pre-loaded with last 6</div>
+
+<div class="month-picker">
+  <div class="month-picker-label">Showing data for</div>
+  <div class="month-picker-row">
+    <button class="month-pill" data-month="2025-12" onclick="selectMonth('2025-12')">Dec 25</button>
+    <button class="month-pill" data-month="2026-01" onclick="selectMonth('2026-01')">Jan 26</button>
+    <button class="month-pill" data-month="2026-02" onclick="selectMonth('2026-02')">Feb 26</button>
+    <button class="month-pill" data-month="2026-03" onclick="selectMonth('2026-03')">Mar 26</button>
+    <button class="month-pill" data-month="2026-04" onclick="selectMonth('2026-04')">Apr 26</button>
+    <button class="month-pill" data-month="2026-05" onclick="selectMonth('2026-05')">May 26</button>
+    <button class="month-pill" data-month="2026-06" onclick="selectMonth('2026-06')">Jun 26</button>
+    <button class="month-pill active" data-month="2026-07" onclick="selectMonth('2026-07')">Jul 26</button>
+  </div>
+</div>
+
+<div class="section featured">
+<h2 id="sm-section-title">How social performed in June 2026</h2>
+<p class="section-explain">A side-by-side look at what each channel did. Organic activity (Instagram, LinkedIn) and paid activity (Meta Ads across Facebook + Instagram) shown together for context. Pick any month above to switch.</p>
+<div class="two-col">
+
+  <div>
+    <h3 style="font-size:14px;color:#E1306C;margin-bottom:8px;font-weight:700;">📷 INSTAGRAM (organic)</h3>
+    <div class="tile-grid" style="grid-template-columns:repeat(2,1fr);">
+      <div class="tile ig featured"><div class="label">Followers</div><div class="value" id="sm-ig-followers">6,860</div><div class="sub" id="sm-ig-followers-sub">end of June</div></div>
+      <div class="tile ig featured"><div class="label">Profile views</div><div class="value" id="sm-ig-views">22,245</div><div class="sub" id="sm-ig-views-sub">vs prior month</div></div>
+      <div class="tile ig"><div class="label">Reach</div><div class="value" id="sm-ig-reach">3,732</div><div class="sub" id="sm-ig-reach-sub">vs prior month</div></div>
+      <div class="tile ig"><div class="label">Reposts</div><div class="value" id="sm-ig-reposts">1</div><div class="sub" id="sm-ig-reposts-sub">UGC activity</div></div>
+    </div>
+  </div>
+
+  <div>
+    <h3 style="font-size:14px;color:#0A66C2;margin-bottom:8px;font-weight:700;" id="sm-li-heading">💼 LINKEDIN (organic) ⭐</h3>
+    <div class="tile-grid" style="grid-template-columns:repeat(2,1fr);">
+      <div class="tile li featured"><div class="label">New followers</div><div class="value" id="sm-li-newfoll">28</div><div class="sub" id="sm-li-newfoll-sub">gained this month</div></div>
+      <div class="tile li featured"><div class="label">Impressions</div><div class="value" id="sm-li-imps">1,309</div><div class="sub" id="sm-li-imps-sub">vs prior month</div></div>
+      <div class="tile li"><div class="label">Engagement rate</div><div class="value" id="sm-li-eng">15.7%</div><div class="sub" id="sm-li-eng-sub">vs prior month</div></div>
+      <div class="tile li"><div class="label">Posts published</div><div class="value" id="sm-li-posts">7</div><div class="sub" id="sm-li-posts-sub">vs prior month</div></div>
+    </div>
+  </div>
+
+</div>
+
+<h3 style="font-size:14px;color:#1877F2;margin:18px 0 8px;font-weight:700;" id="sm-meta-heading">📘 META ADS (paid across Facebook + Instagram + Threads)</h3>
+<div class="tile-grid">
+  <div class="tile meta featured"><div class="label">Spend</div><div class="value" id="sm-meta-spend">$2,507</div><div class="sub" id="sm-meta-spend-sub">vs prior month</div></div>
+  <div class="tile meta featured"><div class="label">Impressions</div><div class="value" id="sm-meta-imps">216K</div><div class="sub" id="sm-meta-imps-sub">vs prior month</div></div>
+  <div class="tile meta featured"><div class="label">CPM</div><div class="value" id="sm-meta-cpm">$10.93</div><div class="sub" id="sm-meta-cpm-sub">vs prior month</div></div>
+  <div class="tile meta"><div class="label">Reach</div><div class="value" id="sm-meta-reach">110K</div><div class="sub" id="sm-meta-reach-sub">vs prior month</div></div>
+  <div class="tile meta"><div class="label">Link clicks</div><div class="value" id="sm-meta-clicks">6,851</div><div class="sub" id="sm-meta-clicks-sub">FB + IG total</div></div>
+  <div class="tile meta"><div class="label">Actions (all events)</div><div class="value" id="sm-meta-conv">262,602</div><div class="sub" id="sm-meta-conv-sub">vs prior month</div></div>
+</div>
+
+<div class="callout" style="background:#dcfce7;border-left-color:#16a34a;"><strong>May quick read:</strong> Best social month of the year. <strong>LinkedIn surged</strong> — impressions +137%, engagement rate 15.7% (year-high), 7 posts, and the Training Summit post hit a stunning <strong>74.6% engagement rate</strong>. <strong>Meta Ads got more efficient</strong> — same budget, CPM down 17%, impressions +19%, reach +22%. <strong>Instagram doubled its posting cadence</strong> (8 posts vs 4), added 2 reels, profile views up 27%. The case-study content template is clearly working across platforms.</div>
+</div>
+
+<!-- ====================================================== -->
+<!-- INSTAGRAM -->
+<!-- ====================================================== -->
+<div class="band-label platform-ig">Instagram organic — 6-month trend</div>
+
+<div class="section ig">
+<h2>Instagram — reach and profile-view trend <span class="platform-tag ig">organic</span></h2>
+<p class="section-explain">Profile views are the more stable signal at VHPC's scale; reach swings depending on individual posts going wider. Six months of monthly data so you can see the seasonality.</p>
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Monthly reach + profile views</h3>
+    <div class="chart-wrap"><canvas id="igTrend"></canvas></div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">3-month vs 6-month context</h3>
+    <table>
+      <thead><tr><th>Metric</th><th class="right">3-mo avg</th><th class="right">6-mo avg</th></tr></thead>
+      <tbody>
+        <tr><td>Reach / mo</td><td class="right">12,145</td><td class="right">12,855</td></tr>
+        <tr><td>Profile views / mo</td><td class="right">23,898</td><td class="right">30,403</td></tr>
+        <tr><td>Reposts / mo</td><td class="right">9.3</td><td class="right">5.0</td></tr>
+        <tr><td>Posts published</td><td class="right">~877 total</td><td class="right">snapshot</td></tr>
+      </tbody>
+    </table>
+    <p class="note-banner"><strong>Pattern:</strong> Reposts are climbing — users are sharing VHPC content more in the last 3 months (avg 9.3/mo) than the 6-month avg (5/mo). That's earned amplification worth doubling down on.</p>
+  </div>
+</div>
+<div class="callout ig"><strong>What to watch:</strong> April's reach drop (4,180 vs the 6-mo avg of 12,855) is a one-month dip following a strong March (20,220). Either content velocity slowed, or the algorithm pulled back after a peak. Worth checking posting cadence — if you posted fewer times, that explains it.</div>
+</div>
+
+
+<!-- ====================================================== -->
+<!-- LINKEDIN — REACTIVATION STORY -->
+<!-- ====================================================== -->
+<div class="band-label platform-li">LinkedIn organic — channel reactivation story</div>
+
+<div class="section li">
+<h2>LinkedIn — the channel woke up in April <span class="platform-tag li">organic</span></h2>
+
+<div class="dormancy-note"><strong>Context:</strong> VHPC's LinkedIn was largely dormant from Nov 2025 through March 2026 — only 1 post in November, then five months of mostly inherited reach from old posts and follower notifications. In April, the channel was reactivated with 4 posts. The numbers below should be read as a starting baseline, not a "trend."</div>
+
+<div class="dormancy-note" style="background:#fef3c7;border-left-color:#ca8a04;"><strong>Data restatement — August 18, 2026.</strong> The impressions series on this page was previously understated for February through June (roughly half the true figure), and June's new-follower count was showing 19 instead of 189. Both were stale-pull errors, now corrected against LinkedIn PageStatistics. The trend charts also stopped at June because the chart's month axis was never extended past six months; they now run through August. LinkedIn data has been flowing normally the whole time — nothing was broken on the LinkedIn side.</div>
+
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Monthly impressions + engagement rate</h3>
+    <div class="chart-wrap"><canvas id="liTrend"></canvas></div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">New followers per month</h3>
+    <div class="chart-wrap"><canvas id="liFollowers"></canvas></div>
+  </div>
+</div>
+
+<table>
+  <thead><tr><th>Month</th><th class="right">Posts</th><th class="right">Impressions</th><th class="right">Engagements</th><th class="right">Engagement rate</th><th class="right">New followers</th></tr></thead>
+  <tbody>
+    <tr><td>Nov 2025</td><td class="right">1</td><td class="right">237</td><td class="right">0</td><td class="right">0.0%</td><td class="right">11</td></tr>
+    <tr><td>Dec 2025</td><td class="right">0</td><td class="right">217</td><td class="right">8</td><td class="right">3.7%</td><td class="right">17</td></tr>
+    <tr><td>Jan 2026</td><td class="right">0</td><td class="right">129</td><td class="right">3</td><td class="right">2.3%</td><td class="right">6</td></tr>
+    <tr><td>Feb 2026</td><td class="right">0</td><td class="right">84</td><td class="right">2</td><td class="right">2.4%</td><td class="right">6</td></tr>
+    <tr><td>Mar 2026</td><td class="right">0</td><td class="right">254</td><td class="right">1</td><td class="right">0.4%</td><td class="right"><strong>75</strong> ⭐</td></tr>
+    <tr style="background:#dcfce7 !important;"><td><strong>Apr 2026</strong></td><td class="right"><strong>4</strong></td><td class="right"><strong>553</strong></td><td class="right"><strong>50</strong></td><td class="right"><strong>9.0%</strong></td><td class="right"><strong>7</strong></td></tr>
+  </tbody>
+</table>
+
+<div class="callout li"><strong>What April proved:</strong> Posting consistently is the unlock. 4 posts → impressions doubled (553 vs Mar 254), engagement rate hit 9.0% (vs the 0.4-3.7% range when silent), and the pickleball post alone drove 68 clicks (43% engagement rate). The unexplained piece: March saw 75 new followers despite zero posts — likely a lagged effect from older content or external referrals. Worth investigating where they came from.</div>
+</div>
+
+
+<!-- ====================================================== -->
+<!-- META ADS PAID -->
+<!-- ====================================================== -->
+<div class="band-label platform-meta">Meta Ads paid — Facebook + Instagram</div>
+
+<div class="section meta">
+<h2>Meta Ads — paid social spend and performance <span class="platform-tag meta">paid</span></h2>
+<p class="section-explain">Spend split across Facebook (~88-91% of budget) and Instagram (~9-12%) with trivial amounts on Messenger and Threads. Conversions are platform-defined pixel events (view content, lead, etc.) — not 1:1 with NetSuite new customers. Use this for engagement and channel mix; use the Leadership dashboard for accounting-source spend totals.</p>
+
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Monthly spend — Facebook vs Instagram</h3>
+    <div class="chart-wrap"><canvas id="metaSpend"></canvas></div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Monthly impressions — Facebook vs Instagram</h3>
+    <div class="chart-wrap"><canvas id="metaImpressions"></canvas></div>
+  </div>
+</div>
+
+<h3 style="font-size:14px;color:#475569;margin:18px 0 8px;">Full 6-month detail</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Month</th>
+      <th>Platform</th>
+      <th class="right">Spend</th>
+      <th class="right">Impressions</th>
+      <th class="right">Reach</th>
+      <th class="right">Link clicks</th>
+      <th class="right">CPM</th>
+      <th class="right">Conversions*</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Nov 2025</td><td>Facebook</td><td class="right">$3,148</td><td class="right">206,369</td><td class="right">70,679</td><td class="right">6,625</td><td class="right">$15.25</td><td class="right">4,792</td></tr>
+    <tr><td>Nov 2025</td><td>Instagram</td><td class="right">$375</td><td class="right">17,683</td><td class="right">3,184</td><td class="right">243</td><td class="right">$21.23</td><td class="right">1,823</td></tr>
+    <tr><td>Dec 2025</td><td>Facebook</td><td class="right">$3,189</td><td class="right">399,386</td><td class="right">253,259</td><td class="right">8,696</td><td class="right">$7.98</td><td class="right">3,955</td></tr>
+    <tr><td>Dec 2025</td><td>Instagram</td><td class="right">$313</td><td class="right">40,556</td><td class="right">30,035</td><td class="right">232</td><td class="right">$7.72</td><td class="right">1,391</td></tr>
+    <tr><td>Jan 2026</td><td>Facebook</td><td class="right">$3,119</td><td class="right">310,580</td><td class="right">130,676</td><td class="right">9,844</td><td class="right">$10.04</td><td class="right">4,600</td></tr>
+    <tr><td>Jan 2026</td><td>Instagram</td><td class="right">$374</td><td class="right">15,837</td><td class="right">2,604</td><td class="right">120</td><td class="right">$23.62</td><td class="right">1,598</td></tr>
+    <tr><td>Feb 2026</td><td>Facebook</td><td class="right">$3,098</td><td class="right">411,197</td><td class="right">231,382</td><td class="right">9,033</td><td class="right">$7.53</td><td class="right">5,405</td></tr>
+    <tr><td>Feb 2026</td><td>Instagram</td><td class="right">$380</td><td class="right">23,247</td><td class="right">11,759</td><td class="right">945</td><td class="right">$16.36</td><td class="right">1,132</td></tr>
+    <tr><td>Mar 2026</td><td>Facebook</td><td class="right">$3,029</td><td class="right">281,037</td><td class="right">140,037</td><td class="right">7,755</td><td class="right">$10.78</td><td class="right">6,755</td></tr>
+    <tr><td>Mar 2026</td><td>Instagram</td><td class="right">$464</td><td class="right">40,753</td><td class="right">23,229</td><td class="right">1,541</td><td class="right">$11.39</td><td class="right">1,848</td></tr>
+    <tr style="background:#dbeafe !important;"><td><strong>Apr 2026</strong></td><td>Facebook</td><td class="right"><strong>$2,278</strong></td><td class="right"><strong>185,221</strong></td><td class="right"><strong>79,833</strong></td><td class="right"><strong>6,270</strong></td><td class="right"><strong>$12.30</strong></td><td class="right"><strong>7,174</strong></td></tr>
+    <tr style="background:#dbeafe !important;"><td><strong>Apr 2026</strong></td><td>Instagram</td><td class="right"><strong>$229</strong></td><td class="right"><strong>10,902</strong></td><td class="right"><strong>3,948</strong></td><td class="right"><strong>331</strong></td><td class="right"><strong>$21.03</strong></td><td class="right"><strong>1,247</strong></td></tr>
+  </tbody>
+</table>
+<p class="note-banner"><strong>* Conversions</strong> = Meta Ads platform-defined "offsite_conversions" — includes pixel events of multiple types (view content, lead, purchase). Not a direct count of NetSuite new customers. Use as a directional engagement signal.</p>
+
+<div class="callout meta"><strong>3-month vs 6-month efficiency:</strong> Facebook CPM ranged $7.53–$15.25 over the 6 months. Best months were Dec ($7.98) and Feb ($7.53). April was higher at $12.30 despite lower spend — when budgets shrink, you typically get less competitive auction efficiency. Instagram CPM is consistently higher ($7.72–$23.62) but volume is much smaller, so it doesn't materially move the average. Worth testing more IG budget at lower CPMs to see if scale-up is possible.</div>
+</div>
+
+<!-- ====================================================== -->
+<!-- WATCH ITEMS -->
+<!-- ====================================================== -->
+<div class="band-label primary">Watch items + recommendations</div>
+
+<div class="section">
+<h2>What to act on this month</h2>
+<p class="section-explain">A short list of things the data surfaces. Color coded by urgency.</p>
+
+<div class="flag-row yellow"><div class="icon">🟡</div><div class="body"><strong>LinkedIn reach is down three months running — May was the peak</strong><span>Impressions: 2,606 (May) → 2,113 (Jun) → 1,097 (Jul) → 370 (Aug through the 18th). That's 58% off the peak. Engagement <em>rate</em> is actually at a record 21.1% in August, so the audience that still sees the content is more engaged than ever — the problem is reach and cadence, not content quality. Follower growth has stalled too: 189 in June, 13 in July, 0 so far in August. Recommend returning to the 5–7 post/month cadence that produced the May peak.</span></div></div>
+
+<div class="flag-row blue"><div class="icon">🔵</div><div class="body"><strong>Pickleball post template was the breakout — replicate it</strong><span>The same pickleball content performed best on both Instagram (542 views, highest of the month) and LinkedIn (43% engagement rate). The pattern: real customer install + specific product spec + clean project photos. Aim for 2-3 of these case-study posts per month across both platforms.</span></div></div>
+
+<div class="flag-row yellow"><div class="icon">🟡</div><div class="body"><strong>Instagram reach dropped 79% in April — investigate</strong><span>Reach fell from 20,220 in March to 4,180 in April. Profile views also down 36%. Check: did posting cadence drop? Did a specific viral post in March account for most of that 20K, and April is just regression to mean? Worth pulling daily IG data for both months to see if it's content-frequency related.</span></div></div>
+
+<div class="flag-row yellow"><div class="icon">🟡</div><div class="body"><strong>Two unexplained follower spikes with no matching posts — March (74) and June (189)</strong><span>February: 6 new followers. March: 74 despite zero posts. June: 189 on 5 posts, then July back to 13 and August to 0. Both spikes are far outside the normal 6–29 range. Possible causes: a rep linking the page from their profile, an external tag, or a trade-show/partner referral. Worth 15 minutes in LinkedIn's follower-source report — if either spike has a repeatable cause, it's the cheapest growth lever on the page.</span></div></div>
+
+<div class="flag-row yellow"><div class="icon">🟡</div><div class="body"><strong>Instagram is giving back the giveaway followers</strong><span>Followers peaked at 7,015 at the end of July after the giveaway added 155. As of August 18 the count is 6,903 — a net loss of 112, which is more than the giveaway gained. Giveaway follower churn is normal, but it means the +155 headline should not be treated as durable audience growth. Profile views are holding up better (11,929 in the first 18 days, tracking near July's 29,755 pace).</span></div></div>
+
+<div class="flag-row blue"><div class="icon">🔵</div><div class="body"><strong>Test Instagram format diversity</strong><span>All 4 top April posts were carousels. Reels reach tends to be 5-10x higher than feed posts on Instagram in 2026. Worth running a 30-day test: 50% reels, 50% carousels. Track which format earns higher reach per post.</span></div></div>
+
+<div class="flag-row blue"><div class="icon">🔵</div><div class="body"><strong>Meta Ads budget shifted down 28% in April — was that intentional?</strong><span>April spend was $2,514 vs $3,500/mo earlier. CPM rose to $12.30 (vs $7.53-10.78 prior months) suggesting less efficient auctions at lower budget. If the budget cut was intentional, fine. If accidental (campaign ran out, cap hit), worth refilling.</span></div></div>
+</div>
+
+<div class="footer">
+<div style="background:#fef3c7; padding:10px 16px; border-radius:6px; margin-bottom:16px; color:#78350f; font-weight:600;">⚠ Confidential — Versatile High-Performance Coatings internal use only. Do not redistribute.</div>
+Data sources: Instagram Insights (organic) · LinkedIn Pages (organic) · Meta Ads (paid) — pulled via Supermetrics.<br>
+Period: January 1, 2026 – June 30, 2026. Account scope: VHPC only (excludes Closets Your Way and GarageExperts pages).<br>
+Refresh cadence: monthly. Next refresh after May data closes.
+</div>
+
+</div>
+
+<script>
+// Aug 26 is a PARTIAL month — data through Aug 18, 2026. Marked with * on the axis.
+const MONTHS = ['Jan 26','Feb 26','Mar 26','Apr 26','May 26','Jun 26','Jul 26','Aug 26*'];
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, Arial, sans-serif';
+Chart.defaults.font.size = 11;
+
+// Instagram trend
+const IG_REACH = [5244, 12035, 20220, 4180, 4112, 3732, 4267, null];
+const IG_VIEWS = [24925, 25169, 28305, 18219, 23183, 22245, 29755, 11929];
+
+new Chart(document.getElementById('igTrend'), {
+  type: 'line',
+  data: {
+    labels: MONTHS,
+    datasets: [
+      {label: 'Profile views', data: IG_VIEWS, borderColor: '#E1306C', backgroundColor: 'rgba(225,48,108,0.1)', borderWidth: 2.5, tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: '#E1306C', yAxisID: 'y'},
+      {label: 'Reach', data: IG_REACH, borderColor: '#F58529', backgroundColor: 'rgba(245,133,41,0.1)', borderWidth: 2.5, tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: '#F58529', yAxisID: 'y'}
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {legend: {position: 'top', labels: {boxWidth: 14, padding: 8}}},
+    scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: {callback: v => v >= 1000 ? (v/1000) + 'K' : v} }, x: { grid: { display: false } } }
+  }
+});
+
+// LinkedIn trend - dual axis
+// RESTATED 2026-08-18 from LinkedIn PageStatistics (page_impressions / page_engagement_rate).
+// Feb–Jun impressions were previously understated ~2x by a stale partial-month pull.
+const LI_IMPRESSIONS = [129, 168, 508, 1652, 2606, 2113, 1097, 370];
+const LI_ENGAGEMENT_RATE = [2.33, 2.38, 0.20, 8.84, 14.31, 7.43, 7.75, 21.08];
+
+new Chart(document.getElementById('liTrend'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS,
+    datasets: [
+      {type: 'bar', label: 'Impressions', data: LI_IMPRESSIONS, backgroundColor: '#0A66C2', borderRadius: 4, yAxisID: 'y', order: 2},
+      {type: 'line', label: 'Engagement rate %', data: LI_ENGAGEMENT_RATE, borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.1)', borderWidth: 2.5, tension: 0.3, fill: false, pointRadius: 4, pointBackgroundColor: '#dc2626', yAxisID: 'y1', order: 1}
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {legend: {position: 'top', labels: {boxWidth: 14, padding: 8}}},
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#e2e8f0' }, title: {display: true, text: 'Impressions'} },
+      y1: { beginAtZero: true, max: 10, position: 'right', grid: { display: false }, title: {display: true, text: 'Engagement %'}, ticks: {callback: v => v + '%'} },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// LinkedIn followers gained
+// RESTATED: Jun was previously 19 in this array — the correct figure is 189.
+const LI_NEW_FOLLOWERS = [6, 6, 74, 7, 29, 189, 13, 0];
+new Chart(document.getElementById('liFollowers'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS,
+    datasets: [{ label: 'New followers', data: LI_NEW_FOLLOWERS, backgroundColor: LI_NEW_FOLLOWERS.map(v => v >= 50 ? '#dc2626' : '#0A66C2'), borderRadius: 4 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => c.parsed.y + ' new followers' + (c.parsed.y >= 50 ? ' (anomaly — investigate)' : '')}}},
+    scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' } }, x: { grid: { display: false } } }
+  }
+});
+
+// Meta spend by platform
+const FB_SPEND = [3118.68, 3098.19, 3028.71, 2278.39, 2239.75, 2211.18, 2186.40, 1229.65];
+const IG_SPEND = [374.14, 380.43, 464.27, 229.22, 260.66, 292.59, 272.76, 172.62];
+
+new Chart(document.getElementById('metaSpend'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS,
+    datasets: [
+      {label: 'Facebook', data: FB_SPEND, backgroundColor: '#1877F2', borderRadius: 3, stack: 'a'},
+      {label: 'Instagram', data: IG_SPEND, backgroundColor: '#E1306C', borderRadius: 3, stack: 'a'}
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {legend: {position: 'top', labels: {boxWidth: 14, padding: 8}}, tooltip: {callbacks: {label: c => c.dataset.label + ': $' + c.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}}},
+    scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: {callback: v => '$' + (v/1000).toFixed(1) + 'K'}, stacked: true }, x: { grid: { display: false }, stacked: true } }
+  }
+});
+
+// Meta impressions by platform
+const FB_IMPS = [310580, 411197, 281037, 185221, 220234, 202329, 166219, 73809];
+const IG_IMPS = [15837, 23247, 40753, 10902, 13295, 13363, 12285, 6542];
+
+new Chart(document.getElementById('metaImpressions'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS,
+    datasets: [
+      {label: 'Facebook', data: FB_IMPS, backgroundColor: '#1877F2', borderRadius: 3, stack: 'a'},
+      {label: 'Instagram', data: IG_IMPS, backgroundColor: '#E1306C', borderRadius: 3, stack: 'a'}
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {legend: {position: 'top', labels: {boxWidth: 14, padding: 8}}, tooltip: {callbacks: {label: c => c.dataset.label + ': ' + c.parsed.y.toLocaleString() + ' impressions'}}},
+    scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: {callback: v => (v/1000).toFixed(0) + 'K'}, stacked: true }, x: { grid: { display: false }, stacked: true } }
+  }
+});
+
+// ============================================================
+// MONTH PICKER — Social Media at-a-glance section (last 6 months)
+// ============================================================
+const SM_DATA = {
+  "2025-12": { label:"December 2025", prev:"Nov", isMay:false,
+    ig:{followers:6555, fol_note:"end of Dec", views:53899, views_prev:31903, reach:31594, reach_prev:3854, reposts:1, reposts_note:"low UGC activity"},
+    li:{newfoll:17, newfoll_note:"gained Dec", imps:217, imps_prev:237, eng:3.69, eng_prev:0.0, posts:0, posts_prev:1},
+    meta:{spend:3502, spend_prev:3524, imps_k:440, imps_prev_k:225, cpm:7.91, cpm_prev:15.50, reach_k:283, reach_prev_k:74, clicks:8928, conv:5366, conv_prev:6615} },
+  "2026-01": { label:"January 2026", prev:"Dec", isMay:false,
+    ig:{followers:6580, fol_note:"end of Jan", views:24925, views_prev:53899, reach:5244, reach_prev:31594, reposts:0, reposts_note:"none this month"},
+    li:{newfoll:6, newfoll_note:"gained Jan", imps:129, imps_prev:217, eng:2.33, eng_prev:3.69, posts:0, posts_prev:0},
+    meta:{spend:3493, spend_prev:3502, imps_k:326, imps_prev_k:440, cpm:10.72, cpm_prev:7.91, reach_k:133, reach_prev_k:283, clicks:9964, conv:6200, conv_prev:5366} },
+  "2026-02": { label:"February 2026", prev:"Jan", isMay:false,
+    ig:{followers:6595, fol_note:"end of Feb", views:25169, views_prev:24925, reach:12035, reach_prev:5244, reposts:9, reposts_note:"climbing"},
+    li:{newfoll:6, newfoll_note:"gained Feb", imps:168, imps_prev:129, eng:2.38, eng_prev:2.33, posts:0, posts_prev:0},
+    meta:{spend:3479, spend_prev:3493, imps_k:434, imps_prev_k:326, cpm:8.00, cpm_prev:10.72, reach_k:243, reach_prev_k:133, clicks:9978, conv:6537, conv_prev:6200} },
+  "2026-03": { label:"March 2026", prev:"Feb", isMay:false,
+    ig:{followers:6620, fol_note:"end of Mar", views:28305, views_prev:25169, reach:20220, reach_prev:12035, reposts:13, reposts_note:"6-mo high"},
+    li:{newfoll:74, newfoll_note:"74 — anomaly, 0 posts", imps:508, imps_prev:168, eng:0.20, eng_prev:2.38, posts:0, posts_prev:0},
+    meta:{spend:3494, spend_prev:3479, imps_k:322, imps_prev_k:434, cpm:11.13, cpm_prev:8.00, reach_k:163, reach_prev_k:243, clicks:9296, conv:8603, conv_prev:6537} },
+  "2026-04": { label:"April 2026", prev:"March", isMay:false,
+    ig:{followers:6639, fol_note:"end of April", views:18219, views_prev:28305, reach:4180, reach_prev:20220, reposts:6, reposts_note:"slight pullback"},
+    li:{newfoll:7, newfoll_note:"gained April", imps:1652, imps_prev:508, eng:8.84, eng_prev:0.20, posts:4, posts_prev:0},
+    meta:{spend:2514, spend_prev:3494, imps_k:196, imps_prev_k:322, cpm:12.30, cpm_prev:11.13, reach_k:84, reach_prev_k:163, clicks:6601, conv:8421, conv_prev:8603} },
+  "2026-05": { label:"May 2026", prev:"April", isMay:false,
+    ig:{followers:6640, fol_note:"end of May", views:23183, views_prev:18219, reach:4112, reach_prev:4180, reposts:8, reposts_note:"strong UGC month"},
+    li:{newfoll:29, newfoll_note:"gained May", imps:2606, imps_prev:1652, eng:14.31, eng_prev:8.84, posts:7, posts_prev:4},
+    meta:{spend:2504, spend_prev:2514, imps_k:234, imps_prev_k:196, cpm:10.71, cpm_prev:12.30, reach_k:102, reach_prev_k:84, clicks:6830, conv:271689, conv_prev:8421} },
+  "2026-06": { label:"June 2026", prev:"May", isMay:false,
+    ig:{followers:6860, fol_note:"end of June", views:22245, views_prev:23183, reach:3732, reach_prev:4112, reposts:1, reposts_note:"low UGC month"},
+    li:{newfoll:189, newfoll_note:"gained June (big spike)", imps:2113, imps_prev:2606, eng:7.43, eng_prev:14.31, posts:5, posts_prev:7},
+    meta:{spend:2507, spend_prev:2504, imps_k:216, imps_prev_k:234, cpm:11.61, cpm_prev:10.71, reach_k:109, reach_prev_k:102, clicks:8885, conv:262602, conv_prev:271689} },
+  "2026-07": { label:"July 2026", prev:"June", isMay:false,
+    ig:{followers:7015, fol_note:"end of July (+155 from giveaway)", views:29755, views_prev:22245, reach:4267, reach_prev:3732, reposts:3, reposts_note:"2 contractor UGC posts"},
+    li:{newfoll:13, newfoll_note:"gained July", imps:1097, imps_prev:2113, eng:7.75, eng_prev:7.43, posts:4, posts_prev:5},
+    meta:{spend:2462, spend_prev:2507, imps_k:179, imps_prev_k:216, cpm:13.78, cpm_prev:11.61, reach_k:90, reach_prev_k:109, clicks:6978, conv:0, conv_prev:262602} }
+};
+
+function smFmt$(n) { return '$' + Math.round(n).toLocaleString(); }
+function smFmtK(n) { return Math.round(n).toLocaleString() + 'K'; }
+function smDelta(curr, prev, isPct, isPP) {
+  if (prev === 0 && curr === 0) return '<span class="delta flat">flat</span>';
+  if (prev === 0) return '<span class="delta up">new</span>';
+  const diff = curr - prev;
+  const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+  const sign = diff > 0 ? '+' : (diff < 0 ? '−' : '');
+  if (isPP || isPct) {
+    const pct = Math.abs((diff/prev) * 100);
+    return `<span class="delta ${cls}">${sign}${pct.toFixed(0)}%</span>`;
+  }
+  return '';
+}
+
+function selectMonth(monthKey) {
+  const d = SM_DATA[monthKey];
+  if (!d) return;
+  document.querySelectorAll('.month-pill').forEach(p => p.classList.toggle('active', p.dataset.month === monthKey));
+
+  // Section title
+  document.getElementById('sm-section-title').textContent = `How social performed in ${d.label}`;
+
+  // Instagram
+  document.getElementById('sm-ig-followers').textContent = d.ig.followers.toLocaleString();
+  document.getElementById('sm-ig-followers-sub').textContent = d.ig.fol_note;
+  document.getElementById('sm-ig-views').textContent = d.ig.views.toLocaleString();
+  document.getElementById('sm-ig-views-sub').innerHTML = `vs ${d.prev} ${d.ig.views_prev.toLocaleString()} ${smDelta(d.ig.views, d.ig.views_prev, true)}`;
+  document.getElementById('sm-ig-reach').textContent = d.ig.reach.toLocaleString();
+  document.getElementById('sm-ig-reach-sub').innerHTML = `vs ${d.prev} ${d.ig.reach_prev.toLocaleString()} ${smDelta(d.ig.reach, d.ig.reach_prev, true)}`;
+  document.getElementById('sm-ig-reposts').textContent = d.ig.reposts;
+  document.getElementById('sm-ig-reposts-sub').textContent = d.ig.reposts_note;
+
+  // LinkedIn — star only on May (the breakout month)
+  document.getElementById('sm-li-heading').innerHTML = '💼 LINKEDIN (organic)' + (d.isMay ? ' ⭐' : '');
+  document.getElementById('sm-li-newfoll').textContent = d.li.newfoll;
+  document.getElementById('sm-li-newfoll-sub').textContent = d.li.newfoll_note;
+  document.getElementById('sm-li-imps').textContent = d.li.imps.toLocaleString();
+  document.getElementById('sm-li-imps-sub').innerHTML = `vs ${d.prev} ${d.li.imps_prev.toLocaleString()} ${smDelta(d.li.imps, d.li.imps_prev, true)}`;
+  document.getElementById('sm-li-eng').textContent = d.li.eng.toFixed(1) + '%';
+  document.getElementById('sm-li-eng-sub').innerHTML = `vs ${d.prev} ${d.li.eng_prev.toFixed(1)}% ${smDelta(d.li.eng, d.li.eng_prev, false, true)}`;
+  document.getElementById('sm-li-posts').textContent = d.li.posts;
+  document.getElementById('sm-li-posts-sub').textContent = `vs ${d.prev} ${d.li.posts_prev}`;
+
+  // Meta Ads
+  document.getElementById('sm-meta-spend').textContent = smFmt$(d.meta.spend);
+  document.getElementById('sm-meta-spend-sub').innerHTML = `vs ${d.prev} ${smFmt$(d.meta.spend_prev)} ${smDelta(d.meta.spend, d.meta.spend_prev, true)}`;
+  document.getElementById('sm-meta-imps').textContent = smFmtK(d.meta.imps_k);
+  document.getElementById('sm-meta-imps-sub').innerHTML = `vs ${d.prev} ${smFmtK(d.meta.imps_prev_k)} ${smDelta(d.meta.imps_k, d.meta.imps_prev_k, true)}`;
+  document.getElementById('sm-meta-cpm').textContent = '$' + d.meta.cpm.toFixed(2);
+  document.getElementById('sm-meta-cpm-sub').innerHTML = `vs ${d.prev} $${d.meta.cpm_prev.toFixed(2)} ${smDelta(d.meta.cpm_prev, d.meta.cpm, true)}`;
+  document.getElementById('sm-meta-reach').textContent = smFmtK(d.meta.reach_k);
+  document.getElementById('sm-meta-reach-sub').innerHTML = `vs ${d.prev} ${smFmtK(d.meta.reach_prev_k)} ${smDelta(d.meta.reach_k, d.meta.reach_prev_k, true)}`;
+  document.getElementById('sm-meta-clicks').textContent = d.meta.clicks.toLocaleString();
+  document.getElementById('sm-meta-clicks-sub').textContent = 'FB + IG total';
+  document.getElementById('sm-meta-conv').textContent = d.meta.conv.toLocaleString();
+  document.getElementById('sm-meta-conv-sub').innerHTML = `vs ${d.prev} ${d.meta.conv_prev.toLocaleString()} ${smDelta(d.meta.conv, d.meta.conv_prev, true)}`;
+}
+
+// Initialize with July 2026
+selectMonth('2026-07');
+</script>
+
+</body>
+</html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Versatile HPC — What Marketing is Doing</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f7fa; color: #1a202c; line-height: 1.5; padding: 24px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.header { text-align: center; padding: 24px 0 32px; border-bottom: 3px solid #1F4E79; margin-bottom: 24px; }
+.header h1 { font-size: 28px; color: #1F4E79; margin-bottom: 8px; }
+.header .subtitle { color: #64748b; font-size: 14px; }
+.exec-summary { background: linear-gradient(135deg, #1F4E79 0%, #2c6ba0 100%); color: white; border-radius: 12px; padding: 28px 32px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(31,78,121,0.15); }
+.exec-summary h2 { color: white; font-size: 18px; margin-bottom: 12px; letter-spacing: 0.3px; }
+.exec-summary .lede { font-size: 13px; color: #dbeafe; margin-bottom: 8px; }
+.exec-summary .headline-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 14px; align-items: stretch; }
+.exec-summary .headline { background: rgba(255,255,255,0.10); border-radius: 8px; padding: 14px 16px; border-left: 3px solid #f59e0b; display: flex; flex-direction: column; }
+.exec-summary .headline .num { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.3px; line-height: 1.2; }
+.exec-summary .headline .desc { font-size: 12px; color: #dbeafe; line-height: 1.4; margin-top: auto; }
+@media(max-width: 900px) { .exec-summary .headline-row { grid-template-columns: 1fr; } }
+
+.band-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin: 32px 0 10px; padding-left: 12px; border-left: 4px solid #1F4E79; color: #1F4E79; display: flex; align-items: center; gap: 12px; }
+.status-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.5px; }
+.status-pill.live { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
+.status-pill.upcoming { background: #fef3c7; color: #78350f; border: 1px solid #fcd34d; }
+.status-pill.launched { background: #dbeafe; color: #1e3a8a; border: 1px solid #93c5fd; }
+.status-pill.tracking { background: #e0e7ff; color: #3730a3; border: 1px solid #a5b4fc; }
+
+.section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.section h2 { font-size: 20px; color: #1F4E79; margin-bottom: 8px; }
+.section h2 small { font-size: 13px; color: #64748b; font-weight: 400; margin-left: 8px; }
+.section-explain { color: #64748b; font-size: 13px; margin-bottom: 20px; font-style: italic; }
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 16px; align-items: stretch; }
+.tile { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 18px; border-radius: 10px; border-left: 4px solid #1F4E79; display: flex; flex-direction: column; }
+.tile .label { min-height: 2.6em; display: flex; align-items: flex-start; }
+.tile .sub { margin-top: auto; padding-top: 4px; }
+.tile.good { border-left-color: #16a34a; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
+.tile.warn { border-left-color: #ca8a04; background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); }
+.tile.hero { border-left-color: #1F4E79; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); }
+.tile.pending { border-left-color: #94a3b8; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+.tile .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.tile .value { font-size: 26px; font-weight: 700; color: #1F4E79; margin: 6px 0 2px; line-height: 1.15; }
+.tile.good .value { color: #166534; }
+.tile.warn .value { color: #92400e; }
+.tile.pending .value { color: #94a3b8; font-size: 20px; font-style: italic; font-weight: 600; }
+.tile .sub { font-size: 12px; color: #64748b; line-height: 1.4; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+@media(max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+.callout { background: #e0f2fe; border-left: 4px solid #0284c7; padding: 14px 18px; border-radius: 6px; font-size: 13px; margin: 12px 0; line-height: 1.55; }
+.callout.good { background: #dcfce7; border-left-color: #16a34a; }
+.callout.warn { background: #fef3c7; border-left-color: #ca8a04; }
+.callout.bad { background: #fee2e2; border-left-color: #dc2626; }
+.callout.bad strong { color: #7f1d1d; }
+.tile.bad { border-left-color: #dc2626; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
+.tile.bad .value { color: #991b1b; }
+.callout.hero { background: linear-gradient(90deg,#eff6ff,#dbeafe); border-left-color: #1F4E79; }
+.callout strong { color: #0c4a6e; }
+.callout.good strong { color: #14532d; }
+.callout.warn strong { color: #78350f; }
+.callout.hero strong { color: #1F4E79; }
+
+.needs-input { background: #fef3c7; border: 1.5px dashed #ca8a04; border-radius: 8px; padding: 14px 18px; margin: 12px 0; font-size: 13px; color: #78350f; line-height: 1.55; }
+.needs-input strong { color: #78350f; }
+.needs-input ul { margin: 8px 0 0 22px; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+th { background: #1F4E79; color: white; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 12px; }
+th.right, td.right { text-align: right; }
+td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+tr:nth-child(even) td { background: #f8fafc; }
+tr.pending td { color: #94a3b8; font-style: italic; }
+
+.creative-slot { border: 2px dashed #94a3b8; border-radius: 10px; background: #f8fafc; padding: 32px 16px; text-align: center; color: #64748b; font-size: 13px; line-height: 1.5; }
+.creative-slot .icon { font-size: 32px; margin-bottom: 8px; color: #94a3b8; }
+.creative-slot strong { color: #475569; }
+
+.footer { text-align: center; padding: 20px; color: #64748b; font-size: 12px; margin-top: 20px; }
+.footer .conf { background: #fef3c7; padding: 10px 16px; border-radius: 6px; margin-bottom: 16px; color: #78350f; font-weight: 600; }
+
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: #1F4E79; text-decoration: none; font-size: 13px; font-weight: 600; padding: 8px 14px; background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 8px; border: 1px solid #e2e8f0; transition: all 0.15s ease; }
+.back-link:hover { background: #eff6ff; border-color: #1F4E79; box-shadow: 0 2px 6px rgba(31,78,121,0.12); }
+
+.flow-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; }
+.flow-card .flow-title { font-size: 15px; font-weight: 700; color: #1F4E79; margin-bottom: 4px; }
+.flow-card .flow-trigger { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 10px; }
+.flow-card .flow-desc { font-size: 13px; color: #475569; line-height: 1.5; margin-bottom: 10px; }
+.flow-card .flow-metric { display: flex; justify-content: space-between; padding: 6px 0; font-size: 12px; border-top: 1px dashed #cbd5e1; }
+.flow-card .flow-metric .metric-label { color: #64748b; }
+.flow-card .flow-metric .metric-value { color: #94a3b8; font-style: italic; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<a href="index.html" class="back-link">← All dashboards</a>
+
+<div class="header">
+<h1>What Marketing Is Doing</h1>
+<div class="subtitle">Versatile High-Performance Coatings · Active initiatives, recent wins, and what launches next · Updated August 18, 2026</div>
+</div>
+
+<div class="exec-summary">
+  <h2>The three things marketing has in motion right now</h2>
+  <p class="lede">The contractor lead-gen campaign is delivering below every acquisition benchmark we have. Email nurture is live after a targeting fix. And there is one new budget request for September.</p>
+  <div class="headline-row">
+    <div class="headline">
+      <div class="num">57 contractor leads at $22.80 each</div>
+      <div class="desc"><strong>$1,299 spent since July 11.</strong> That is 23× below our blended cost per customer. The August lookalike audience added to this campaign is producing at parity with the original targeting — $25.03 vs $22.32 CPL — on a fifth of the spend.</div>
+    </div>
+    <div class="headline">
+      <div class="num">Email nurture is live and opening at 46.6%</div>
+      <div class="desc"><strong>The targeting miss is fixed.</strong> Criteria were too narrow to catch newsletter signups, call-ins and imported leads. After a manual push, 133 emails have gone out at roughly double the B2B open benchmark. Clicks are the weak point at 3.8%.</div>
+    </div>
+    <div class="headline">
+      <div class="num">Two asks: $1,000/month + $1,750 one-time</div>
+      <div class="desc"><strong>$1,000/month Google retargeting from September</strong> — a 90-day follow from first purchase aimed at the second order. <strong>Plus $1,750 for a second focus group.</strong> Retargeting keeps one-time buyers visible; the focus group is the only way to learn why two-thirds of them never reorder. Meta budget stays as-is.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================== -->
+<!-- INITIATIVE 1: INSTAGRAM GIVEAWAY -->
+<!-- ====================================================== -->
+<div class="band-label">Initiative 1 &nbsp;<span class="status-pill launched">Completed · July 1 – July 31</span></div>
+
+<div class="section">
+<h2>Instagram giveaway — final results, and what happened after</h2>
+<p class="section-explain">The month-long YETI cooler + drinkware giveaway wrapped July 31. Final Insights numbers reconciled against Supermetrics — this was the strongest single organic asset on the channel this year and drove more follower growth than any single post in memory.</p>
+
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">The campaign at a glance</h3>
+    <div style="font-size:13px;color:#475569;line-height:1.7;">
+      <strong>Target:</strong> Current + prospective Instagram followers, and their networks (via UGC from contractor collab posts).<br>
+      <strong>Offer:</strong> Red YETI Roadie cooler + white YETI water bottle + navy YETI tumbler (all flag-branded).<br>
+      <strong>Window:</strong> July 1 – July 31.<br>
+      <strong>Boost:</strong> $40 boosted across Meta — drove 176 of the 203 profile visits at $0.23 per visit.
+    </div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Final results (July 1–31 window)</h3>
+    <div style="background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border-left:4px solid #16a34a;border-radius:8px;padding:14px 18px;">
+      <div style="font-size:12px;color:#166534;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:4px;">Instagram Insights · full 31-day window</div>
+      <div style="font-size:14px;color:#14532d;line-height:1.55;">
+        <strong>+155 net new followers</strong> — moving IG audience from 6,860 → 7,015. Profile views hit <strong>29,755 (year-high, +34% MoM)</strong>. Reach 4,267.<br>
+        Plus <strong>2 contractor UGC posts</strong> tagged VHPC — earned amplification we didn't pay for. $40 boost across Meta drove 176 of 203 profile visits at $0.23 each.
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="font-size:14px;color:#475569;margin:20px 0 8px;">Results from Instagram Insights</h3>
+<div class="tile-grid">
+  <div class="tile good"><div class="label">Views</div><div class="value">4,134</div><div class="sub">Total impressions on the giveaway post</div></div>
+  <div class="tile good"><div class="label">Reach</div><div class="value">1,825</div><div class="sub">Unique accounts that saw the post</div></div>
+  <div class="tile good"><div class="label">Total interactions</div><div class="value">375</div><div class="sub">240 likes · 63 comments · 34 saves · 29 shares</div></div>
+  <div class="tile hero"><div class="label">New follows</div><div class="value">155</div><div class="sub">Attributed directly to profile activity from this post</div></div>
+  <div class="tile hero"><div class="label">Profile visits</div><div class="value">203</div><div class="sub">Clicked through to the VHPC profile — 76% of them followed</div></div>
+  <div class="tile good"><div class="label">External link taps</div><div class="value">6</div><div class="sub">Clicks to versatile.net directly from the profile</div></div>
+</div>
+
+<div class="callout good"><strong>Why this is a real win:</strong> The June baseline for the whole Instagram channel was 28 new followers for the entire month (per Social Media dashboard). This single giveaway post drove <strong>155 new followers on its own — 5.5× the monthly baseline in one asset</strong>. The 76% follow-through rate from profile visits (155 of 203) is well above what's typical for a giveaway — meaning the audience arriving is real and interested, not just prize-hunters. And 375 interactions on 4,134 views is a <strong>9.1% engagement rate</strong>, which is exceptional for the channel's scale.</div>
+
+<div class="callout hero"><strong>The bigger story — earned amplification from contractors:</strong> Two contractors created their own posts tagging VHPC, and both are performing well organically on their own feeds. This is the outcome that actually matters more than the direct metrics. Contractor-generated content in the wild is what turns a giveaway from "a nice traffic bump" into "brand credibility inside the community we're trying to sell to." Recommend we reach out to both contractors, thank them personally, and open a conversation about a lightweight ongoing collab or affiliate arrangement.</div>
+
+<h3 style="font-size:14px;color:#475569;margin:22px 0 8px;">Three weeks later — the followers are unwinding</h3>
+<div class="callout warn"><strong>The +155 is not holding.</strong> Instagram followers peaked at 7,015 on July 31 and sit at <strong>6,903 as of August 18 — a net loss of 112</strong>, which is more than the giveaway gained. Giveaway follower churn is normal and expected, but it means the +155 should not be carried forward as durable audience growth. The honest framing for leadership: the giveaway bought a spike in <em>attention</em>, not a permanent audience.<br><br><strong>What did hold:</strong> profile views. 29,755 in July, and 11,929 in the first 18 days of August — tracking close to July's pace even without an active promotion. And the two contractor UGC posts are still earning on their own feeds. Attention and credibility persisted; the follower count did not.</div>
+
+<div class="callout hero"><strong>Recommendation — stop running giveaways for follower growth.</strong> Two data points now say the same thing. The giveaway added 155 followers and gave back 112. Meanwhile the pickleball case-study post — a real customer install with product specs and clean photos, costing nothing but time — was the top performer on <em>both</em> Instagram and LinkedIn. Case-study content earns an audience that stays. If we run another giveaway, the goal should be UGC and email capture, not follower count.</div>
+</div>
+
+<!-- ====================================================== -->
+<!-- INITIATIVE 2: CONTRACTOR LEAD GEN CAMPAIGN -->
+<!-- ====================================================== -->
+<div class="band-label">Initiative 2 &nbsp;<span class="status-pill live">Live · launched July 11</span></div>
+
+<div class="section">
+<h2>Contractor lead-gen campaign — Meta platforms</h2>
+<p class="section-explain">A new paid campaign across Facebook and Instagram (Meta Ads) built specifically to reach professional contractors and drive them to the VHPC website. This is our first lead-gen creative that's contractor-targeted at the top of the funnel.</p>
+
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">The campaign at a glance</h3>
+    <div style="font-size:13px;color:#475569;line-height:1.7;">
+      <strong>Target:</strong> Professional contractors on Facebook + Instagram (feed and Stories placements) in focused markets.<br>
+      <strong>Offer:</strong> Free custom quote from a VHPC specialist — CTA: "Get pricing." No discount, direct-response lead capture.<br>
+      <strong>Budget:</strong> $25/day on the focused-market set. <strong>$3,310 total across 6 ad sets</strong> Jul 11 &ndash; Aug 18.<br>
+      <strong>Launched:</strong> July 11, 2026 &middot; Ongoing.
+    </div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">Creative — 9×16 Stories video</h3>
+    <div style="background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%);border:1px solid #cbd5e1;border-radius:12px;padding:24px;height:100%;display:flex;flex-direction:column;justify-content:center;">
+      <div style="font-size:13px;color:#475569;line-height:1.6;">
+        <strong>Format:</strong> 9×16 vertical video optimized for Facebook + Instagram Stories placements.<br>
+        <strong>Hook:</strong> "The pros' go-to floor coatings manufacturer."<br>
+        <strong>Value line:</strong> Stronger bonds, faster ship times — no exceptions.<br>
+        <strong>Visual:</strong> Dramatic before/after — deteriorated concrete on the left transitioning to a coated high-performance surface on the right. Car wheel in frame for real-world context.<br>
+        <strong>CTA:</strong> "Get pricing" — swipe-up / tap-through to versatile.net free-quote form.
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="font-size:14px;color:#475569;margin:20px 0 8px;">Results to date (Jul 11 – Aug 18, 39 days)</h3>
+<p style="font-size:12px;color:#64748b;font-style:italic;margin-bottom:12px;">Campaign: <code>2025-2026-Versatile-CON-Focused_Markets-Lead_Gen-Paid_Social-Meta</code> · objective OUTCOME_LEADS. Figures below cover this campaign only. Our other Meta campaigns run traffic and sales objectives and are reported on the Social Media dashboard.</p>
+
+<div class="tile-grid">
+  <div class="tile good"><div class="label">Contractor lead form submissions</div><div class="value">57</div><div class="sub">On-Meta lead forms · up from 42 at the Aug 9 read</div></div>
+  <div class="tile hero"><div class="label">Cost per lead</div><div class="value">$22.80</div><div class="sub">23× below the $524 blended cost per customer</div></div>
+  <div class="tile good"><div class="label">Campaign spend</div><div class="value">$1,299</div><div class="sub">$25/day base budget · two ad sets</div></div>
+  <div class="tile"><div class="label">Impressions</div><div class="value">28,126</div><div class="sub">610 clicks · 2.17% CTR · $2.13 per click</div></div>
+  <div class="tile good"><div class="label">Lead pace</div><div class="value">1.5 / day</div><div class="sub">57 leads across 39 days, steady since launch</div></div>
+  <div class="tile pending"><div class="label">Lead → customer conversion</div><div class="value">Tracking</div><div class="sub">Leads still maturing; blended benchmark 26%. September refresh will show conversion.</div></div>
+</div>
+
+<h3 style="font-size:14px;color:#475569;margin:22px 0 8px;">The two ad sets inside the campaign — does the new August audience work?</h3>
+<table>
+  <thead>
+    <tr><th>Ad set</th><th class="right">Spend</th><th class="right">Impr.</th><th class="right">Freq</th><th class="right">Leads</th><th class="right">CPL</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Original targeting</strong> — contractor + flooring interests, Advantage+, UT/NM/MO</td>
+      <td class="right">$1,049</td><td class="right">23,544</td><td class="right">2.22</td><td class="right"><strong>47</strong></td><td class="right"><strong>$22.32</strong></td>
+    </tr>
+    <tr>
+      <td><strong>August lookalike</strong> — 3rd-party list (VersatileAugList_2026), same markets</td>
+      <td class="right">$250</td><td class="right">4,582</td><td class="right">2.03</td><td class="right"><strong>10</strong></td><td class="right"><strong>$25.03</strong></td>
+    </tr>
+    <tr style="background:#1F4E79 !important;color:white;font-weight:700;">
+      <td style="color:white;">Campaign total</td>
+      <td class="right" style="color:white;">$1,299</td><td class="right" style="color:white;">28,126</td><td class="right" style="color:white;">—</td><td class="right" style="color:white;">57</td><td class="right" style="color:white;">$22.80</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout good"><strong>The August audience update is working — and the read is available now.</strong> The new third-party lookalike is producing leads at <strong>$25.03 versus the original targeting's $22.32</strong>. That is parity, on a fifth of the spend, in its first few weeks. Frequency is slightly lower too (2.03 vs 2.22), which means it has more room to run before fatigue. There is no need to wait for September to decide whether the audience shift helped: it did. <strong>Recommendation: give the lookalike a larger share of the daily budget and let it prove itself at scale.</strong></div>
+
+<div class="callout"><strong>Why $22.80 matters against our own numbers.</strong> Blended cost per customer is $524. Even at a pessimistic 5% lead-to-customer conversion, these leads imply roughly $456 per customer — still below blended CAC. At the 26% conversion rate our overall funnel runs, it would be about $88. The reason to keep funding this campaign is not the lead count; it is that lead economics this far below CAC are rare, and we have not yet had a month where we could measure the conversion end of it. September gives us that.</div>
+
+<div class="callout warn"><strong>One delivery item to check.</strong> The campaign carries a $25/day budget but has averaged roughly $5.40/day since August 10 — five extra leads and $48 of spend over nine days. The CPL in that recent window is actually better, under $10, so this is not a performance problem; it is an underspend. If delivery is being constrained by audience size or a bid cap, the best-performing acquisition asset we have is being held back. Worth 15 minutes in Ads Manager.</div>
+</div>
+
+<!-- ====================================================== -->
+<!-- INITIATIVE 3: NETSUITE EMAIL FLOWS -->
+<!-- ====================================================== -->
+<div class="band-label">Initiative 3 &nbsp;<span class="status-pill live">Live · 2 of 4 flows reporting</span></div>
+
+<div class="section">
+<h2>Email nurture flows in NetSuite — first real results, after a targeting fix</h2>
+<p class="section-explain">Four automated lifecycle sequences live in NetSuite. Two are now reporting. The first month did not work as designed, for a reason worth understanding.</p>
+
+<div class="callout warn"><strong>What went wrong, and what fixed it.</strong> The new-lead sequence (no purchase) was built on criteria that turned out to be too narrow. It could not see newsletter subscribers, phone-in leads, or leads imported from Meta — which is a large share of the people it was designed to reach. The campaigns also only fire when a <em>new</em> person enters the list, so nobody already sitting in it got picked up. A manual push was required to capture the existing list. Criteria are now corrected and both reporting campaigns are delivering.<br><br><strong>Why this connects to something bigger:</strong> the leads this flow could not see are the same population sitting unassigned in NetSuite — 104 of July's 278 records have no sales rep, are email-only, and convert at 1%. Same root cause, two symptoms. The nurture fix addresses the marketing half; the routing automation still needs work.</div>
+
+<h3 style="font-size:14px;color:#475569;margin:20px 0 8px;">Actual results as of August 18</h3>
+<table>
+  <thead>
+    <tr><th>Campaign · email</th><th class="right">Sent</th><th class="right">Opened</th><th class="right">Open %</th><th class="right">Clicked</th><th class="right">Click %</th><th class="right">Replied</th></tr>
+  </thead>
+  <tbody>
+    <tr style="background:#eff6ff !important;"><td colspan="7"><strong>CAM47 · Web registration — NO purchase</strong> (started Jun 12)</td></tr>
+    <tr><td>You signed up. Now let's talk floors.</td><td class="right">60</td><td class="right">27</td><td class="right"><strong>45.0%</strong></td><td class="right">2</td><td class="right">3.3%</td><td class="right">5</td></tr>
+    <tr><td>The website price isn't the real price.</td><td class="right">32</td><td class="right">15</td><td class="right"><strong>46.9%</strong></td><td class="right">1</td><td class="right">3.1%</td><td class="right">1</td></tr>
+    <tr><td>What's the holdup?</td><td class="right">5</td><td class="right">3</td><td class="right">60.0%</td><td class="right">0</td><td class="right">0%</td><td class="right">0</td></tr>
+    <tr><td>Last one from me.</td><td class="right">1</td><td class="right">1</td><td class="right">100%</td><td class="right">0</td><td class="right">0%</td><td class="right">0</td></tr>
+    <tr style="background:#eff6ff !important;"><td colspan="7"><strong>CAM48 · Web registration — PURCHASED</strong> (started Jun 12)</td></tr>
+    <tr><td>Welcome to Versatile — your coating is on the way</td><td class="right">18</td><td class="right">9</td><td class="right"><strong>50.0%</strong></td><td class="right">1</td><td class="right">5.6%</td><td class="right">0</td></tr>
+    <tr><td>3 prep steps the pros never skip</td><td class="right">17</td><td class="right">7</td><td class="right">41.2%</td><td class="right">1</td><td class="right">5.9%</td><td class="right">0</td></tr>
+    <tr style="background:#1F4E79 !important;color:white;font-weight:700;"><td style="color:white;">Total across both reporting campaigns</td><td class="right" style="color:white;">133</td><td class="right" style="color:white;">62</td><td class="right" style="color:white;">46.6%</td><td class="right" style="color:white;">5</td><td class="right" style="color:white;">3.8%</td><td class="right" style="color:white;">6</td></tr>
+  </tbody>
+</table>
+
+<div class="callout good"><strong>The opens are genuinely strong — 46.6% blended.</strong> Typical B2B lifecycle benchmarks sit in the 20–25% range, so these are roughly double. Subject lines and sender reputation are working, and the audience wants to hear from us. Six replies on 133 sends is also a real signal — those are humans writing back, which is worth more than a click.</div>
+
+<div class="callout warn"><strong>The clicks are the problem — 3.8%.</strong> Strong opens with weak clicks is a specific diagnosis: the subject line earns attention, then the email body fails to give a reason to act. Note that the highest-clicking email is "The website price isn't the real price," which speaks directly to the pricing-opacity frustration the focus group raised — contractors said they have to call in to find out what things actually cost. That is a content signal worth following: the emails that address a real friction point outperform the ones that don't.<br><br><strong>Recommendation:</strong> rewrite the two lowest-clicking emails around a single specific job question, matching what customers are actually asking ChatGPT — "which product for a garage with forklift traffic," not "explore our range."</div>
+
+<div class="callout"><strong>Two flows still have no visible results.</strong> The at-risk and dormant sequences (Flows 3 and 4) cannot be read yet — they only fire on new list entry, so the existing lapsed population needs a manual push like the one that fixed CAM47. Given the workbook identifies <strong>409 lapsed accounts holding roughly $2.78M in lifetime value, with $1.27M concentrated in just 28 accounts</strong>, this is the highest-value unfired campaign we have. Worth prioritising the manual push.</div>
+
+<div class="callout warn"><strong>One thing to verify:</strong> the welcome email's subject line is stored in NetSuite with raw template code visible — <code>&lt;#if customer.firstName?has_content&gt;...</code> including what looks like a malformed default value. The 50% open rate suggests it is rendering correctly in the inbox, but it is worth sending one test to confirm recipients aren't occasionally seeing code in their subject line.</div>
+
+<div class="tile-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+  <div class="flow-card">
+    <div class="flow-title">Flow 1 · New leads <span style="font-weight:600;font-size:12px;color:#64748b;">(4 emails)</span></div>
+    <div class="flow-trigger">Triggered when a lead creates an account but hasn't purchased</div>
+    <div style="font-size:13px;color:#475569;line-height:1.7;margin-top:10px;">
+      <strong>Target:</strong> New account signups who haven't converted to a first order.<br>
+      <strong>Purpose:</strong> Convert the lead into a first sale.<br>
+      <strong>Offer:</strong> <strong>WELCOME10</strong> — 10% off first order (up to $500), 7-day window (final email).
+    </div>
+    <div class="flow-metric" style="margin-top:12px;"><span class="metric-label">Open rate</span><span class="metric-value">45.8% · 98 sent</span></div>
+    <div class="flow-metric"><span class="metric-label">Click rate</span><span class="metric-value">3.1% · 6 replies</span></div>
+    <div class="flow-metric"><span class="metric-label">Lead → customer conversion</span><span class="metric-value">0 attributed so far</span></div>
+  </div>
+
+  <div class="flow-card">
+    <div class="flow-title">Flow 2 · New customers <span style="font-weight:600;font-size:12px;color:#64748b;">(3 emails)</span></div>
+    <div class="flow-trigger">Triggered when a customer places their first order</div>
+    <div style="font-size:13px;color:#475569;line-height:1.7;margin-top:10px;">
+      <strong>Target:</strong> First-time customers, from ship confirmation through their next reorder decision.<br>
+      <strong>Purpose:</strong> Confirm the order, help them succeed on the job, drive the second purchase.<br>
+      <strong>Offer:</strong> 10% off next order (auto-applied at checkout) in exchange for a product review after their first project.
+    </div>
+    <div class="flow-metric" style="margin-top:12px;"><span class="metric-label">Open rate</span><span class="metric-value">45.7% · 35 sent</span></div>
+    <div class="flow-metric"><span class="metric-label">Click rate</span><span class="metric-value">5.7% · 2 clicks</span></div>
+    <div class="flow-metric"><span class="metric-label">Reviews + repeat purchase 90d</span><span class="metric-value">Too early — window open</span></div>
+  </div>
+
+  <div class="flow-card">
+    <div class="flow-title">Flow 3 · At-risk customers <span style="font-weight:600;font-size:12px;color:#64748b;">(4 emails)</span></div>
+    <div class="flow-trigger">Triggered when a customer stops ordering (dormancy window TBD)</div>
+    <div style="font-size:13px;color:#475569;line-height:1.7;margin-top:10px;">
+      <strong>Target:</strong> Existing customers whose ordering cadence has slipped — recent buyers going quiet.<br>
+      <strong>Purpose:</strong> Diagnose why they went silent and pull them back before they fully lapse.<br>
+      <strong>Offer:</strong> <strong>WELCOME-BACK</strong> — 10% off next order, 14-day window. Escalates to a final push: <strong>15% off orders $700+, free freight over $700, or bulk 90-gallon special pricing</strong> — 14-day window.
+    </div>
+    <div class="flow-metric" style="margin-top:12px;"><span class="metric-label">Status</span><span class="metric-value">Not yet fired</span></div>
+    <div class="flow-metric"><span class="metric-label">Blocker</span><span class="metric-value">Needs manual list push</span></div>
+    <div class="flow-metric"><span class="metric-label">Value at stake</span><span class="metric-value">Part of $2.78M lapsed</span></div>
+  </div>
+
+  <div class="flow-card">
+    <div class="flow-title">Flow 4 · Dormant customers <span style="font-weight:600;font-size:12px;color:#64748b;">(2 emails)</span></div>
+    <div class="flow-trigger">Triggered when a customer hasn't ordered in 1+ year (deep dormancy)</div>
+    <div style="font-size:13px;color:#475569;line-height:1.7;margin-top:10px;">
+      <strong>Target:</strong> Customers who have gone silent for 12+ months — effectively lapsed.<br>
+      <strong>Purpose:</strong> Reopen the conversation and recover revenue we'd otherwise never see again.<br>
+      <strong>Offer:</strong> <strong>COMEBACK2026</strong> — 20% off next order + free freight on orders over $700, 3-week window. Our strongest offer of the year.
+    </div>
+    <div class="flow-metric" style="margin-top:12px;"><span class="metric-label">Status</span><span class="metric-value">Not yet fired</span></div>
+    <div class="flow-metric"><span class="metric-label">Blocker</span><span class="metric-value">Needs manual list push</span></div>
+    <div class="flow-metric"><span class="metric-label">Target population</span><span class="metric-value">409 lapsed accounts</span></div>
+  </div>
+</div>
+
+<div class="callout hero"><strong>Why this matters:</strong> Right now our repeat-purchase story is passive — the 21.5% of 2025 customers who came back through July 2026 did so on their own. These four flows are the first time we're actively nudging that behavior across the entire customer lifespan. Even a modest lift on the at-risk and dormant flows meaningfully increases lifetime value across the base. Two of the four are now delivering with strong open rates; the two with the most revenue behind them are the two still waiting on a manual push.</div>
+</div>
+
+<!-- ====================================================== -->
+<!-- INITIATIVE 4: TRACKING + TARGETING HYGIENE -->
+<!-- ====================================================== -->
+<div class="band-label">Initiative 4 &nbsp;<span class="status-pill live">In flight · August</span></div>
+
+<div class="section">
+<h2>Tracking and targeting cleanup</h2>
+<p class="section-explain">Two changes made this month that improve the quality of every number on these dashboards, rather than changing any single campaign.</p>
+
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">GarageExperts exclusions &mdash; live last week</h3>
+    <div style="background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border-left:4px solid #16a34a;border-radius:8px;padding:14px 18px;font-size:13px;color:#14532d;line-height:1.6;">
+      Campaigns now suppress GE franchisees as far as the platforms allow. The workbook estimates <strong>~49% of paid-credited revenue and ~35% of paid orders</strong> were franchisees who would have ordered regardless &mdash; so paid performance has been flattered by traffic we were never really winning.<br><br>
+      <strong>September is the first clean read.</strong> Expect credited revenue on paid to <em>fall</em> while true efficiency stays the same or improves. That drop is the exclusion working, not performance declining &mdash; worth flagging to leadership before the September numbers land.
+    </div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">First-party data with TRU &mdash; in progress</h3>
+    <div style="background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%);border-left:4px solid #1F4E79;border-radius:8px;padding:14px 18px;font-size:13px;color:#475569;line-height:1.6;">
+      Expanding the first-party data we can track and link inside Google, so real customers can be distinguished from general campaign traffic.<br><br>
+      This is the foundation that makes the GE exclusion measurable and improves audience quality on the Google side. It is also what would let us attribute the new-customer retargeting campaign properly rather than inferring from aggregate reorder rates. Infrastructure work with no visible output this month, and a prerequisite for most of what follows.
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ====================================================== -->
+<!-- THE SEPTEMBER ASK -->
+<!-- ====================================================== -->
+<div class="band-label">The ask &nbsp;<span class="status-pill upcoming">Decision needed · September</span></div>
+
+<div class="section">
+<h2>New-customer retargeting on Google — $1,000/month, September start</h2>
+<p class="section-explain">A new Google retargeting campaign that follows every new customer from their first purchase, with one job: get the second order. This is incremental spend, not a reallocation — Meta budget stays where it is. Below is what the data says about whether the window and the audience are right.</p>
+
+<div class="two-col">
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">The campaign</h3>
+    <div style="font-size:13px;color:#475569;line-height:1.7;">
+      <strong>Audience:</strong> New customers, entered on first purchase. A second purchase disqualifies and exits them.<br>
+      <strong>Window:</strong> 90 days of follow.<br>
+      <strong>Goal:</strong> Accelerate the second order and convert one-timers into repeat buyers.<br>
+      <strong>Ask:</strong> $1,000/month of <strong>new</strong> Google spend, starting September.<br>
+      <strong>Rationale:</strong> Stay in front of new customers rather than letting them drift to another supplier.
+    </div>
+  </div>
+  <div>
+    <h3 style="font-size:14px;color:#475569;margin-bottom:8px;">What the data says about the design</h3>
+    <div style="background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border-left:4px solid #16a34a;border-radius:8px;padding:14px 18px;">
+      <div style="font-size:13px;color:#14532d;line-height:1.6;">
+        <strong>Median time to second order: 17 days.</strong> 51% of everyone who ever reorders has done so by day 17, 63% by day 30, <strong>83% by day 90</strong>.<br><br>
+        The 90-day window is the right length — it captures 83% of natural repeat behaviour. Only 17% of repeaters convert after day 90, so extending further has sharply diminishing returns.
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="font-size:14px;color:#475569;margin:22px 0 8px;">Two refinements the data supports</h3>
+<table>
+  <thead>
+    <tr><th>Refinement</th><th>Evidence</th><th>Why it matters</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Target small first orders hardest</strong></td>
+      <td>Reorder rate by first-order size: <strong>under $400 → 35.4%</strong>; $400–2,499 → 49.1%; over $2,500 → 50.9%</td>
+      <td>Sample-scale buyers are <strong>28% less likely to return</strong> (35.4% vs 49.1%). There are <strong>591 one-and-done buyers</strong> in this band. Weighting spend here targets the actual leak rather than spreading evenly across new customers.</td>
+    </tr>
+    <tr>
+      <td><strong>Front-load the first 30 days</strong></td>
+      <td>63% of eventual second orders happen by day 30; only 20% land between day 30 and day 90</td>
+      <td>Spend should be heaviest in the first two to three weeks, when the decision is actually being made, then taper. A flat 90-day spend curve wastes budget on a period where little converts.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout hero"><strong>Why this is worth $1,000 of new money.</strong> The weakness it targets is the clearest one in the business: roughly two-thirds of every cohort never places a second order, and the 2025 cohort's 21.5% repeat rate happened <em>passively</em> — nobody was asking them to come back. At the current average of about 62 new customers a month, $1,000 is roughly <strong>$16 per new customer for a 90-day follow</strong>. Set against a $524 blended cost to acquire each of them and a $1,059 average first order, that is a small premium to protect an asset we have already paid for. The Google-side lookalike built in August and the TRU first-party data work both make this campaign land better than it would have three months ago.</div>
+
+<div class="callout warn"><strong>One thing we still cannot answer: why qualified customers don't come back.</strong> The transaction data shows the <em>what</em> — a 35.4% reorder rate on small first orders, a 17-day median, 591 one-and-done buyers — but not the <em>why</em>. Retargeting treats the symptom by staying visible. It will not tell us whether people leave over price, product confusion, or a bad first experience. The second focus group is the cheaper instrument for that question &mdash; <strong>$1,750 one-time against $3,000 for the 90-day retargeting run</strong> &mdash; and the two should run together: retargeting to hold the customers, research to find the cause.<br><br><strong>How to judge it:</strong> the honest success measure is not clicks or impressions — it is whether the median time to second order moves below 17 days, and whether the reorder rate for sub-$400 first orders climbs off 35.4%. Both are measurable in NetSuite without any attribution wiring, by comparing September-onward cohorts against the pre-campaign baseline.</div>
+</div>
+
+<!-- ====================================================== -->
+<!-- INITIATIVE 5: GEO/SEO + RESEARCH -->
+<!-- ====================================================== -->
+<div class="band-label">Initiative 5 &nbsp;<span class="status-pill live">In flight · content is time-only</span> <span class="status-pill upcoming">Focus group 2 · $1,750 ask</span></div>
+
+<div class="section">
+<h2>Search and AI visibility review — plus customer research</h2>
+<p class="section-explain">The content work needs time rather than spend. The research that surfaced the gap does carry a cost &mdash; $1,750 per focus group. Recent primary research turned this from a hypothesis into a documented gap.</p>
+
+<div class="callout bad"><strong>Customers are asking AI assistants the exact questions we have no coverage for.</strong> In the August focus group, a 20-year customer described using ChatGPT to decide which product to buy — specifically asking whether a spec difference "3 versus 9" mattered for his job, because our own materials didn't tell him. His words: <em>"I wish they would just tell me that. Does this product work for something that's going to have forklifts on it?"</em><br><br>We had already measured the other side of this: <strong>0% visibility on every failure-mode prompt tested in HubSpot's AEO tool, and zero Search Console impressions on failure-mode queries.</strong> Demand exists, we are invisible for it, and customers are getting answers about our products from somewhere that isn't us. These were 55–60+ year-old veterans — the least likely group to be doing this.</div>
+
+<div class="tile-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));">
+  <div class="tile good">
+    <div class="label">The plan</div>
+    <div class="value" style="font-size:17px;line-height:1.3;">Failure-mode content</div>
+    <div class="sub">Build out informative blog and spec content targeting the job questions customers actually ask — forklift traffic, moisture, chip resistance, product selection by environment. Costs time, not budget. Jon to review and validate technical accuracy.</div>
+  </div>
+  <div class="tile good">
+    <div class="label">Measured demand already there</div>
+    <div class="value" style="font-size:17px;line-height:1.3;">230K impressions</div>
+    <div class="sub">The polyaspartic family already earns 230,000 Search Console impressions at an average position of 8. Product numbers rank on their own. The gap is not awareness — it is that we publish nothing for the failure-mode and selection questions.</div>
+  </div>
+  <div class="tile">
+    <div class="label">Content the customers asked for</div>
+    <div class="value" style="font-size:17px;line-height:1.3;">Real-garage video</div>
+    <div class="sub">Focus group was specific: our videos are all shot in a studio. <em>"We want to see this in a real garage... how they're actually prepping the floor."</em> Floor prep named directly. One production effort serves both the video gap and the AI-answer gap.</div>
+  </div>
+  <div class="tile warn">
+    <div class="label">Focus group 2 — new customers</div>
+    <div class="value">$1,750</div>
+    <div class="sub"><strong>Per group, one-time &mdash; Current Customer Focus Group.</strong> Group 1 was three 20-year veterans buying on habit — strong on trust and friction, weak on how new buyers decide. Group 2 targets customers under two years, focused on journey: job-driven vs price-driven, where they self-educate, and whether they run competitor products alongside ours. <strong>This is the only instrument on this page that answers why two-thirds of a cohort never reorders.</strong></div>
+  </div>
+</div>
+
+<div class="callout good"><strong>What group 1 told us that changes the product work:</strong> tier names built on customer identity do not work, because every contractor is simultaneously a "pro" and a "core" customer — the <em>job</em> changes, not the person. Their repeated ask was to name the job, not the buyer. "Specialty" and "Elite" landed; "Pro," "Core," "Rogue," "Signature" and "Select" did not. None of the three knew we run two product lines, and all three primarily phone in orders because the website has, in their words, "too many things — I don't even know where to start."</div>
+</div>
+
+<div class="footer">
+<div class="conf">⚠ Confidential — Versatile High-Performance Coatings internal use only. Do not redistribute.</div>
+Prepared: August 18, 2026 &middot; Next refresh: September 1, 2026 &mdash; first clean read on the GarageExperts exclusions, and lead&rarr;customer conversion on the 58 contractor leads.<br>Meta Ads data via Supermetrics (on-Facebook lead forms). Email results from NetSuite campaigns CAM47 and CAM48. Reorder and lapsed-account figures from Versatile_YoY_Deep_Analysis_2026.xlsx.
+</div>
+
+</div>
+</body>
+</html>
