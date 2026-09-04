@@ -8,91 +8,207 @@
     "basis": "Approved annual marketing budget by GL account by month. Budget is NOT loaded into NetSuite - Budget vs. Actual (report -197) returns Budget Amount 0 for every account and at the subsidiary grand-total line. This file is the only budget source.",
     "captured": "2026-09-04",
     "row_count": 8,
-    "annual_total": 206345.60
+    "annual_total": 206345.6
   },
-
   "derived_lines": {
     "66212.0002": {
       "formula": "0.20 * (66212.0016 + 66212.0017)",
       "note": "Agency fees are 20% of combined Google + Meta spend, per cells B5:M5 of the source workbook. This is not a fixed line: any increase in Google or Meta spend carries a 20% agency surcharge. Every budget ask involving paid media must be priced with it."
     }
   },
-
   "cancellations": [
     {
       "account": "66212.0007",
       "reason": "World of Concrete trade show cancelled",
       "decided": "2026-08",
       "effective_from": "2026-08",
-      "months_released": ["2026-08", "2026-11", "2026-12"],
-      "amount_released": 24500.00,
+      "months_released": [
+        "2026-08",
+        "2026-11",
+        "2026-12"
+      ],
+      "amount_released": 24500.0,
       "note": "Approved but will not be executed. Jan and Apr postings ($24,958.25 combined) had already been spent before the cancellation. Budget-vs-actual must show these months as released, not as underspend - an unspent line the business cancelled is a different fact from an unspent line it failed to execute."
     }
   ],
-
   "accounts": {
     "66212.0002": {
       "name": "Advertising & Marketing : Agency Fees",
       "display": "Agency fees",
       "derived": true,
-      "monthly": [2393.20, 2393.20, 2393.20, 1700.00, 1700.00, 1700.00, 1700.00, 1700.00, 1700.00, 1700.00, 1700.00, 1700.00],
-      "annual": 22479.60
+      "monthly": [
+        2393.2,
+        2393.2,
+        2393.2,
+        1700.0,
+        1700.0,
+        1700.0,
+        1700.0,
+        1700.0,
+        1700.0,
+        1700.0,
+        1700.0,
+        1700.0
+      ],
+      "annual": 22479.6
     },
     "66212.0006": {
       "name": "Advertising & Marketing : Trade Advertising",
       "display": "Trade advertising (print publications)",
-      "monthly": [2984.00, 2984.00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      "annual": 5968.00
+      "monthly": [
+        2984.0,
+        2984.0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "annual": 5968.0
     },
     "66212.0007": {
       "name": "Advertising & Marketing : Trade Show Promotions",
       "display": "Trade shows",
-      "monthly": [20000.00, 0, 0, 9500.00, 0, 0, 0, 9500.00, 0, 0, 7500.00, 7500.00],
-      "annual": 54000.00
+      "monthly": [
+        20000.0,
+        0,
+        0,
+        9500.0,
+        0,
+        0,
+        0,
+        9500.0,
+        0,
+        0,
+        7500.0,
+        7500.0
+      ],
+      "annual": 54000.0
     },
     "66212.0010": {
       "name": "Advertising & Marketing : Media (Photo and Video)",
       "display": "Photo and video production",
-      "monthly": [7500.00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      "annual": 7500.00
+      "monthly": [
+        7500.0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "annual": 7500.0
     },
     "66212.0016": {
       "name": "Advertising & Marketing : Google",
       "display": "Google paid search",
-      "monthly": [8466.00, 8466.00, 8466.00, 6000.00, 6000.00, 6000.00, 6000.00, 6000.00, 6000.00, 6000.00, 6000.00, 6000.00],
-      "annual": 79398.00
+      "monthly": [
+        8466.0,
+        8466.0,
+        8466.0,
+        6000.0,
+        6000.0,
+        6000.0,
+        6000.0,
+        6000.0,
+        6000.0,
+        6000.0,
+        6000.0,
+        6000.0
+      ],
+      "annual": 79398.0
     },
     "66212.0017": {
       "name": "Advertising & Marketing : Meta",
       "display": "Meta (Facebook and Instagram)",
-      "monthly": [3500.00, 3500.00, 3500.00, 2500.00, 2500.00, 2500.00, 2500.00, 2500.00, 2500.00, 2500.00, 2500.00, 2500.00],
-      "annual": 33000.00
+      "monthly": [
+        3500.0,
+        3500.0,
+        3500.0,
+        2500.0,
+        2500.0,
+        2500.0,
+        2500.0,
+        2500.0,
+        2500.0,
+        2500.0,
+        2500.0,
+        2500.0
+      ],
+      "annual": 33000.0
     },
     "66212.0019": {
       "name": "Advertising & Marketing : Other",
       "display": "Other marketing",
-      "monthly": [4000.00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      "annual": 4000.00
+      "monthly": [
+        4000.0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "annual": 4000.0
     },
     "66212.0020": {
       "name": "Advertising & Marketing : Advertising",
       "display": "Advertising (pre-split catch-all)",
-      "monthly": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      "annual": 0.00,
+      "monthly": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "annual": 0.0,
       "note": "Zero budget, but carries $25,879.27 of Jan-Mar actuals. Evidence indicates this is Google spend posted before the account split: 66212.0016 has zero actual in Jan-Mar, 66212.0020 has zero actual from Apr onward, and March's 0020 posting of $8,466.00 equals the March Google budget of $8,466.00 exactly. Treated as Google for channel reporting via reclass_to. INFERENCE - accounting has not yet confirmed.",
       "reclass_to": "66212.0016",
       "reclass_confidence": "inferred"
     }
   },
-
   "unbudgeted_actuals": {
     "note": "Accounts carrying 2026 actuals with no approved budget line. Every dollar must still appear in the budget-vs-actual table; these become explicit rows rather than being dropped, which is how v1's table under-reported.",
-    "accounts": ["66212.0004", "66212.0008", "66212.0013", "66212.0020", "66215.001", "66215.002"]
+    "accounts": [
+      "66212.0004",
+      "66212.0008",
+      "66212.0013",
+      "66212.0020",
+      "66215.001",
+      "66215.002"
+    ]
   },
-
   "targets": {
-    "revenue": null,
+    "basis": "m1_net_revenue",
+    "growth_over_prior_year_pct": 19.0,
+    "set_by": "Jules, 2026-09-04",
+    "definition": "Grow 2026 new-customer (M1) NET revenue 19% over 2025 new-customer (M1) NET revenue.",
+    "prior_year_actual": 872630.57,
+    "prior_year_basis_note": "FY2025 M1 NET on the CURRENT data basis. The figure published in August 2026 was higher; five months have since drifted down (see the cohort snapshot drift block). Target is computed on the current basis so both sides of the comparison are measured the same way.",
+    "target_amount": 1038430.38,
     "new_customers": null,
-    "note": "The approved budget workbook carries GL spend only - no revenue or new-customer target. Until these are supplied, 'Are we spending wisely?' can report budget-vs-actual and year-over-year, but cannot report performance against plan."
+    "caveat": "M1 NET revenue is a FLOOR, not total marketing-attributable revenue: any customer whose sales cycle crossed a month boundary contributes zero M1 by construction, and repeat revenue from prior cohorts is excluded entirely. The 2025 cohort alone contributed roughly $1.66M of repeat revenue in Jan-Jul 2026. If leadership's 19% means total revenue growth rather than new-customer revenue growth, this target is materially harder than intended - confirm before publishing."
   }
 }

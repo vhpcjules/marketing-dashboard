@@ -68,3 +68,62 @@ their own line rather than blended into the month.
 Guarded by `tests/test_spend.py::TestAugustIsNotNegative` and by the
 `credits_blended_into_monthly_spend` mutation, which reintroduces the fault
 and confirms the suite goes red.
+
+---
+
+# Addendum — 2025 agency overcharge, and cohort drift
+
+## 3. The agency credit is a 2025 overcharge (resolved 2026-09-04)
+
+Jules confirms the $8,528.87 agency credit was **an overcharge from last
+year**. So 2025's reported spend was overstated, and a like-for-like
+year-over-year comparison must correct both sides:
+
+| Jan–Jul | As published | Corrected |
+|---|---|---|
+| 2025 spend | $326,229 | **$317,700** |
+| 2025 return per $1 | $1.48 | **$1.52** |
+| 2025 cost per customer | $591 | **$576** |
+| 2026 spend | $136,891 | **$127,437** |
+| 2026 return per $1 | $3.46 | **$3.71** |
+| Spend change YoY | −58.0% | **−59.9%** |
+
+**Stated assumption:** the full $8,528.87 is attributed to the Jan–Jul 2025
+window. If the overcharge accrued across all twelve months of 2025, only
+about $4,975 belongs to Jan–Jul, and 2025's corrected return per $1 would be
+$1.50 rather than $1.52. Attributing the whole amount is the conservative
+choice — it improves 2025 and therefore *understates* 2026's improvement.
+Worth pinning down which months the overcharge covered.
+
+## 4. Cohort drift — 5 of 14 months have moved (unexplained)
+
+A live pull on 2026-09-04 reproduces **9 of the 14 published cohort months to
+the cent**, confirming the NET revenue methodology. Five have moved, all
+downward:
+
+| Cohort | Customers | M1 NET | Drift |
+|---|---|---|---|
+| 2025-03 | 91 → 89 | $90,201 → $88,906 | −1.44% |
+| 2025-05 | 94 → 93 | $77,932 → $74,096 | −4.92% |
+| 2025-06 | 88 → 87 | $71,999 → $71,662 | −0.47% |
+| 2026-06 | 67 → 63 | $130,063 → $125,591 | −3.44% |
+| 2026-07 | 72 → 70 | $51,088 → $49,741 | −2.64% |
+
+Aggregate: 2025 Jan–Jul **−1.14%**, 2026 Jan–Jul **−1.23%**. Both exceed the
+1% drift threshold, so this would fail a build under the freeze gate. **No
+snapshot has been overwritten.**
+
+**Ruled out:** GarageExperts reclassification. The category-2 exclusions were
+tested directly and fall in different months entirely (2025-01, 2025-06,
+2025-08, 2025-09, 2026-01, 2026-03, 2026-05 — a single recurring entity at
+roughly $20K/month, correctly excluded).
+
+**Leading hypothesis:** credit memos and returns posted after the original
+report date. Supporting evidence: the unaffected months match to the *cent*,
+so this is not a methodology difference but transaction-level change in
+specific months; and every move is downward, which is what late credits look
+like.
+
+**Decision needed:** accept the restatement (regenerate the snapshots in
+their own commit) or investigate the five months first. Under the freeze rule
+this is Jules's call, not the tool's.
