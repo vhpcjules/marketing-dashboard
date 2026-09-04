@@ -205,10 +205,16 @@
     "growth_over_prior_year_pct": 19.0,
     "set_by": "Jules, 2026-09-04",
     "definition": "Grow 2026 new-customer (M1) NET revenue 19% over 2025 new-customer (M1) NET revenue.",
-    "prior_year_actual": 872630.57,
-    "prior_year_basis_note": "FY2025 M1 NET on the CURRENT data basis. The figure published in August 2026 was higher; five months have since drifted down (see the cohort snapshot drift block). Target is computed on the current basis so both sides of the comparison are measured the same way.",
-    "target_amount": 1038430.38,
+    "prior_year_actual": 878098.0,
+    "prior_year_basis_note": "FY2025 M1 NET on the FROZEN (published) basis. Per Jules 2026-09-04: keep the frozen revenue we are tracking. Closed months use their frozen snapshot values; months not previously published (2026-08 onward) use live figures. The -1.1% drift detected on 2026-09-04 is logged in reports/restatement_2026-08.md and deliberately NOT applied.",
+    "target_amount": 1044936.62,
     "new_customers": null,
-    "caveat": "M1 NET revenue is a FLOOR, not total marketing-attributable revenue: any customer whose sales cycle crossed a month boundary contributes zero M1 by construction, and repeat revenue from prior cohorts is excluded entirely. The 2025 cohort alone contributed roughly $1.66M of repeat revenue in Jan-Jul 2026. If leadership's 19% means total revenue growth rather than new-customer revenue growth, this target is materially harder than intended - confirm before publishing."
+    "caveat": "M1 NET revenue is a FLOOR, not total marketing-attributable revenue: any customer whose sales cycle crossed a month boundary contributes zero M1 by construction, and repeat revenue from prior cohorts is excluded entirely. The 2025 cohort alone contributed roughly $1.66M of repeat revenue in Jan-Jul 2026. If leadership's 19% means total revenue growth rather than new-customer revenue growth, this target is materially harder than intended - confirm before publishing.",
+    "secondary_frame": {
+      "name": "cohort revenue to date (M1 + repeat)",
+      "why": "M1 is the target frame, but it is not what the spend bought. Jan-Aug 2026 cohorts have produced $1,031,222 against $552,656 of M1 - repeat revenue is 46.4% of the total. ROAS on M1 is $4.07; on revenue to date it is $7.59. Both are reported, always labelled with basis and average maturity.",
+      "not_a_target": true,
+      "maturity_caveat": "2026 cohorts average 4.3 months of maturity against 14.3 for 2025 cohorts. To-date multiples are not comparable across cohorts of different ages: 1.13x at one month, 3.34x at eight."
+    }
   }
 }

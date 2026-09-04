@@ -180,3 +180,58 @@ instruction cost five months of 2× understated LinkedIn impressions.
   metric. `campaignobjective` is pulled alongside performance, always.
 - **GMB and Hotjar** — arrive as manual files via `data/manual/` without
   blocking the build.
+
+## Two ROAS figures, never one
+
+M1 is the target frame, but it is not what the spend bought. A customer
+acquired in March who reorders in June produces revenue M1 never sees, and
+the M1 window closes long before most reordering happens — median time to a
+second order is 17 days, but only 51% of eventual repeat buyers have
+reordered by then and 83% by day 90.
+
+So both are reported, side by side, always:
+
+| Basis | Jan–Aug 2026 | ROAS |
+|---|---|---|
+| M1 NET revenue | $552,656 | **$4.07** |
+| + repeat revenue since | $478,566 | |
+| = revenue to date | $1,031,222 | **$7.59** |
+
+Repeat revenue is **46.4%** of everything those cohorts have produced.
+Judging marketing on M1 alone credits it with roughly half of what its
+customers have already spent.
+
+**`Roas` cannot be constructed without a basis label and a maturity**, in the
+same way `Money` cannot be constructed without a period. An M1 figure and a
+to-date figure differ by about 2× at four months of maturity and 5× at
+fourteen; a ROAS quoted without both labels is a number waiting to be
+misread.
+
+**Maturity is the whole caveat.** 2026 cohorts average 4.3 months against
+14.3 for 2025, and the multiple climbs steeply with age:
+
+| Cohort age | Revenue-to-date multiple of M1 |
+|---|---|
+| 1 month (2026-08) | 1.13× |
+| 3 months (2026-06) | 1.28× |
+| 6 months (2026-03) | 2.61× |
+| 8 months (2026-01) | 3.34× |
+| ~14 months (2025 cohorts) | 5.09× |
+
+Every aggregate reports the **customer-weighted** average maturity that
+produced it — month-weighting would let a 55-customer month pull the average
+as hard as a 127-customer one.
+
+Revenue-to-date is a **reading frame, not a target**. The 19% growth target
+is set and graded on M1.
+
+## The freeze decision, 2026-09-04
+
+Closed periods keep their frozen snapshot values. Months never previously
+published use live figures. The −1.1% (2025) and −1.2% (2026) cohort drift
+found on 2026-09-04 is logged in `reports/restatement_2026-08.md` and
+**deliberately not applied**.
+
+This matters for the target: FY2025 M1 is held at the published **$878,098**,
+not the $872,631 a live pull returns today. Without that pin, the target
+would silently re-baseline on every build.

@@ -102,6 +102,30 @@ MUTATIONS = [
         expect_in_output="TestAgencySurcharge",
     ),
     Mutation(
+        id="roas_basis_label_dropped",
+        bug="an M1 ROAS and a revenue-to-date ROAS rendering identically - they differ 2x",
+        file="src/data/cohorts.py",
+        find='        if not self.basis or not self.period:\n            raise ValueError',
+        replace='        if False:\n            raise ValueError',
+        expect_in_output="test_roas_cannot_exist_without_a_basis",
+    ),
+    Mutation(
+        id="cohort_accepts_impossible_revenue",
+        bug="revenue-to-date below M1 is impossible and must not pass silently",
+        file="src/data/cohorts.py",
+        find="        if self.revenue_to_date < self.m1_net:",
+        replace="        if False:",
+        expect_in_output="test_revenue_to_date_below_m1_raises",
+    ),
+    Mutation(
+        id="maturity_weighted_by_month_not_customers",
+        bug="a 12-customer month would pull the average as hard as a 127-customer month",
+        file="src/data/cohorts.py",
+        find="        total = sum(c.maturity_months(self.as_of) * c.customers for c in self.cohorts)\n        return _d(total) / _d(self.customers)",
+        replace="        total = sum(c.maturity_months(self.as_of) for c in self.cohorts)\n        return _d(total) / _d(len(self.cohorts))",
+        expect_in_output="test_weighted_by_customers_not_months",
+    ),
+    Mutation(
         id="naf_included_in_marketing_spend",
         bug="96212.* is the GarageExperts franchisee fund, not VHPC spend",
         file="src/data/spend.py",
@@ -115,6 +139,7 @@ MUTATIONS = [
 def _run_suite(root: Path) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, "-m", "pytest", "tests/test_units.py", "tests/test_spend.py",
+         "tests/test_cohorts.py", "tests/test_targets.py",
          "-q", "--no-header", "-p", "no:cacheprovider"],
         cwd=root, capture_output=True, text=True, timeout=300,
     )
