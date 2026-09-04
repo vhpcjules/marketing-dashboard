@@ -96,16 +96,48 @@ class TestImpossibleDataIsRejected:
         assert c.multiple.multiple == "1.00x"
 
 
+def _fy2025_spend():
+    """Read FY2025 spend from the snapshot rather than hardcoding it.
+
+    A hardcoded literal is how a period mismatch got in here in the first
+    place: Jan-Jul 2025 spend ($317,700) was divided into FULL-YEAR 2025
+    revenue, overstating ROAS by about 1.8x. Money's period label did not
+    catch it, because the label read "FY2025" while the value was seven
+    months - the label discipline catches mislabelled combinations, not a
+    wrong value under a correct label. Deriving the figure from data is the
+    guard that actually works.
+    """
+    import json
+    from src.data.spend import REPO_ROOT
+    p = REPO_ROOT / "data" / "snapshots" / "2025-12" / "netsuite_marketing_spend_annual.json"
+    return D(str(json.loads(p.read_text())["true_operating"]))
+
+
 class TestMaturityContrastWith2025:
-    def test_2025_cohorts_at_full_maturity(self):
-        """FY2025: 1,120 customers, $872,631 M1, $4,442,363 to date."""
-        cs25 = CohortSet(
+    """FY2025: 1,120 customers, $872,631 M1, $4,442,363 to date."""
+
+    @pytest.fixture
+    def cs25(self):
+        return CohortSet(
             label="FY2025",
             cohorts=[Cohort("2025-01", 1120, "872630.57", "4442362.80")],
-            spend=Money("317700.13", "FY2025"),
+            spend=Money(_fy2025_spend(), "FY2025"),
             as_of=AS_OF,
         )
+
+    def test_spend_is_full_year_not_seven_months(self):
+        assert _fy2025_spend() == D("583254.04")
+        assert _fy2025_spend() != D("317700.13"), "Jan-Jul spend crept back in"
+
+    def test_full_maturity_multiple(self, cs25):
         assert cs25.cohorts[0].multiple.multiple == "5.09x"
-        # M1 ROAS on the corrected 2025 spend basis
-        assert cs25.roas_m1.per_dollar == "$2.75"
-        assert cs25.roas_to_date.per_dollar == "$13.98"
+
+    def test_roas_both_bases(self, cs25):
+        assert cs25.roas_m1.per_dollar == "$1.50"
+        assert cs25.roas_to_date.per_dollar == "$7.62"
+
+    def test_2026_matches_2025_return_at_a_third_of_the_maturity(self, cs, cs25):
+        """The strongest signal available: near-identical revenue-to-date
+        ROAS, reached by the 2026 cohorts in under a third of the time."""
+        assert abs(cs.roas_to_date.value - cs25.roas_to_date.value) < D("0.10")
+        assert cs.avg_maturity_months < cs25.avg_maturity_months / 3

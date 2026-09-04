@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "domain": "netsuite_marketing_spend_annual",
+    "period": "2025",
+    "pulled": "2026-09-04",
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2",
+    "query_id": "marketing_spend_monthly (aggregated to year)",
+    "note": "FY2025 total, needed because full-year cohort revenue must be divided by full-year spend. Jan-Jul 2025 alone was $326,229 as posted; dividing FY2025 revenue by that overstates ROAS by roughly 1.8x."
+  },
+  "as_posted": 591782.91,
+  "corrections": [
+    {
+      "id": "agency_fees_2025_overcharge",
+      "amount": -8528.87,
+      "credited_in": "2026-08",
+      "note": "Agency overcharge on 2025 spend, credited on the 2026 ledger. For a like-for-like year-over-year comparison 2025 spend is reduced by this amount. Confirmed as an overcharge by Jules, 2026-09-04."
+    }
+  ],
+  "true_operating": 583254.04
+}
