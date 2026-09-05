@@ -110,9 +110,12 @@ EXECUTIVE = PageContract(
         })
         # pace against the total-revenue target (pendable until revenue_total is ingested)
         + _m({
-            "{ytd}.total_net": "currency", "{pytd}.total_net": "currency",
+            "{ytd}.total_net": "currency", "{pytd}.total_net": "currency", "{pfy}.total_net": "currency",
             "{fy}.required_monthly": "currency", "{fy}.forecast_at_run_rate": "currency",
+            "{fy}.still_needed": "currency", "{ytd}.total_run_rate": "currency",
+            "{pfy}.total_remaining_months": "currency",
         }, section="pace")
+        + _m({"{fy}.gap_at_run_rate": "currency"}, hib=False, section="pace")
         + _m({"{ytd}.spend_share_of_revenue": "pct"}, hib=False)
         # year over year
         + _m({
@@ -121,15 +124,8 @@ EXECUTIVE = PageContract(
             "{ytd}.return_per_dollar": "ratio", "{pytd}.return_per_dollar": "ratio",
         })
         + _m({"{pytd}.spend": "currency"}, hib=False)
-        # legacy accounts (pendable). The published-basis ids are what the template asks for
-        # when report.vintage_basis == 'published'; the computed ids when it is 'computed'.
-        # The contract lists the published set; the computed set is checked by the template
-        # itself failing loudly on a missing id.
-        + _m({
-            "vintage.pre2018_accounts": "count", "vintage.pre2018_share_of_accounts": "pct",
-            "vintage.pre2018_share_of_revenue": "pct", "vintage.pre2018_avg_annual_net": "currency",
-            "vintage.band_2025_avg_annual_net": "currency",
-        }, section="vintage")
+        # legacy accounts: the template picks the published or the Sage-joined id set by
+        # report.vintage_basis and fails loudly on a missing id, so the contract lists neither.
     ),
     claims=(
         "{cur}.volume_story", "{ytd}.roas_story", "{fy}.pace_story",

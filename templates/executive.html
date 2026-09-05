@@ -159,10 +159,11 @@
   {{ p.pending('pace', pending.pace) }}
   {% else %}
   <div class="tile-grid">
-    {{ t.tile('Full-year target', m(fy ~ '.target')) }}
+    {{ t.tile('Full-year target', m(fy ~ '.target'), None, 'Last year, total NET revenue:', m(ids.pfy ~ '.total_net')) }}
     {{ t.tile('Total NET revenue to date', m(ytd ~ '.total_net'), delta_between(ytd ~ '.total_net', pytd ~ '.total_net'), 'Same months last year:', m(pytd ~ '.total_net')) }}
-    {{ t.tile('Required per remaining month', m(fy ~ '.required_monthly')) }}
-    {{ t.tile('Forecast at current run rate', m(fy ~ '.forecast_at_run_rate')) }}
+    {{ t.tile('Still needed this year', m(fy ~ '.still_needed'), None, 'Per remaining month:', m(fy ~ '.required_monthly')) }}
+    {{ t.tile('Forecast at current run rate', m(fy ~ '.forecast_at_run_rate'), delta_between(fy ~ '.forecast_at_run_rate', ids.pfy ~ '.total_net'), 'Monthly run rate, last four months:', m(ytd ~ '.total_run_rate')) }}
+    {{ t.tile('Gap to target at run rate', m(fy ~ '.gap_at_run_rate'), None, 'The same remaining months last year produced:', m(ids.pfy ~ '.total_remaining_months')) }}
   </div>
   {% endif %}
   <div class="callout">{{ c(fy ~ '.on_track') }}</div>

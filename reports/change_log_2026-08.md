@@ -6,8 +6,6 @@ Build notes:
 
 - gmb: GMB figures for August 2026 have not been supplied yet. Add gmb_2026-08.json or gmb_2026-08.csv under data/manual/2026/ and rebuild.
 - hotjar: HOTJAR figures for August 2026 have not been supplied yet. Add hotjar_2026-08.json or hotjar_2026-08.csv under data/manual/2026/ and rebuild.
-- no revenue_total snapshots: the company target is shown but pace against it is pending until 'python -m src.ingest write revenue_total YYYY-MM' has run for each month
-- no vintage_accounts snapshot for 2026-08; its section will show as pending
 
 | Metric | Source | Jul 26 | Aug 26 | Change | Direction | Threshold | Exceeds |
 |---|---|---|---|---|---|---|---|

@@ -161,11 +161,14 @@ Both asks total {{ m("ask26.total") }}, inside the
 cancellation. They are a reallocation within the approved plan.
 
 Leadership's target is growth in total company NET revenue, not in
-new-customer revenue. Pricing what it would take to close the company's
-run-rate gap needs the monthly total-revenue series, which has not yet been
-pulled into this build; the tiles above say so rather than estimating. Money
-already available inside the approved plan — released trade-show budget plus
-the year-to-date variance — is {{ m("fy26.available_within_plan") }}.
+new-customer revenue, and the run-rate gap to it is
+{{ m("fy26.gap_at_run_rate") }}. Closing that through acquisition alone would
+take {{ m("fy26.spend_to_close_at_marketing_return") }} of additional media at
+this year's revenue-to-date return, or {{ m("fy26.spend_to_close_conservative") }}
+at a cautious marginal return, against {{ m("fy26.available_within_plan") }}
+available inside the approved plan. That is a company conversation about the
+legacy base, not a marketing budget ask, and the tiles above say so in
+numbers rather than estimating a path that does not exist.
 
 ## Data-quality notes
 
@@ -183,7 +186,7 @@ the year-to-date variance — is {{ m("fy26.available_within_plan") }}.
 - Two source documents disagree about which customer category id is
   GarageExperts and which is Vendor. Both are excluded, so revenue is
   unaffected; the ids are resolved by name at ingest and asserted.
-- The legacy-account (vintage) figures on the Executive page are the
-  published Sage-basis numbers. NetSuite carries migration dates, not
-  acquisition dates, for legacy accounts; a Sage created-date export is
-  needed to refresh them.
+- The legacy-account (vintage) figures on the Executive page are computed
+  from the Sage sales-history reports joined to NetSuite on the customer
+  number (migration dropped the leading zeros). The oldest band is a floor at
+  2019; the pre-2018 band the previous deck published is not recoverable.

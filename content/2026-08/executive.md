@@ -3,11 +3,37 @@ period: 2026-08
 dashboard: executive
 prepared: 2026-09-05
 claims:
+  total_growth_vs_prior_year:
+    expr: "delta(ytd26.total_net, ytd25.total_net)"
+    assert: "between(-30, 30)"
+    render: "{:+.1f}%"
+  forecast_growth_vs_prior_year:
+    expr: "delta(fy26.forecast_at_run_rate, fy25.total_net)"
+    assert: "between(0, 19)"
+    render: "{:+.1f}%"
+    note: "The year lands short of the nineteen percent target at the current run rate. If this leaves the 0-19 band the sentence that uses it must be rewritten."
+  required_uplift_remaining_months:
+    expr: "delta(fy26.still_needed, fy25.total_remaining_months)"
+    assert: "positive"
+    render: "{:+.0f}%"
+    note: "What September to December must deliver relative to the same months last year."
   m1_growth_vs_prior_year:
     expr: "delta(ytd26.m1_net, ytd25.m1_net)"
     assert: "between(-50, 50)"
     render: "{:+.1f}%"
     note: "Marketing's frame: new-customer month-one NET revenue, same months a year apart."
+  shortfall_at_marketing_return:
+    expr: "fy26.shortfall_after_available"
+    assert: "nonzero"
+    render:
+      positive: "roughly ${:,.0f} of new money beyond the approved plan"
+      negative: "nothing beyond the approved plan, which has roughly ${:,.0f} to spare"
+  shortfall_at_cautious_return:
+    expr: "fy26.shortfall_after_available_conservative"
+    assert: "nonzero"
+    render:
+      positive: "roughly ${:,.0f}"
+      negative: "nothing, with roughly ${:,.0f} to spare"
   roas_exceeds_prior_year_at_a_third_of_maturity:
     expr: "ytd26.roas_to_date - fy25.roas_to_date"
     assert: "positive"
@@ -17,10 +43,10 @@ claims:
     assert: "positive"
     render: "${:,.0f}"
   legacy_multiple:
-    expr: "vintage.pre2018_avg_annual_net / vintage.band_2025_avg_annual_net"
-    assert: "between(9, 13)"
+    expr: "vintage.legacy_avg_annual_net / vintage.newest_avg_annual_net"
+    assert: "between(9, 14)"
     render: "{:.0f}×"
-    note: "v1 published 20×. That was the 2010–2012 band alone against 2025; across all pre-2018 accounts the multiple is about 11×."
+    note: "v1 published 20× on the 2010-2012 band alone. On the Sage sales-history join the accounts already buying in 2019 average about eleven and a half times a 2025-acquired account."
 not_carried_forward:
   - "v1 Budget: '$33,177 under YTD' and '$56K–$104K of headroom'. The approved budget is $206,346, not $291,545, and the year is not under plan by that amount. Corrected in 'Are we spending wisely?'."
   - "v1 Budget: 'Google 58% under-spent, $65,630 available'. Jan–Mar Google spend sat in the Advertising account before the split; combined, Google is close to plan. Corrected on the Marketing Ops page."
@@ -35,31 +61,41 @@ not_carried_forward:
 
 ## The three things to take from this month
 
-### The company target is total revenue; marketing's share of it is not yet growing at that rate
+### The company is growing, but not at the target rate, and marketing spend cannot close the gap alone
 
 Leadership's target is {{ m("fy26.target_growth") }} growth in total NET
-revenue over last year, a full-year figure of {{ m("fy26.target") }}. Pace
-against it is not yet measurable in this build: monthly total revenue has
-not been pulled into the data layer, and nothing is estimated in its place.
-What marketing can measure is its own contribution — the revenue of the
-customers it acquires. On that frame, January through August produced
-{{ m("ytd26.m1_net") }} of new-customer first-month NET revenue against
-{{ m("ytd25.m1_net") }} for the same months last year:
-{{ c("m1_growth_vs_prior_year") }}, against a company growth rate of
-{{ m("fy26.target_growth") }}. Since May, new-customer first-month revenue
-has run at {{ m("ytd26.run_rate") }} a month; the same remaining months last
-year produced {{ m("fy25.m1_remaining_months") }} in total. Customer count is
-down and deal size is up; the next section takes that apart.
+revenue over last year: {{ m("fy26.target") }} against last year's
+{{ m("fy25.total_net") }}. Through August the company has booked
+{{ m("ytd26.total_net") }}, {{ c("total_growth_vs_prior_year") }} on the same
+months last year. At the run rate of the last four months
+({{ m("ytd26.total_run_rate") }} a month) the year lands at
+{{ m("fy26.forecast_at_run_rate") }}, {{ c("forecast_growth_vs_prior_year") }}
+on last year and {{ m("fy26.gap_at_run_rate") }} short of the target. Hitting
+it now needs {{ m("fy26.required_monthly") }} every month from September to
+December, {{ c("required_uplift_remaining_months") }} above what the same four
+months produced last year.
 
-Two things follow. First, a company growth target of this size will not be
-met by new-customer acquisition alone: the legacy base carries the revenue,
-and protecting it is the larger lever (see the year-over-year headline).
-Second, the money to accelerate acquisition is already inside the plan —
-World of Concrete's cancellation released {{ m("budget26.released_by_cancellation") }},
-the year is running {{ c("budget26.vs_plan_story") }}, and the re-priced
-September asks below fit inside that with room to spare. Pricing what it
-would take to close the company gap has to wait for the total-revenue
-series; it will appear on the Marketing Ops page the month it lands.
+Marketing's own contribution is measured on the customers it acquires. On
+that frame, January through August produced {{ m("ytd26.m1_net") }} of
+new-customer first-month NET revenue against {{ m("ytd25.m1_net") }} for the
+same months last year: {{ c("m1_growth_vs_prior_year") }}. Since May,
+new-customer first-month revenue has run at {{ m("ytd26.run_rate") }} a
+month; the same remaining months last year produced
+{{ m("fy25.m1_remaining_months") }} in total. Customer count is down and
+deal size is up; the next section takes that apart.
+
+Two things follow. First, the gap is not a marketing-budget problem. Closing
+it through acquisition at this year's revenue-to-date return would take
+{{ m("fy26.spend_to_close_at_marketing_return") }} of additional media, or
+{{ m("fy26.spend_to_close_conservative") }} at a cautious marginal return;
+the approved plan has {{ m("fy26.available_within_plan") }} available, so it
+would need {{ c("shortfall_at_marketing_return") }} — at the cautious return,
+{{ c("shortfall_at_cautious_return") }}. Second, the revenue is carried by
+the legacy base: accounts already buying in 2019 or earlier produce well
+over a third of company revenue (see the year-over-year headline). Protecting
+and growing those accounts is the larger lever, and the September asks below
+are sized to that reality — a reallocation within the plan, not a request for
+new money.
 
 ### August rebounded; July was a dip, not a trend
 
@@ -173,22 +209,25 @@ cohorts against the pre-campaign baseline.
 
 ## Year-over-year headline
 
-The structural finding is unchanged in direction and corrected in size. The
-{{ m("vintage.pre2018_accounts") }} accounts acquired before 2018 are
-{{ m("vintage.pre2018_share_of_accounts") }} of active accounts and
-{{ m("vintage.pre2018_share_of_revenue") }} of last year's revenue, averaging
-{{ m("vintage.pre2018_avg_annual_net") }} a year against
-{{ m("vintage.band_2025_avg_annual_net") }} for an account acquired last year
-— about {{ c("legacy_multiple") }}. Last month's deck said twenty; that was
-the strongest single era, not the group. The corrected multiple still means
-no realistic acquisition programme replaces a lost legacy account, and
-protecting the accounts we have remains worth more than acquiring new ones.
+The structural finding is unchanged in direction and now computed rather than
+carried. Joining the Sage sales history to NetSuite dates
+{{ m("vintage.sage_dated_accounts") }} of last year's
+{{ m("vintage.active_accounts") }} active accounts by their first year of
+sales. The {{ m("vintage.legacy_accounts") }} accounts already buying in 2019
+or earlier are {{ m("vintage.legacy_share_of_accounts") }} of active accounts
+and {{ m("vintage.legacy_share_of_revenue") }} of last year's revenue,
+averaging {{ m("vintage.legacy_avg_annual_net") }} a year against
+{{ m("vintage.newest_avg_annual_net") }} for an account acquired last year —
+about {{ c("legacy_multiple") }}. Last month's deck said twenty; that was the
+strongest single era on a created-date basis the repository never held. The
+corrected multiple still means no realistic acquisition programme replaces a
+lost legacy account, and protecting the accounts we have remains worth more
+than acquiring new ones.
 
-These figures are the ones published in August, on the Sage created-date
-basis. NetSuite cannot reproduce them because legacy accounts carry a
-migration date rather than an acquisition date; they will refresh when a
-Sage export is added to the repository. Until then they are labelled as
-published, not as current.
+The oldest band is a floor, not a birth year: the Sage reports begin in 2019,
+so an account selling then may be far older. Accounts Sage never saw are dated
+by their NetSuite creation year, which is real for accounts created after the
+migration.
 
 ## Are we connecting with people online?
 
@@ -233,3 +272,9 @@ expired.
 - The first-ninety-days window now starts on the day a record was created,
   not at the exact timestamp. The previous basis dropped same-day orders
   placed after the record's creation time.
+- Legacy-account figures are computed from the Sage sales history joined to
+  NetSuite, not carried from the August deck. The oldest band is "2019 or
+  earlier" because that is where the Sage reports begin.
+- The company target is paced on total NET revenue, all customers, from the
+  same ledger join as every other revenue figure here. New-customer revenue
+  is shown alongside as marketing's contribution and is not the target.
