@@ -112,7 +112,14 @@ class SpendData:
         store = SnapshotStore()
         bud_path = REPO_ROOT / "data" / "manual" / str(year) / "approved_marketing_budget.json"
         corr_path = REPO_ROOT / "data" / "manual" / str(year) / "corrections.json"
-        budget = json.loads(bud_path.read_text())
+        if bud_path.exists():
+            budget = json.loads(bud_path.read_text())
+        else:
+            # A prior year with no approved-budget workbook in the repo. Actuals
+            # and efficiency still work; budget-vs-actual has nothing to compare
+            # to and says so rather than inventing a plan.
+            budget = {"_meta": {"absent": True, "note": f"no approved budget file for {year} in data/manual/{year}/"},
+                      "accounts": {}, "cancellations": [], "derived_lines": {}, "targets": {}}
         corrections = json.loads(corr_path.read_text())["corrections"] if corr_path.exists() else []
 
         postings: dict[str, dict[str, Decimal]] = {}

@@ -266,9 +266,13 @@ class DriftReport:
         return p
 
 
+ROUNDING_TOLERANCE = Decimal("0.5")   # frozen values were published to the dollar; cents are not drift
+
+
 def detect_drift(store: SnapshotStore, domain: str, live: dict[str, dict[str, Any]],
                  metrics: Iterable[str], *, as_of: date,
-                 threshold_pct: Decimal = DEFAULT_DRIFT_THRESHOLD_PCT) -> DriftReport:
+                 threshold_pct: Decimal = DEFAULT_DRIFT_THRESHOLD_PCT,
+                 tolerance: Decimal = ROUNDING_TOLERANCE) -> DriftReport:
     """Compare live values against FROZEN snapshots only.
 
     `live` is {period: {metric: value}}. Open periods are skipped - they are
@@ -286,7 +290,10 @@ def detect_drift(store: SnapshotStore, domain: str, live: dict[str, dict[str, An
             if metric not in values or metric not in snap.body:
                 continue
             frozen_v, live_v = snap.metric(metric), _dec(values[metric])
-            if frozen_v != live_v:
+            # Published figures were rounded to the dollar; a live value that
+            # differs only in cents is rounding, not movement. Recording it as
+            # drift would make "18 months moved" of a series where 5 did.
+            if abs(frozen_v - live_v) > tolerance:
                 report.findings.append(DriftFinding(domain, period, metric, frozen_v, live_v))
     return report
 

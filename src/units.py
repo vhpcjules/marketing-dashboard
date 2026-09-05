@@ -131,20 +131,23 @@ class Money:
                 f"{self.period!r} and {other.period!r}"
             )
 
+    @staticmethod
+    def _signed(q: Decimal, suffix: str = "") -> str:
+        # A negative amount reads "−$11,929", never "$-11,929". Real minus sign,
+        # matching the delta arrows, so a table column of signed variances lines up.
+        return f"−${abs(q):,}{suffix}" if q < 0 else f"${q:,}{suffix}"
+
     @property
     def usd0(self) -> str:
-        q = self.amount.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-        return f"${q:,}"
+        return self._signed(self.amount.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
     @property
     def usd2(self) -> str:
-        q = self.amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        return f"${q:,}"
+        return self._signed(self.amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
     @property
     def usdk(self) -> str:
-        q = (self.amount / 1000).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-        return f"${q:,}K"
+        return self._signed((self.amount / 1000).quantize(Decimal("1"), rounding=ROUND_HALF_UP), "K")
 
     def __format__(self, spec: str) -> str:
         return self.usd0 if not spec else format(self.amount, spec)

@@ -95,13 +95,22 @@ class TestDriftOnTheRealCase:
         live = {m: {"m1_net_revenue": v} for m, v in self.LIVE.items()}
         rep = detect_drift(seeded, "cohorts_m1", live, ["m1_net_revenue"], as_of=SEP5)
         moved = {f.period for f in rep.findings}
-        assert moved == {"2025-03", "2025-05", "2025-06", "2026-06", "2026-07", "2026-01"}
+        # 2026-01 moved 43 cents against a frozen value published to the dollar:
+        # that is rounding, not drift, and must not appear as a finding.
+        assert moved == {"2025-03", "2025-05", "2025-06", "2026-06", "2026-07"}
+
+    def test_cent_rounding_is_not_drift_but_a_dollar_is(self, seeded):
+        live = {"2026-01": {"m1_net_revenue": 37328.43}}
+        assert not detect_drift(seeded, "cohorts_m1", live, ["m1_net_revenue"], as_of=SEP5).findings
+        live = {"2026-01": {"m1_net_revenue": 37329.43}}
+        rep = detect_drift(seeded, "cohorts_m1", live, ["m1_net_revenue"], as_of=SEP5)
+        assert {f.period for f in rep.findings} == {"2026-01"} and not rep.breaches
 
     def test_breaches_are_the_material_ones(self, seeded):
         live = {m: {"m1_net_revenue": v} for m, v in self.LIVE.items()}
         rep = detect_drift(seeded, "cohorts_m1", live, ["m1_net_revenue"], as_of=SEP5)
         breached = {f.period for f in rep.breaches}
-        # 2025-06 moved -0.47% and 2026-01 moved 43 cents: below 1%, findings but not breaches
+        # 2025-06 moved -0.47%: below 1%, a finding but not a breach
         assert breached == {"2025-03", "2025-05", "2026-06", "2026-07"}
         assert not rep.ok
 
@@ -136,8 +145,13 @@ class TestRepoSnapshots:
 
     def test_spend_jan_jul_frozen_aug_open(self):
         s = SnapshotStore()
-        assert s.frozen_periods("marketing_spend") == [f"2026-0{i}" for i in range(1, 8)]
+        frozen = s.frozen_periods("marketing_spend")
+        # 2026 Jan-Jul frozen at the published values; 2025 Jan-Jul frozen as the YoY baseline.
+        assert [m for m in frozen if m.startswith("2026")] == [f"2026-0{i}" for i in range(1, 8)]
+        assert [m for m in frozen if m.startswith("2025")] == [f"2025-0{i}" for i in range(1, 8)]
         assert not s.read("2026-08", "marketing_spend").frozen
+        for m in ("2025-08", "2025-09", "2025-10", "2025-11", "2025-12"):
+            assert not s.read(m, "marketing_spend").frozen, f"{m} was never published; must stay open"
 
     def test_cohorts_frozen_through_july_at_published_values(self):
         s = SnapshotStore()
