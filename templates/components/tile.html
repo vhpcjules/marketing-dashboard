@@ -1,0 +1,27 @@
+{#
+  tile(label, metric, delta=None, explain=None, explain_metric=None, featured=False)
+
+  `metric` is a RenderedMetric from m(); `delta` a RenderedDelta from
+  delta_between(). Nothing else is accepted for those slots - a bare string
+  in the value slot would be a number the validator cannot trace.
+
+  `explain` is prose (no digits); `explain_metric` is an optional m() span
+  appended to it, e.g. explain='Same months last year:' plus the prior-year
+  figure. Kept as a separate slot because string-concatenating a Markup
+  span with `~` yields a plain str that autoescape then escapes.
+
+  Alignment: the tile is a 4-row grid (label / value / delta / explain).
+  Inside a .tile-grid the rows are a subgrid, so every tile in the same
+  visual row shares track heights and the values sit on one baseline
+  whether a label wraps to one line or three. Where subgrid is unsupported
+  the fallback is a min-height label row. No margin hacks - v1 tuned
+  `margin-top: 6px` per tile and it broke on the first two-line label.
+#}
+{% macro tile(label, metric, delta=None, explain=None, explain_metric=None, featured=False) %}
+<div class="tile{% if featured %} tile-featured{% endif %}">
+  <div class="tile-label">{{ label }}</div>
+  <div class="tile-value">{{ metric }}</div>
+  <div class="tile-delta">{% if delta %}{{ delta }}{% endif %}</div>
+  <div class="tile-explain">{% if explain %}{{ explain }}{% endif %}{% if explain_metric %} {{ explain_metric }}{% endif %}</div>
+</div>
+{% endmacro %}

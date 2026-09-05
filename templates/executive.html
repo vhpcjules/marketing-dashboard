@@ -1,0 +1,173 @@
+{#
+  Executive dashboard.
+
+  Every figure on this page comes through m() or c(). Metric IDs follow
+  <period>.<measure> (see src/render/registry.py and the EXECUTIVE contract
+  in src/render/contracts.py, which lists every ID this template asks for):
+
+    aug26.*   reporting month        jul26.*  the month before
+    ytd26.*   Jan..reporting month   ytd25.*  the same months last year
+    fy26.*    full-year target frame fy25.*   prior full year
+    r12.*     rolling twelve closed months
+    m13.*     latest CLOSED first-90-days cohort
+
+  Context beyond base.html:
+    report   {month_label, month_iso, prev_month_label, ytd_label, ytd_iso,
+              prior_ytd_label, prior_ytd_iso, r12_label, r12_iso}
+    charts   {new_customers_12m, m1_net_12m, sources_customers}  chart_spec dicts
+    tables   {budget_vs_actual: {columns, rows}, online: {columns, rows}}
+    flags    [{severity, title, body}]
+    pending  {section_key: reason}   keys: m13_quality | sources | online
+
+  Period labels are wrapped in <time> and methodology terms in term(), so
+  the bare-digit scan can tell a date and "M1" from an untraced number.
+#}
+{% extends 'base.html' %}
+{% import 'components/tile.html' as t %}
+{% import 'components/flag_row.html' as f %}
+{% import 'components/band_label.html' as b %}
+{% import 'components/table.html' as tb %}
+{% import 'components/chart.html' as ch %}
+{% import 'components/pending.html' as p %}
+
+{% block content %}
+
+{# ---- Exec summary band: exactly three headline cards ------------------- #}
+<section class="exec-summary" aria-labelledby="exec-summary-h">
+  <h2 id="exec-summary-h">The three things to take from this dashboard</h2>
+  <p class="lede"><time datetime="{{ report.month_iso }}">{{ report.month_label }}</time>: new-customer volume, marketing return on both bases, and where we stand against the year's target.</p>
+  <div class="headline-row">
+    <div class="headline">
+      <div class="num">{{ m('aug26.new_customers') }} new customers · {{ m('aug26.m1_net') }} NET {{ term('m1') }}</div>
+      <div class="desc">{{ c('aug26.volume_story') }}</div>
+    </div>
+    <div class="headline">
+      <div class="num">{{ m('ytd26.roas_to_date') }} back per dollar to date · {{ m('ytd26.roas_m1') }} in {{ term('m1') }}</div>
+      <div class="desc">{{ c('ytd26.roas_story') }}</div>
+    </div>
+    <div class="headline">
+      <div class="num">{{ m('ytd26.m1_net') }} of a {{ m('fy26.target') }} target</div>
+      <div class="desc">{{ c('fy26.pace_story') }}</div>
+    </div>
+  </div>
+</section>
+
+{# ---- Are we growing? -------------------------------------------------- #}
+<section class="section" aria-labelledby="growing-h">
+  <h2 id="growing-h">Are we growing?</h2>
+  <p class="section-explain">New customers and the NET revenue they produce in their first month ({{ term('m1') }}), over the twelve closed months to <time datetime="{{ report.month_iso }}">{{ report.month_label }}</time>. Change is against <time>{{ report.prev_month_label }}</time>.</p>
+
+  <div class="tile-grid">
+    {{ t.tile('New customers', m('aug26.new_customers'), delta_between('aug26.new_customers', 'jul26.new_customers'),
+              'People or businesses who bought from us for the first time this month.') }}
+    {{ t.tile('New-customer NET revenue, month one', m('aug26.m1_net'), delta_between('aug26.m1_net', 'jul26.m1_net'),
+              'What those customers spent in the month their record was created. A floor, not an estimate: a sale that crosses a month boundary leaves this window by construction.') }}
+    {{ t.tile('Average first order', m('aug26.avg_first_order'), delta_between('aug26.avg_first_order', 'jul26.avg_first_order'),
+              'Month-one NET revenue per new customer. Deal-size variance is normal in specialty coatings; read the trend, not the month.') }}
+    {{ t.tile('Return per dollar, month one', m('aug26.m1_return_per_dollar'), None,
+              'Month-one NET revenue divided by true operating marketing spend for the month.') }}
+  </div>
+
+  <div class="two-col">
+    {{ ch.chart('new_customers_12m', charts.new_customers_12m, 'New customers per cohort month') }}
+    {{ ch.chart('m1_net_12m', charts.m1_net_12m, 'Month-one NET revenue per cohort') }}
+  </div>
+
+  {{ b.band_label('First-ninety-days quality', 'closed cohorts only') }}
+  {% if 'm13_quality' in pending %}
+  {{ p.pending('m13_quality', pending.m13_quality) }}
+  {% else %}
+  <p class="section-explain">The {{ term('first90') }} window is reported only once every customer in the cohort has had ninety days. Latest closed cohort: {{ m('m13.latest.cohort') }}.</p>
+  <div class="tile-grid">
+    {{ t.tile('Customers in cohort', m('m13.latest.customers')) }}
+    {{ t.tile('Month-one NET', m('m13.latest.m1_net')) }}
+    {{ t.tile('First-ninety-days NET', m('m13.latest.first90_net')) }}
+    {{ t.tile('Multiple of month one', m('m13.latest.multiple'), None, 'How much the cohort grew beyond its first month. Above one means customers came back.') }}
+  </div>
+  {% endif %}
+</section>
+
+{# ---- Where are customers coming from? --------------------------------- #}
+<section class="section" aria-labelledby="sources-h">
+  <h2 id="sources-h">Where are customers coming from?</h2>
+  <p class="section-explain">The channel that first brought each new customer, over the twelve months <time datetime="{{ report.r12_iso }}">{{ report.r12_label }}</time>. Sorted bars, largest first.</p>
+  {% if 'sources' in pending %}
+  {{ p.pending('sources', pending.sources) }}
+  {% else %}
+  <div class="two-col">
+    {{ ch.chart('sources_customers', charts.sources_customers, 'Share of new customers by first source', tall=True) }}
+    <div>
+      <div class="tile-grid tile-grid-narrow">
+        {{ t.tile('Largest source', m('r12.sources.top_channel')) }}
+        {{ t.tile('Its share of new customers', m('r12.sources.top_share')) }}
+        {{ t.tile('Untracked share', m('r12.sources.untracked_share'), None, 'Customers whose source was never recorded. Reducing this is a marketing-operations priority, not a reporting footnote.') }}
+      </div>
+      <div class="callout">{{ c('r12.sources_story') }}</div>
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+{# ---- Are we spending wisely? ------------------------------------------ #}
+<section class="section" aria-labelledby="spend-h">
+  <h2 id="spend-h">Are we spending wisely?</h2>
+  <p class="section-explain">Approved budget against actual spend, <time datetime="{{ report.ytd_iso }}">{{ report.ytd_label }}</time>. Efficiency figures use the true-operating basis: credits are pushed back to the months they belong to, and prior-year items are excluded.</p>
+
+  {{ b.band_label('Budget versus actual', 'total computed from the rows') }}
+  {{ tb.table('budget_vs_actual', tables.budget_vs_actual.columns, tables.budget_vs_actual.rows,
+              total_label='Total marketing', caption=None) }}
+
+  {{ b.band_label('Return on marketing spend', 'two bases, always together') }}
+  <p class="section-explain">Month one is the target frame but not what the spend bought: repeat orders arrive after the window closes. Both figures are shown, each with the average customer-weighted maturity of the cohorts behind it.</p>
+  <div class="tile-grid tile-grid-pair">
+    {{ t.tile('Return per dollar, month-one basis', m('ytd26.roas_m1'), None, m('ytd26.roas_maturity')) }}
+    {{ t.tile('Return per dollar, revenue-to-date basis', m('ytd26.roas_to_date'), None, m('ytd26.roas_maturity')) }}
+    {{ t.tile('Repeat share of cohort revenue', m('ytd26.repeat_share'), None, 'What month-one reporting does not see.') }}
+    {{ t.tile('Spend as a share of month-one revenue', m('ytd26.spend_share_of_revenue'), None, 'Lower is better.') }}
+  </div>
+
+  {{ b.band_label('Pace against the target', 'graded on month one') }}
+  <div class="tile-grid">
+    {{ t.tile('Full-year target', m('fy26.target')) }}
+    {{ t.tile('Month-one NET to date', m('ytd26.m1_net')) }}
+    {{ t.tile('Required per remaining month', m('fy26.required_monthly')) }}
+    {{ t.tile('Forecast at current run rate', m('fy26.forecast_at_run_rate')) }}
+  </div>
+  <div class="callout">{{ c('fy26.on_track') }}</div>
+</section>
+
+{# ---- Year-over-year headline ------------------------------------------ #}
+<section class="section" aria-labelledby="yoy-h">
+  <h2 id="yoy-h">Year-over-year headline</h2>
+  <p class="section-explain"><time datetime="{{ report.ytd_iso }}">{{ report.ytd_label }}</time> against <time datetime="{{ report.prior_ytd_iso }}">{{ report.prior_ytd_label }}</time>, both on today's data basis. Every change is relative.</p>
+  <div class="tile-grid">
+    {{ t.tile('Month-one NET revenue', m('ytd26.m1_net'), delta_between('ytd26.m1_net', 'ytd25.m1_net'), 'Same months last year:', m('ytd25.m1_net')) }}
+    {{ t.tile('New customers', m('ytd26.new_customers'), delta_between('ytd26.new_customers', 'ytd25.new_customers'), 'Same months last year:', m('ytd25.new_customers')) }}
+    {{ t.tile('Marketing spend', m('ytd26.spend'), delta_between('ytd26.spend', 'ytd25.spend'), 'Same months last year:', m('ytd25.spend')) }}
+    {{ t.tile('Return per dollar, month one', m('ytd26.return_per_dollar'), delta_between('ytd26.return_per_dollar', 'ytd25.return_per_dollar'), 'Same months last year:', m('ytd25.return_per_dollar')) }}
+  </div>
+</section>
+
+{# ---- Are we connecting with people online? ---------------------------- #}
+<section class="section" aria-labelledby="online-h">
+  <h2 id="online-h">Are we connecting with people online?</h2>
+  <p class="section-explain">Indirect indicators of brand health: how many people see us, click through, and engage. Three windows so a single month cannot masquerade as a trend. Rates carry their denominators.</p>
+  {% if 'online' in pending %}
+  {{ p.pending('online', pending.online) }}
+  {% else %}
+  {{ tb.table('online', tables.online.columns, tables.online.rows) }}
+  {% endif %}
+</section>
+
+{# ---- What needs attention -------------------------------------------- #}
+<section class="section" aria-labelledby="attention-h">
+  <h2 id="attention-h">What needs attention</h2>
+  <p class="section-explain">Red is urgent. Amber is monitor. Green is working well. Blue is a change we made whose result is still pending.</p>
+  <div class="flag-list">
+    {% for flag in flags %}
+    {{ f.flag_row(flag.severity, flag.title, flag.body) }}
+    {% endfor %}
+  </div>
+</section>
+
+{% endblock %}

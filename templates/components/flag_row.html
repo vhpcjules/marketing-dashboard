@@ -1,0 +1,24 @@
+{#
+  flag_row(severity, title, body)
+
+  severity: red | amber | green | blue. These are STATUS encodings, kept
+  deliberately off the brand palette (see BRAND.md). flag_icon() raises on
+  any other value, so a typo cannot render an uncoloured, iconless row.
+
+    red    urgent
+    amber  monitor
+    green  working well
+    blue   a change we made; result still pending
+
+  `body` is prose. Any figure inside it must already be a data-metric or
+  data-claim span (build it with m()/c() before passing it in).
+#}
+{% macro flag_row(severity, title, body) %}
+<div class="flag-row flag-{{ severity }}" data-severity="{{ severity }}">
+  <div class="flag-icon" aria-hidden="true">{{ flag_icon(severity) }}</div>
+  <div class="flag-body">
+    <strong class="flag-title">{{ title }}</strong>
+    <span class="flag-text">{{ body }}</span>
+  </div>
+</div>
+{% endmacro %}

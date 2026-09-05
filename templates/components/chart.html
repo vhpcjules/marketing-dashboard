@@ -1,0 +1,20 @@
+{#
+  chart(chart_id, spec, title=None, tall=False)
+
+  A canvas plus its config as a JSON payload. No JavaScript here: the single
+  bootstrap in base.html finds every #chart-<id> payload and instantiates
+  it. `spec` comes from src.render.charts.chart_spec and is serialised by
+  chart_json(), which writes Decimals as JSON numbers and escapes < > & so
+  the payload is inert inside <script>.
+#}
+{% macro chart(chart_id, spec, title=None, tall=False) %}
+<figure class="chart" data-chart-figure="{{ chart_id }}">
+  {% if title %}
+  <figcaption class="chart-title">{{ title }}</figcaption>
+  {% endif %}
+  <div class="chart-wrap{% if tall %} tall{% endif %}">
+    <canvas data-chart="{{ chart_id }}" role="img" aria-label="{{ title or chart_id }}"></canvas>
+  </div>
+  <script type="application/json" id="chart-{{ chart_id }}">{{ chart_json(spec) }}</script>
+</figure>
+{% endmacro %}

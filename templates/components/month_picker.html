@@ -1,0 +1,46 @@
+{#
+  month_picker(months, active_month)
+
+  THE month picker. base.html includes it once; pages never carry their own.
+  v1 had a copy per page, each with its own onclick handler and its own
+  idea of which months existed, and they disagreed.
+
+  months        [{id: 'YYYY-MM', label: 'Aug 26'}]
+  active_month  'YYYY-MM' - must be one of months[].id
+
+  Behaviour: a pill click marks itself active and shows every element
+  carrying data-month equal to its id, hiding the rest. Sections opt in by
+  carrying data-month; the pills themselves are excluded from the toggle.
+  Labels sit in <time> so the bare-digit scan knows they are dates.
+#}
+{% macro month_picker(months, active_month) %}
+<nav class="month-picker" aria-label="Reporting month">
+  <div class="month-picker-label">Showing data for</div>
+  <div class="month-picker-row" role="tablist">
+    {% for mo in months %}
+    <button type="button" class="month-pill{% if mo.id == active_month %} active{% endif %}" data-month="{{ mo.id }}" role="tab" aria-selected="{{ 'true' if mo.id == active_month else 'false' }}"><time datetime="{{ mo.id }}">{{ mo.label }}</time></button>
+    {% endfor %}
+  </div>
+</nav>
+<script>
+(function () {
+  var pills = document.querySelectorAll('.month-pill[data-month]');
+  function select(id) {
+    Array.prototype.forEach.call(pills, function (p) {
+      var on = p.getAttribute('data-month') === id;
+      p.classList.toggle('active', on);
+      p.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    var sections = document.querySelectorAll('[data-month]:not(.month-pill)');
+    Array.prototype.forEach.call(sections, function (s) {
+      s.hidden = s.getAttribute('data-month') !== id;
+    });
+  }
+  Array.prototype.forEach.call(pills, function (p) {
+    p.addEventListener('click', function () { select(p.getAttribute('data-month')); });
+  });
+  var active = document.querySelector('.month-pill.active');
+  if (active) { select(active.getAttribute('data-month')); }
+})();
+</script>
+{% endmacro %}

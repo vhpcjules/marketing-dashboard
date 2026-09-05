@@ -1,0 +1,13 @@
+{#
+  pending(section, reason)
+
+  A section whose data is not yet available renders this, never a blank.
+  A blank tile looks like a rendering bug and gets ignored; a labelled
+  "data pending" callout says what is missing and why, and carries
+  data-pending so the build log can list every one on the page.
+#}
+{% macro pending(section, reason) %}
+<div class="callout callout-pending" role="status" data-pending="{{ section }}">
+  <strong>Data pending.</strong> {{ reason }}
+</div>
+{% endmacro %}

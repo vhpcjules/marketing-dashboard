@@ -1,0 +1,9 @@
+{#
+  band_label(text, sub=None)
+
+  The small uppercase label that opens a group of tiles or a table inside a
+  section. `sub` is an optional italic qualifier ("closed cohorts only").
+#}
+{% macro band_label(text, sub=None) %}
+<h3 class="band-label">{{ text }}{% if sub %} <em class="band-sub">{{ sub }}</em>{% endif %}</h3>
+{% endmacro %}

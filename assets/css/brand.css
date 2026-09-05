@@ -1,0 +1,282 @@
+/* =====================================================================
+   Versatile High-Performance Coatings — dashboard stylesheet
+
+   Tokens first, then the v1 visual language (tile grid, band labels,
+   exec-summary band, flag rows, tables) re-expressed in those tokens.
+   Decisions and the reasoning are in BRAND.md; the Python twin of the
+   token block is src/render/brand.py and the tests check they agree.
+
+   Rules baked in here:
+   - No dark mode, no animation, no framework.
+   - Yellow is never text on a light surface (1.49:1 on white). It is a
+     filled chip, a highlight on the Deep Blue band, or a chart bar.
+   - Flag colours are status encodings and stay off the brand palette.
+   - Every numeric cell uses tabular numerals so columns of figures line up.
+   ===================================================================== */
+
+/* ---- Tokens --------------------------------------------------------- */
+:root {
+  --vhpc-aqua: #014C8D;       /* primary ink; replaces v1 navy #1F4E79 */
+  --vhpc-deep: #051732;       /* dark band, body text */
+  --vhpc-grey: #465564;       /* muted text */
+  --vhpc-sandstone: #F8F8F8;  /* page ground */
+  --vhpc-yellow: #FBCF20;     /* highlight on dark only / filled chip */
+  --vhpc-white: #FFFFFF;
+
+  /* derived tints of Aqua for surfaces; never used as text */
+  --vhpc-aqua-10: rgba(1, 76, 141, 0.10);
+  --vhpc-aqua-06: rgba(1, 76, 141, 0.06);
+  --vhpc-rule: #E3E6EA;        /* hairlines, table borders, chart grid */
+
+  /* status encodings — deliberately not brand colours */
+  --flag-red: #dc2626;
+  --flag-amber: #ca8a04;
+  --flag-green: #16a34a;
+  --flag-blue: #0284c7;
+  --flag-red-bg: #fee2e2;
+  --flag-amber-bg: #fef3c7;
+  --flag-green-bg: #dcfce7;
+  --flag-blue-bg: #e0f2fe;
+
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --tracking-headline: 0.02em;
+  --tracking-subhead: 0.025em;
+  --leading-body: 1.5;
+  --radius: 6px;
+  --container: 1200px;
+}
+
+/* ---- Inter (self-hosted, SIL OFL 1.1; see assets/fonts/LICENSE.txt) --- */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/Inter-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/Inter-Italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/Inter-Bold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('../fonts/Inter-Black.woff2') format('woff2');
+}
+
+/* ---- Base ----------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: var(--leading-body);
+  color: var(--vhpc-deep);
+  background: var(--vhpc-sandstone);
+  font-feature-settings: 'tnum' 1, 'cv11' 1;  /* tabular figures everywhere; single-storey a is Inter's cv11 */
+}
+a { color: var(--vhpc-aqua); }
+img { max-width: 100%; height: auto; }
+.container { max-width: var(--container); margin: 0 auto; padding: 0 24px; }
+
+h1, h2, .headline .num, .band-label {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-headline);
+}
+h1 { font-size: 26px; line-height: 1.15; margin: 0 0 6px; color: var(--vhpc-aqua); }
+h2 { font-size: 17px; line-height: 1.2; margin: 0 0 6px; color: var(--vhpc-aqua); }
+h3 { font-size: 14px; margin: 0 0 8px; color: var(--vhpc-grey); }
+em, .band-sub, .section-explain { font-style: italic; letter-spacing: var(--tracking-subhead); }
+
+/* ---- Numerals ------------------------------------------------------- */
+[data-metric], .num, .tile-value, .delta, td.num, .headline .num, time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Internal-use banner ------------------------------------------- */
+.internal-banner {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--vhpc-deep);
+  color: var(--vhpc-white);
+  font-size: 12px;
+  padding: 6px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.chip {
+  display: inline-block;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: var(--tracking-headline);
+  padding: 2px 8px; border-radius: 999px; line-height: 1.5;
+}
+.chip-yellow { background: var(--vhpc-yellow); color: var(--vhpc-deep); }  /* Deep on Yellow: 11.95:1 */
+
+/* ---- Header band ---------------------------------------------------- */
+.site-header { background: var(--vhpc-deep); color: var(--vhpc-white); }
+.header-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 72px; }
+.logo { display: inline-flex; align-items: center; padding: 12px 0; }
+.logo img { height: 40px; width: auto; display: block; }
+.site-nav { display: flex; gap: 4px; }
+.site-nav a {
+  color: var(--vhpc-white); text-decoration: none;
+  font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: var(--tracking-headline);
+  padding: 10px 14px; border-bottom: 3px solid transparent;
+}
+.site-nav a:hover { border-bottom-color: rgba(255,255,255,0.4); }
+.site-nav a.active { border-bottom-color: var(--vhpc-yellow); }    /* Yellow on the dark band only */
+
+.page-title { padding: 28px 0 16px; border-bottom: 3px solid var(--vhpc-aqua); margin-bottom: 20px; }
+.page-subtitle { margin: 0; color: var(--vhpc-grey); font-size: 13px; }
+
+/* ---- Month picker (one implementation) ----------------------------- */
+.month-picker { background: var(--vhpc-white); padding: 14px 18px; border-radius: var(--radius); margin-bottom: 16px; border: 1px solid var(--vhpc-rule); }
+.month-picker-label { font-size: 11px; color: var(--vhpc-grey); text-transform: uppercase; letter-spacing: var(--tracking-headline); font-weight: 700; margin-bottom: 10px; }
+.month-picker-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.month-pill {
+  padding: 7px 13px; border-radius: var(--radius); border: 1px solid var(--vhpc-rule);
+  background: var(--vhpc-white); color: var(--vhpc-grey);
+  font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.month-pill:hover { border-color: var(--vhpc-aqua); color: var(--vhpc-aqua); }
+.month-pill.active { background: var(--vhpc-aqua); border-color: var(--vhpc-aqua); color: var(--vhpc-white); }
+.month-pill time { font-variant-numeric: tabular-nums; }
+
+/* ---- Sections ------------------------------------------------------- */
+.section { background: var(--vhpc-white); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; border: 1px solid var(--vhpc-rule); }
+.section-explain { color: var(--vhpc-grey); font-size: 13px; margin: 0 0 18px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+
+.band-label {
+  font-size: 11px; color: var(--vhpc-aqua);
+  margin: 28px 0 10px; padding-left: 12px; border-left: 4px solid var(--vhpc-aqua);
+}
+.band-label .band-sub { text-transform: none; font-weight: 400; color: var(--vhpc-grey); letter-spacing: var(--tracking-subhead); }
+
+/* ---- Exec summary band ---------------------------------------------- */
+.exec-summary {
+  background: var(--vhpc-deep); color: var(--vhpc-white);
+  border-radius: var(--radius); padding: 28px 32px; margin-bottom: 20px;
+}
+.exec-summary h2 { color: var(--vhpc-white); font-size: 15px; margin-bottom: 10px; }
+.exec-summary .lede { font-size: 13px; color: rgba(255,255,255,0.78); margin: 0 0 14px; }
+.exec-summary .headline-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: stretch; }
+.exec-summary .headline {
+  background: rgba(255,255,255,0.08); border-radius: var(--radius); padding: 14px 16px;
+  border-left: 3px solid var(--vhpc-yellow);            /* Yellow highlight, dark surface only */
+  display: grid; grid-template-rows: auto 1fr;
+}
+.exec-summary .headline .num { font-size: 18px; line-height: 1.25; color: var(--vhpc-white); margin-bottom: 8px; }
+.exec-summary .headline .desc { font-size: 12px; color: rgba(255,255,255,0.85); line-height: 1.45; align-self: end; }
+.exec-summary [data-metric] { color: var(--vhpc-yellow); }   /* figures pop on the dark band; Yellow on Deep is 11.95:1 */
+@media (max-width: 900px) { .exec-summary .headline-row { grid-template-columns: 1fr; } }
+
+/* ---- Tiles ---------------------------------------------------------- */
+/* Each tile is a 4-row grid: label / value / delta / explain. The grid
+   below makes those rows a SUBGRID of the tile grid, so tiles in the same
+   row share track heights and values align on one baseline regardless of
+   how many lines a label takes. Fallback: a min-height label row. */
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+.tile-grid-pair { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.tile-grid-narrow { grid-template-columns: 1fr; }
+.tile {
+  background: var(--vhpc-aqua-06);
+  border-left: 4px solid var(--vhpc-aqua);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  display: grid;
+  grid-template-rows: minmax(2.75em, auto) auto minmax(1.5em, auto) auto;
+  row-gap: 4px;
+  align-content: start;
+}
+@supports (grid-template-rows: subgrid) {
+  .tile-grid { grid-auto-rows: auto; }
+  .tile { grid-row: span 4; grid-template-rows: subgrid; }
+}
+.tile-featured { background: var(--vhpc-aqua-10); }
+.tile-label { font-size: 11px; color: var(--vhpc-grey); text-transform: uppercase; letter-spacing: var(--tracking-headline); font-weight: 700; line-height: 1.35; align-self: start; }
+.tile-value { font-size: 26px; font-weight: 700; color: var(--vhpc-aqua); line-height: 1.1; align-self: end; }
+.tile-delta { font-size: 13px; font-weight: 700; }
+.tile-explain { font-size: 11px; color: var(--vhpc-grey); line-height: 1.4; font-style: italic; letter-spacing: var(--tracking-subhead); }
+
+/* Delta colour is computed from the number (src.units.direction_class);
+   these classes only paint what that function decided. */
+.delta-good { color: var(--flag-green); }
+.delta-bad { color: var(--flag-red); }
+.delta-flat { color: var(--vhpc-grey); }
+
+/* ---- Charts --------------------------------------------------------- */
+.chart { margin: 0; }
+.chart-title { font-size: 13px; font-weight: 700; color: var(--vhpc-grey); margin-bottom: 8px; }
+.chart-wrap { position: relative; height: 300px; }
+.chart-wrap.tall { height: 360px; }
+
+/* ---- Tables --------------------------------------------------------- */
+.table-wrap { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+.data-table caption { text-align: left; font-size: 12px; color: var(--vhpc-grey); padding: 0 0 8px; }
+.data-table th {
+  background: var(--vhpc-aqua); color: var(--vhpc-white);
+  padding: 10px; text-align: left; font-weight: 700; font-size: 12px;
+  text-transform: uppercase; letter-spacing: var(--tracking-headline);
+}
+.data-table td { padding: 10px; border-bottom: 1px solid var(--vhpc-rule); vertical-align: top; }
+.data-table tbody tr:nth-child(even) td { background: var(--vhpc-sandstone); }
+.data-table .right, .data-table th.right { text-align: right; }
+.data-table .center { text-align: center; }
+.data-table td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.data-table tr.row-good td { background: var(--flag-green-bg); }
+.data-table tr.row-warn td { background: var(--flag-amber-bg); }
+.data-table tr.row-danger td { background: var(--flag-red-bg); }
+.data-table tfoot .row-total td { font-weight: 700; background: var(--vhpc-aqua-10); border-top: 2px solid var(--vhpc-aqua); border-bottom: 0; }
+
+/* ---- Callouts ------------------------------------------------------- */
+.callout { background: var(--vhpc-aqua-06); border-left: 4px solid var(--vhpc-aqua); padding: 12px 16px; border-radius: var(--radius); font-size: 13px; margin: 12px 0; }
+.callout-pending { background: var(--flag-amber-bg); border-left-color: var(--flag-amber); color: #78350f; }
+
+/* ---- Flag rows (status, off-palette) -------------------------------- */
+.flag-list { display: grid; gap: 8px; }
+.flag-row { padding: 12px 16px; border-radius: var(--radius); display: flex; align-items: flex-start; gap: 12px; border-left: 4px solid; }
+.flag-icon { font-size: 18px; line-height: 1; flex-shrink: 0; }
+.flag-body { flex: 1; font-size: 13px; color: var(--vhpc-grey); }
+.flag-title { display: block; margin-bottom: 4px; color: var(--vhpc-deep); }
+.flag-red { background: var(--flag-red-bg); border-left-color: var(--flag-red); }
+.flag-amber { background: var(--flag-amber-bg); border-left-color: var(--flag-amber); }
+.flag-green { background: var(--flag-green-bg); border-left-color: var(--flag-green); }
+.flag-blue { background: var(--flag-blue-bg); border-left-color: var(--flag-blue); }
+
+/* ---- Terms ---------------------------------------------------------- */
+dfn.term { font-style: inherit; }
+
+/* ---- Footer --------------------------------------------------------- */
+.site-footer { color: var(--vhpc-grey); font-size: 12px; padding: 24px 0 40px; border-top: 1px solid var(--vhpc-rule); margin-top: 8px; }
+.site-footer p { margin: 0 0 6px; }
+
+/* ---- Print ---------------------------------------------------------- */
+@media print {
+  body { background: #fff; font-size: 11pt; color: #000; }
+  .internal-banner { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .site-header, .exec-summary { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .site-nav, .month-picker { display: none; }
+  .section, .tile, .flag-row, .callout { break-inside: avoid; border: 1px solid #bbb; }
+  .chart-wrap { height: 240px; }
+  a { color: inherit; text-decoration: none; }
+  .container { max-width: none; padding: 0; }
+}

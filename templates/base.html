@@ -1,0 +1,118 @@
+{#
+  The page shell. Everything a dashboard shares lives here once:
+  internal-use banner, Deep Blue header band with the logo slot, nav to the
+  three dashboards, the single month-picker, the footer, and the ONE chart
+  bootstrap that turns every <script type="application/json" id="chart-*">
+  payload into a Chart.js instance.
+
+  Context this shell requires (StrictUndefined - missing keys fail the build):
+    page          {title, slug, subtitle}         slug matches a nav entry
+    months        [{id: 'YYYY-MM', label}]        [] hides the picker
+    active_month  'YYYY-MM'
+    prepared      {iso, label}                    the build date
+    data_sources  [str]
+    asset_root    '' or '/' or a CDN-less prefix  where assets/ is served from
+
+  The logo file assets/logo/vhpc-white.png is supplied by brand, not built
+  here. The <img> keeps its alt text so the header reads correctly until
+  the file lands.
+#}
+{% import 'components/month_picker.html' as mp %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>{{ page.title }} · Versatile High-Performance Coatings</title>
+<link rel="stylesheet" href="{{ asset_root }}assets/css/brand.css">
+<script src="{{ asset_root }}assets/vendor/chart.umd.min.js" defer></script>
+</head>
+<body class="page-{{ page.slug }}">
+
+<div class="internal-banner" role="note">
+  <span class="chip chip-yellow">Internal</span>
+  <span>Internal use only — Versatile High-Performance Coatings. Confidential; do not redistribute. Served behind Cloudflare Access.</span>
+</div>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="logo" href="/executive" aria-label="Versatile High-Performance Coatings home">
+      <img src="{{ asset_root }}assets/logo/vhpc-white.png" alt="Versatile High-Performance Coatings">
+    </a>
+    <nav class="site-nav" aria-label="Dashboards">
+      {% for item in nav %}
+      <a href="{{ item.href }}"{% if item.slug == page.slug %} class="active" aria-current="page"{% endif %}>{{ item.label }}</a>
+      {% endfor %}
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="page-title">
+    <h1>{{ page.title }}</h1>
+    <p class="page-subtitle">{{ page.subtitle }}</p>
+  </div>
+
+  {% if months %}
+  {{ mp.month_picker(months, active_month) }}
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p><strong>Data sources:</strong> {{ data_sources|join(' · ') }}</p>
+    <p>All revenue is NET — product only, excluding shipping and tax, with returns and credit memos deducted. Every rate carries its denominator; every change is a relative change. Full methodology in <em>METHODOLOGY.md</em>.</p>
+    <p>Prepared <time datetime="{{ prepared.iso }}">{{ prepared.label }}</time> · Versatile High-Performance Coatings (VHPC) and Versatile are the same company.</p>
+  </div>
+</footer>
+
+<script>
+/* The one chart bootstrap. Chart configs are data (see src/render/charts.py);
+   this script only adds the two things JSON cannot carry - tick and tooltip
+   formatters - chosen from each payload's meta.y_format. Deferred vendor
+   script has run by DOMContentLoaded. */
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof Chart === 'undefined') { return; }
+  Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = '#465564';
+  var fmt = {
+    usd:   function (v) { return '$' + Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 }); },
+    count: function (v) { return Number(v).toLocaleString('en-US'); },
+    pct:   function (v) { return Number(v).toLocaleString('en-US', { maximumFractionDigits: 1 }) + '%'; }
+  };
+  var payloads = document.querySelectorAll('script[type="application/json"][id^="chart-"]');
+  Array.prototype.forEach.call(payloads, function (node) {
+    var cfg;
+    try { cfg = JSON.parse(node.textContent); } catch (e) { return; }
+    var id = node.id.slice('chart-'.length);
+    var canvas = document.querySelector('canvas[data-chart="' + id + '"]');
+    if (!canvas) { return; }
+    var meta = cfg.meta || {};
+    delete cfg.meta;
+    var f = fmt[meta.y_format] || fmt.count;
+    var axis = meta.value_axis || 'y';
+    cfg.options = cfg.options || {};
+    cfg.options.scales = cfg.options.scales || {};
+    cfg.options.scales[axis] = cfg.options.scales[axis] || {};
+    cfg.options.scales[axis].ticks = Object.assign({}, cfg.options.scales[axis].ticks, {
+      callback: function (v) { return f(v); }
+    });
+    cfg.options.plugins = cfg.options.plugins || {};
+    cfg.options.plugins.tooltip = {
+      callbacks: {
+        label: function (ctx) {
+          var v = axis === 'y' ? ctx.parsed.y : ctx.parsed.x;
+          return (ctx.dataset.label ? ctx.dataset.label + ': ' : '') + f(v);
+        }
+      }
+    };
+    new Chart(canvas, cfg);
+  });
+});
+</script>
+</body>
+</html>
