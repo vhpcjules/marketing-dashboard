@@ -1,0 +1,70 @@
+{
+  "_meta": {
+    "domain": "meta_ads",
+    "frozen": false,
+    "period": "2026-03",
+    "pulled_at": "2026-09-05T21:53:41+00:00",
+    "query_hash": "4b3810380928f7e1",
+    "query_id": "supermetrics:meta_ads",
+    "row_count": 124,
+    "source": "Supermetrics MCP (data_query -> get_async_query_results); Meta Ads act_1162719948574137"
+  },
+  "campaigns": [
+    {
+      "campaign": "Meta-1PLAL_TopCustomers_6m-National-English",
+      "clicks": 270,
+      "impressions": 6040,
+      "judged_on_leads": false,
+      "leads": null,
+      "objective": "OUTCOME_TRAFFIC",
+      "spend": 39.52
+    },
+    {
+      "campaign": "Meta-1PLAL_WebsitePurchases180d-National-English",
+      "clicks": 1078,
+      "impressions": 22644,
+      "judged_on_leads": false,
+      "leads": null,
+      "objective": "OUTCOME_TRAFFIC",
+      "spend": 123.79
+    },
+    {
+      "campaign": "Meta-M25+_SmallBiz+Contractors+Flooring_Interests-National-English",
+      "clicks": 5121,
+      "impressions": 111864,
+      "judged_on_leads": false,
+      "leads": null,
+      "objective": "OUTCOME_TRAFFIC",
+      "spend": 534.86
+    },
+    {
+      "campaign": "Meta-M25+_SmallBiz+Contractors+Flooring_Interests_AdvantagePlus-National-English",
+      "clicks": 6520,
+      "impressions": 182550,
+      "judged_on_leads": false,
+      "leads": null,
+      "objective": "OUTCOME_SALES",
+      "spend": 2802.13
+    }
+  ],
+  "clicks": 12989,
+  "cpm": 10.83,
+  "ctr_pct": 4.02,
+  "days_covered": 31,
+  "impressions": 323098,
+  "lead_campaigns": {
+    "cost_per_lead": null,
+    "lead_field": "onsite_conversion.lead_grouped",
+    "leads": 0,
+    "objectives_counted": [
+      "OUTCOME_LEADS"
+    ],
+    "spend": 0
+  },
+  "note": "leads and cost per lead are computed over OUTCOME_LEADS campaigns only; OUTCOME_SALES / OUTCOME_TRAFFIC campaigns carry leads=null by design",
+  "objectives_present": [
+    "OUTCOME_SALES",
+    "OUTCOME_TRAFFIC"
+  ],
+  "spend": 3500.3
+}

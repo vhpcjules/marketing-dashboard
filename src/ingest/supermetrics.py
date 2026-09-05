@@ -59,7 +59,8 @@ from ..periods import month_end, month_start
 from .common import IngestError, Pull, dec, jsonable
 
 __all__ = [
-    "DATA_QUERY_TOOL", "RESULTS_TOOL", "Source", "LINKEDIN", "INSTAGRAM", "META_ADS", "SOURCES",
+    "DATA_QUERY_TOOL", "RESULTS_TOOL", "Source", "LINKEDIN", "INSTAGRAM", "META_ADS", "GOOGLE_ADS", "GA4", "SOURCES",
+    "GOOGLE_ADS_FIELDS", "GA4_FIELDS", "google_ads_spec", "ga4_spec",
     "LINKEDIN_PAGE_FIELDS", "LINKEDIN_SHARE_FIELDS", "INSTAGRAM_FIELDS", "META_FIELDS",
     "META_LEAD_FIELD", "META_FORBIDDEN_FIELDS", "LEAD_OBJECTIVES",
     "QuerySpec", "QueryResult", "Executor", "SupermetricsError", "CoverageError", "FieldGuardError",
@@ -78,12 +79,26 @@ class Source:
     account: str
     name: str
     domain: str          # snapshot domain
+    sparse_days: bool = False   # ad platforms omit days with no delivery; rows need not reach both month edges
 
 
 LINKEDIN = Source("LIP", "6735901", "LinkedIn Pages", "linkedin")
 INSTAGRAM = Source("IGI", "17841402384139665", "Instagram Insights", "instagram")
-META_ADS = Source("FA", "act_1162719948574137", "Meta Ads", "meta_ads")
-SOURCES: Mapping[str, Source] = {s.domain: s for s in (LINKEDIN, INSTAGRAM, META_ADS)}
+META_ADS = Source("FA", "act_1162719948574137", "Meta Ads", "meta_ads", sparse_days=True)
+GOOGLE_ADS = Source("AW", "4298690564", "Google Ads", "google_ads", sparse_days=True)
+GA4 = Source("GAWA", "361664535", "Google Analytics 4 (versatile.net)", "ga4")
+SOURCES: Mapping[str, Source] = {s.domain: s for s in (LINKEDIN, INSTAGRAM, META_ADS, GOOGLE_ADS, GA4)}
+
+# Google Ads: field ids are capitalised in this connector (field_discovery
+# 2026-09-05). Conversions and ConversionValue are PLATFORM-REPORTED and are
+# stored under names that say so; they are never NetSuite revenue. Report
+# type Campaign; one row per campaign per day.
+GOOGLE_ADS_FIELDS = ("Date", "Campaignname", "AdvertisingChannelType", "Cost", "Impressions", "Clicks",
+                     "Conversions", "ConversionValue")
+# GA4 (versatile.net property). engagementRate is non-aggregatable at the
+# source, so it is recomputed as engagedSessions / sessions over the month.
+# 'conversions' is GA4's count of key events; it is labelled as such.
+GA4_FIELDS = ("date", "sessions", "engagedSessions", "newUsers", "conversions")
 
 # LinkedIn: two metric families that must never meet in one query.
 LINKEDIN_PAGE_FIELDS = ("date", "page_impressions", "page_engagements", "page_engagement_rate")
@@ -133,7 +148,7 @@ class QuerySpec:
 
     @property
     def dated(self) -> bool:
-        return "date" in self.fields
+        return any(f.lower() == "date" for f in self.fields)
 
     def tool_args(self) -> dict[str, Any]:
         """Arguments for the data_query tool. Everything is explicit: no
@@ -203,19 +218,23 @@ def guard_fields(source: Source, fields: Sequence[str]) -> None:
 
 
 def _row_date(row: Mapping[str, Any]) -> date:
-    raw = row.get("date")
+    raw = row.get("date", row.get("Date"))
     if raw is None:
         raise CoverageError("a dated query returned a row without a 'date' field")
     return raw if isinstance(raw, date) else date.fromisoformat(str(raw)[:10])
 
 
-def assert_full_month_coverage(result: QueryResult, month: str, *, as_of: date, dated: bool) -> int:
+def assert_full_month_coverage(result: QueryResult, month: str, *, as_of: date, dated: bool,
+                               sparse_days: bool = False) -> int:
     """Refuse anything short of the whole month. Returns the days covered.
 
     Three tests, any of which refuses:
       - the month is not over as of `as_of`;
       - the result's own range is not exactly [first day, last day];
       - for dated data, the rows do not reach both the first and the last day.
+        Ad platforms (sparse_days) omit days with no delivery, so for them
+        the third test is that every row falls inside the month; the range
+        test above is what catches the v1 mid-month pull.
     """
     first, last = month_start(month), month_end(month)
     if last >= as_of:
@@ -233,6 +252,10 @@ def assert_full_month_coverage(result: QueryResult, month: str, *, as_of: date, 
     if not result.rows:
         raise CoverageError(f"{month}: no rows at all; an empty month is not a zero month")
     days = {_row_date(r) for r in result.rows}
+    if sparse_days:
+        if min(days) < first or max(days) > last:
+            raise CoverageError(f"{month}: rows span {min(days)}..{max(days)}, outside {first}..{last}")
+        return len(days)
     if min(days) != first or max(days) != last:
         raise CoverageError(
             f"{month}: rows span {min(days)}..{max(days)}, not {first}..{last}; "
@@ -269,6 +292,16 @@ def meta_ads_spec(month: str) -> QuerySpec:
     return QuerySpec(META_ADS, META_FIELDS, a, b, {}, "meta_ads")
 
 
+def google_ads_spec(month: str) -> QuerySpec:
+    a, b = _range(month)
+    return QuerySpec(GOOGLE_ADS, GOOGLE_ADS_FIELDS, a, b, {"report_type": "Campaign"}, "google_ads")
+
+
+def ga4_spec(month: str) -> QuerySpec:
+    a, b = _range(month)
+    return QuerySpec(GA4, GA4_FIELDS, a, b, {}, "ga4")
+
+
 # ---------------------------------------------------------------------------
 # Adapter
 # ---------------------------------------------------------------------------
@@ -303,7 +336,8 @@ class SupermetricsAdapter:
 
     def _run(self, spec: QuerySpec, month: str, as_of: date) -> tuple[QueryResult, int]:
         result = self.executor(spec)
-        days = assert_full_month_coverage(result, month, as_of=as_of, dated=spec.dated)
+        days = assert_full_month_coverage(result, month, as_of=as_of, dated=spec.dated,
+                                          sparse_days=spec.source.sparse_days)
         return result, days
 
     def pull_linkedin(self, month: str, *, as_of: date) -> Pull:
@@ -403,8 +437,64 @@ class SupermetricsAdapter:
         }
         return Pull(jsonable(body), len(result.rows), spec.fingerprint())
 
+    def pull_google_ads(self, month: str, *, as_of: date) -> Pull:
+        spec = google_ads_spec(month)
+        result, days = self._run(spec, month, as_of)
+        _require(result.rows, GOOGLE_ADS_FIELDS, "google_ads")
+        camps: dict[tuple[str, str], dict[str, Decimal]] = {}
+        for r in result.rows:
+            key = (str(r["Campaignname"]), str(r["AdvertisingChannelType"]))
+            c = camps.setdefault(key, {k: Decimal(0) for k in ("cost", "impressions", "clicks", "conversions", "value")})
+            c["cost"] += dec(r.get("Cost") or 0, "Cost")
+            c["impressions"] += dec(r.get("Impressions") or 0, "Impressions")
+            c["clicks"] += dec(r.get("Clicks") or 0, "Clicks")
+            c["conversions"] += dec(r.get("Conversions") or 0, "Conversions")
+            c["value"] += dec(r.get("ConversionValue") or 0, "ConversionValue")
+        rows_out = [{"campaign": n, "channel_type": t, "cost": c["cost"], "impressions": c["impressions"],
+                     "clicks": c["clicks"], "platform_conversions": c["conversions"],
+                     "platform_conversion_value": c["value"]} for (n, t), c in sorted(camps.items())]
+        cost = sum((c["cost"] for c in camps.values()), Decimal(0))
+        impressions = sum((c["impressions"] for c in camps.values()), Decimal(0))
+        clicks = sum((c["clicks"] for c in camps.values()), Decimal(0))
+        by_type: dict[str, Decimal] = {}
+        for (_, t), c in camps.items():
+            by_type[t] = by_type.get(t, Decimal(0)) + c["cost"]
+        body = {
+            "cost": cost, "impressions": impressions, "clicks": clicks,
+            "ctr_pct": _rate(clicks, impressions),
+            "avg_cpc": None if clicks == 0 else (cost / clicks).quantize(Decimal("0.01")),
+            "cost_by_channel_type": by_type,
+            "platform_conversions": sum((c["conversions"] for c in camps.values()), Decimal(0)),
+            "platform_conversion_value": sum((c["value"] for c in camps.values()), Decimal(0)),
+            "campaigns": rows_out,
+            "days_covered": days,
+            "note": ("platform_conversions and platform_conversion_value are Google Ads' own attribution and "
+                     "are labelled platform-reported wherever shown; they are never NetSuite revenue"),
+        }
+        return Pull(jsonable(body), len(result.rows), spec.fingerprint())
+
+    def pull_ga4(self, month: str, *, as_of: date) -> Pull:
+        spec = ga4_spec(month)
+        result, days = self._run(spec, month, as_of)
+        _require(result.rows, GA4_FIELDS, "ga4")
+        sessions = _sum(result.rows, "sessions")
+        engaged = _sum(result.rows, "engagedSessions")
+        body = {
+            "sessions": sessions,
+            "engaged_sessions": engaged,
+            "engagement_rate_pct": _rate(engaged, sessions),
+            "new_users": _sum(result.rows, "newUsers"),
+            "key_events": _sum(result.rows, "conversions"),
+            "days_covered": days,
+            "property": GA4.account,
+            "note": ("engagement rate is engaged sessions over sessions for the month, not a mean of daily rates; "
+                     "key_events is GA4's 'conversions' count of configured key events, not orders"),
+        }
+        return Pull(jsonable(body), len(result.rows), spec.fingerprint())
+
     def pull(self, domain: str, month: str, *, as_of: date) -> Pull:
-        fn = {"linkedin": self.pull_linkedin, "instagram": self.pull_instagram, "meta_ads": self.pull_meta_ads}
+        fn = {"linkedin": self.pull_linkedin, "instagram": self.pull_instagram, "meta_ads": self.pull_meta_ads,
+              "google_ads": self.pull_google_ads, "ga4": self.pull_ga4}
         if domain not in fn:
             raise SupermetricsError(f"unknown Supermetrics domain {domain!r}; choose from {sorted(fn)}")
         return fn[domain](month, as_of=as_of)
@@ -418,6 +508,10 @@ def specs_for(domain: str, month: str) -> list[QuerySpec]:
         return [instagram_spec(month)]
     if domain == "meta_ads":
         return [meta_ads_spec(month)]
+    if domain == "google_ads":
+        return [google_ads_spec(month)]
+    if domain == "ga4":
+        return [ga4_spec(month)]
     raise SupermetricsError(f"unknown Supermetrics domain {domain!r}")
 
 

@@ -1,0 +1,45 @@
+{
+  "_meta": {
+    "domain": "google_ads",
+    "frozen": false,
+    "period": "2026-06",
+    "pulled_at": "2026-09-05T22:00:55+00:00",
+    "query_hash": "284d98e63a3a5076",
+    "query_id": "supermetrics:google_ads",
+    "row_count": 60,
+    "source": "Supermetrics MCP (data_query -> get_async_query_results); Google Ads 4298690564"
+  },
+  "avg_cpc": 0.65,
+  "campaigns": [
+    {
+      "campaign": "Non_Brand-Conversions-Paid_Search-Google_Search-Non_Brand",
+      "channel_type": "Search",
+      "clicks": 277,
+      "cost": 1760.6995,
+      "impressions": 4837,
+      "platform_conversion_value": 7158.47,
+      "platform_conversions": 11
+    },
+    {
+      "campaign": "PMAX-Conversions-Performance_Max-Google_Performance_Max-Both",
+      "channel_type": "Performance Max",
+      "clicks": 8761,
+      "cost": 4073.7483,
+      "impressions": 523829,
+      "platform_conversion_value": 268317.48,
+      "platform_conversions": 164.71
+    }
+  ],
+  "clicks": 9038,
+  "cost": 5834.4478,
+  "cost_by_channel_type": {
+    "Performance Max": 4073.7483,
+    "Search": 1760.6995
+  },
+  "ctr_pct": 1.71,
+  "days_covered": 30,
+  "impressions": 528666,
+  "note": "platform_conversions and platform_conversion_value are Google Ads' own attribution and are labelled platform-reported wherever shown; they are never NetSuite revenue",
+  "platform_conversion_value": 275475.95,
+  "platform_conversions": 175.71
+}

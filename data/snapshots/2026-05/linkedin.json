@@ -1,0 +1,24 @@
+{
+  "_meta": {
+    "domain": "linkedin",
+    "frozen": false,
+    "period": "2026-05",
+    "pulled_at": "2026-09-05T21:54:14+00:00",
+    "query_hash": "cbbdcb5184eecc2b",
+    "query_id": "supermetrics:linkedin",
+    "row_count": 32,
+    "source": "Supermetrics MCP (data_query -> get_async_query_results); LinkedIn Pages 6735901"
+  },
+  "note": "page_* and total_share_impressions are different populations and are never summed, compared, or divided into one another",
+  "page_statistics": {
+    "days_covered": 31,
+    "page_engagement_rate_pct": 14.31,
+    "page_engagements": 373,
+    "page_impressions": 2606,
+    "source_family": "PageStatistics (breaks down by date)"
+  },
+  "share_statistics": {
+    "source_family": "share_statistics (whole-month figure; cannot be broken down by date)",
+    "total_share_impressions": 10267
+  }
+}

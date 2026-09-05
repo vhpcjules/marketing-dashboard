@@ -1,0 +1,89 @@
+{
+  "_meta": {
+    "domain": "meta_ads",
+    "frozen": false,
+    "period": "2026-08",
+    "pulled_at": "2026-09-05T21:53:42+00:00",
+    "query_hash": "4b3810380928f7e1",
+    "query_id": "supermetrics:meta_ads",
+    "row_count": 156,
+    "source": "Supermetrics MCP (data_query -> get_async_query_results); Meta Ads act_1162719948574137"
+  },
+  "campaigns": [
+    {
+      "campaign": "Meta-1PLAL_TopCustomers_6m-National-English",
+      "clicks": 188,
+      "impressions": 6450,
+      "judged_on_leads": false,
+      "leads": null,
+      "objective": "OUTCOME_TRAFFIC",
+      "spend": 22.25
+    },
+    {
+      "campaign": "Meta-1PLAL_WebsitePurchases180d-National-English",
+      "clicks": 105,
+      "impressions": 1612,
+      "judged_on_leads": false,
+      "leads": null,
+      "objective": "OUTCOME_TRAFFIC",
+      "spend": 13.3
+    },
+    {
+      "campaign": "Meta-3PLAL_VersatileAugList_2026-Focused_Markets-English",
+      "clicks": 349,
+      "impressions": 12453,
+      "judged_on_leads": true,
+      "leads": 43,
+      "objective": "OUTCOME_LEADS",
+      "spend": 693.25
+    },
+    {
+      "campaign": "Meta-M25+_SmallBiz+Contractors+Flooring_Interests-National-English",
+      "clicks": 3187,
+      "impressions": 44945,
+      "judged_on_leads": false,
+      "leads": null,
+      "objective": "OUTCOME_TRAFFIC",
+      "spend": 310.17
+    },
+    {
+      "campaign": "Meta-M25+_SmallBiz+Contractors+Flooring_Interests_AdvantagePlus-National-English",
+      "clicks": 2489,
+      "impressions": 64308,
+      "judged_on_leads": false,
+      "leads": null,
+      "objective": "OUTCOME_SALES",
+      "spend": 1157.85
+    },
+    {
+      "campaign": "Meta-M25+_UT_NM_MO_SmallBiz+Contractors+Flooring_Interests_AdvantagePlus-Focused_Markets-English",
+      "clicks": 161,
+      "impressions": 6175,
+      "judged_on_leads": true,
+      "leads": 14,
+      "objective": "OUTCOME_LEADS",
+      "spend": 318.57
+    }
+  ],
+  "clicks": 6479,
+  "cpm": 18.5,
+  "ctr_pct": 4.77,
+  "days_covered": 31,
+  "impressions": 135943,
+  "lead_campaigns": {
+    "cost_per_lead": 17.75,
+    "lead_field": "onsite_conversion.lead_grouped",
+    "leads": 57,
+    "objectives_counted": [
+      "OUTCOME_LEADS"
+    ],
+    "spend": 1011.82
+  },
+  "note": "leads and cost per lead are computed over OUTCOME_LEADS campaigns only; OUTCOME_SALES / OUTCOME_TRAFFIC campaigns carry leads=null by design",
+  "objectives_present": [
+    "OUTCOME_LEADS",
+    "OUTCOME_SALES",
+    "OUTCOME_TRAFFIC"
+  ],
+  "spend": 2515.39
+}

@@ -253,3 +253,17 @@ row files; the Sage join happens in the build (`src/data/vintage.py`).
 python -m src.ingest sql   vintage_accounts 2026-08
 python -m src.ingest write vintage_accounts 2026-08 --rows va_fy.json --rows va_ttm.json --as-of 2026-09-05
 ```
+
+## Google Ads and GA4 (added 2026-09-05)
+
+Two more Supermetrics domains, same `spec` / `write` flow. `google_ads` is the
+Versatile account (4298690564), report type Campaign, one row per campaign
+per day; its Conversions and ConversionValue are stored as
+`platform_conversions` / `platform_conversion_value` and are never revenue.
+`ga4` is the versatile.net property (361664535); engagement rate is recomputed
+from engaged sessions over sessions because the source's rate is
+non-aggregatable. Field ids for Google Ads are capitalised (`Date`, `Cost`) in
+this connector; the coverage guard accepts either case.
+
+The Instagram Insights connection expired on 2026-09-05; renew it at the
+Supermetrics token page before pulling `instagram`.

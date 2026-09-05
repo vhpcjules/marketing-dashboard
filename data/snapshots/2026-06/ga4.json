@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "domain": "ga4",
+    "frozen": false,
+    "period": "2026-06",
+    "pulled_at": "2026-09-05T22:00:55+00:00",
+    "query_hash": "6e64e7cbb8e8b8ce",
+    "query_id": "supermetrics:ga4",
+    "row_count": 30,
+    "source": "Supermetrics MCP (data_query -> get_async_query_results); Google Analytics 4 (versatile.net) 361664535"
+  },
+  "days_covered": 30,
+  "engaged_sessions": 14817,
+  "engagement_rate_pct": 51.12,
+  "key_events": 6685,
+  "new_users": 17156,
+  "note": "engagement rate is engaged sessions over sessions for the month, not a mean of daily rates; key_events is GA4's 'conversions' count of configured key events, not orders",
+  "property": "361664535",
+  "sessions": 28987
+}
