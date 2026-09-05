@@ -1,0 +1,114 @@
+{
+  "_meta": {
+    "domain": "source_mix",
+    "frozen": false,
+    "period": "2026-04",
+    "pulled_at": "2026-09-05T16:44:38+00:00",
+    "query_hash": "2e679af98578e4b0",
+    "query_id": "source_mix_by_cohort",
+    "row_count": 27,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "as_of": "2026-09-05",
+  "definition": "sources: keyed by BUILTIN.DF(customer.leadsource); NULL leadsource -> 'Untracked'. customers: COUNT(customer.id) of Customers (subsidiary 2, stage LIKE 'CUSTOMER%', firstorderdate NOT NULL, category NOT IN (2 Garage Experts, 14 Vendor)) created in this cohort month (TO_CHAR(datecreated,'YYYY-MM')), grouped by customer.leadsource. records: COUNT(customer.id) of ALL customer-table records (leads, prospects and customers) created in the month under the same subsidiary/category filters, grouped by leadsource. m1_net_revenue: NET revenue (product only; shipping/tax excluded via i.itemtype IS NOT NULL and tl.taxline='F'; CustCred/CustRfnd deducted; SUM(-tl.foreignamount); t.type IN CustInvc/CashSale/CustCred/CustRfnd; t.subsidiary=2; tl.mainline='F') from those Customers' transactions dated in the cohort month (TO_CHAR(trandate,'YYYY-MM') = TO_CHAR(datecreated,'YYYY-MM')), grouped by the customer's leadsource. customers_m1: COUNT(DISTINCT customer) with an M1 line. m1_transactions: COUNT(DISTINCT transaction.id). untracked_customers / untracked_records: the 'Untracked' (NULL leadsource) counts repeated at top level; untracked_customer_share_pct = untracked_customers / total_customers * 100, untracked_record_share_pct likewise (denominators carried). Query: src/data/queries/source_mix.sql; queries 1-2 run once for the range, query 3 one cohort month per call. Pulled 2026-09-05.",
+  "sources": {
+    "CAM15 Web Referral": {
+      "customers": 1,
+      "customers_m1": 1,
+      "leadsource_id": 947,
+      "m1_net_revenue": 910.94,
+      "m1_transactions": 3,
+      "records": 2
+    },
+    "CAM16 Phone Call": {
+      "customers": 0,
+      "customers_m1": 0,
+      "leadsource_id": 948,
+      "m1_net_revenue": 0.0,
+      "m1_transactions": 0,
+      "records": 2
+    },
+    "CAM3 Website Newsletter Sign-ups": {
+      "customers": 0,
+      "customers_m1": 0,
+      "leadsource_id": 361,
+      "m1_net_revenue": 0.0,
+      "m1_transactions": 0,
+      "records": 12
+    },
+    "CAM35 Direct": {
+      "customers": 11,
+      "customers_m1": 10,
+      "leadsource_id": 1369,
+      "m1_net_revenue": 6270.97,
+      "m1_transactions": 10,
+      "records": 11
+    },
+    "CAM37 Organic Search": {
+      "customers": 23,
+      "customers_m1": 23,
+      "leadsource_id": 1371,
+      "m1_net_revenue": 17790.3,
+      "m1_transactions": 29,
+      "records": 24
+    },
+    "CAM43 Paid Search": {
+      "customers": 7,
+      "customers_m1": 7,
+      "leadsource_id": 86774,
+      "m1_net_revenue": 12750.47,
+      "m1_transactions": 9,
+      "records": 19
+    },
+    "CAM44 PMAX": {
+      "customers": 1,
+      "customers_m1": 1,
+      "leadsource_id": 86775,
+      "m1_net_revenue": 158.01,
+      "m1_transactions": 1,
+      "records": 3
+    },
+    "CAM45 Meta": {
+      "customers": 4,
+      "customers_m1": 4,
+      "leadsource_id": 86776,
+      "m1_net_revenue": 5100.89,
+      "m1_transactions": 4,
+      "records": 47
+    },
+    "CAM9 MailChimp Email": {
+      "customers": 0,
+      "customers_m1": 0,
+      "leadsource_id": 899,
+      "m1_net_revenue": 0.0,
+      "m1_transactions": 0,
+      "records": 1
+    },
+    "Partner Referral": {
+      "customers": 1,
+      "customers_m1": 1,
+      "leadsource_id": -4,
+      "m1_net_revenue": 270.0,
+      "m1_transactions": 1,
+      "records": 3
+    },
+    "Untracked": {
+      "customers": 20,
+      "customers_m1": 16,
+      "leadsource_id": null,
+      "m1_net_revenue": 10700.15,
+      "m1_transactions": 17,
+      "records": 109
+    }
+  },
+  "totals": {
+    "customers": 68,
+    "customers_m1": 63,
+    "m1_net_revenue": 53951.73,
+    "records": 233
+  },
+  "untracked_customer_share_pct": 29.41,
+  "untracked_customers": 20,
+  "untracked_record_share_pct": 46.78,
+  "untracked_records": 109
+}

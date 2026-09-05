@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "domain": "marketing_spend",
+    "frozen": true,
+    "period": "2025-05",
+    "promoted_at": "2026-09-05",
+    "promoted_by": "claude (build)",
+    "promotion_note": "Published in the Aug 18 2026 build (Section 7.6) and reproduced to the dollar from live GL 2026-09-05.",
+    "pulled_at": "2026-09-05T18:45:19+00:00",
+    "query_hash": "efc39115c52d947d",
+    "query_id": "marketing_spend_monthly",
+    "row_count": 5,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "postings": {
+    "66212.0002": 12176,
+    "66212.0016": 22128,
+    "66212.0017": 11993.33,
+    "66212.0019": 1551.94,
+    "66212.0020": 30059
+  }
+}

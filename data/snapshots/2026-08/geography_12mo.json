@@ -1,0 +1,338 @@
+{
+  "_meta": {
+    "domain": "geography_12mo",
+    "frozen": false,
+    "period": "2026-08",
+    "pulled_at": "2026-09-05T16:39:16+00:00",
+    "query_hash": "186b324360159e36",
+    "query_id": "geography_12mo",
+    "row_count": 52,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "address_source": "customer default shipping address: customeraddressbook.defaultshipping='T' -> customeraddressbookentityaddress.state (2-letter code; includes Canadian provinces ON, MB, AB). customer.shipstate/billstate are not exposed to SuiteQL.",
+  "by_state": [
+    {
+      "customers": 210,
+      "m13_net_revenue_closed_cohorts_only": 215987.21,
+      "m1_net_revenue": 206601.01,
+      "state": "CA"
+    },
+    {
+      "customers": 204,
+      "m13_net_revenue_closed_cohorts_only": 189629.24,
+      "m1_net_revenue": 143067.8,
+      "state": "TX"
+    },
+    {
+      "customers": 73,
+      "m13_net_revenue_closed_cohorts_only": 46671.81,
+      "m1_net_revenue": 47289.85,
+      "state": "FL"
+    },
+    {
+      "customers": 35,
+      "m13_net_revenue_closed_cohorts_only": 29794.67,
+      "m1_net_revenue": 23493.63,
+      "state": "NC"
+    },
+    {
+      "customers": 32,
+      "m13_net_revenue_closed_cohorts_only": 38426.56,
+      "m1_net_revenue": 41117.24,
+      "state": "CO"
+    },
+    {
+      "customers": 24,
+      "m13_net_revenue_closed_cohorts_only": 30694.4,
+      "m1_net_revenue": 31701.67,
+      "state": "AZ"
+    },
+    {
+      "customers": 21,
+      "m13_net_revenue_closed_cohorts_only": 15975.93,
+      "m1_net_revenue": 23521.37,
+      "state": "PA"
+    },
+    {
+      "customers": 20,
+      "m13_net_revenue_closed_cohorts_only": 14483.98,
+      "m1_net_revenue": 15038.68,
+      "state": "VA"
+    },
+    {
+      "customers": 19,
+      "m13_net_revenue_closed_cohorts_only": 20350.58,
+      "m1_net_revenue": 13089.74,
+      "state": "WI"
+    },
+    {
+      "customers": 19,
+      "m13_net_revenue_closed_cohorts_only": 12581.56,
+      "m1_net_revenue": 9553.82,
+      "state": "NY"
+    },
+    {
+      "customers": 18,
+      "m13_net_revenue_closed_cohorts_only": 27114.93,
+      "m1_net_revenue": 12107.13,
+      "state": "SC"
+    },
+    {
+      "customers": 17,
+      "m13_net_revenue_closed_cohorts_only": 23714.7,
+      "m1_net_revenue": 16374.43,
+      "state": "OK"
+    },
+    {
+      "customers": 17,
+      "m13_net_revenue_closed_cohorts_only": 11157.57,
+      "m1_net_revenue": 16297.79,
+      "state": "MI"
+    },
+    {
+      "customers": 17,
+      "m13_net_revenue_closed_cohorts_only": 16901.19,
+      "m1_net_revenue": 16124.96,
+      "state": "GA"
+    },
+    {
+      "customers": 17,
+      "m13_net_revenue_closed_cohorts_only": 10362.03,
+      "m1_net_revenue": 11184.35,
+      "state": "TN"
+    },
+    {
+      "customers": 16,
+      "m13_net_revenue_closed_cohorts_only": 12884.82,
+      "m1_net_revenue": 8203.54,
+      "state": "WA"
+    },
+    {
+      "customers": 15,
+      "m13_net_revenue_closed_cohorts_only": 7411.45,
+      "m1_net_revenue": 16615.52,
+      "state": "IL"
+    },
+    {
+      "customers": 14,
+      "m13_net_revenue_closed_cohorts_only": 45969.59,
+      "m1_net_revenue": 14017.71,
+      "state": "ID"
+    },
+    {
+      "customers": 13,
+      "m13_net_revenue_closed_cohorts_only": 24042.11,
+      "m1_net_revenue": 23506.69,
+      "state": "MN"
+    },
+    {
+      "customers": 12,
+      "m13_net_revenue_closed_cohorts_only": 29810.27,
+      "m1_net_revenue": 21529.94,
+      "state": "LA"
+    },
+    {
+      "customers": 12,
+      "m13_net_revenue_closed_cohorts_only": 15724.72,
+      "m1_net_revenue": 10737.64,
+      "state": "MO"
+    },
+    {
+      "customers": 11,
+      "m13_net_revenue_closed_cohorts_only": 11994.42,
+      "m1_net_revenue": 18740.37,
+      "state": "OH"
+    },
+    {
+      "customers": 10,
+      "m13_net_revenue_closed_cohorts_only": 41163.19,
+      "m1_net_revenue": 9124.85,
+      "state": "KS"
+    },
+    {
+      "customers": 10,
+      "m13_net_revenue_closed_cohorts_only": 9096.22,
+      "m1_net_revenue": 7745.3,
+      "state": "MA"
+    },
+    {
+      "customers": 9,
+      "m13_net_revenue_closed_cohorts_only": 7848.49,
+      "m1_net_revenue": 7958.49,
+      "state": "UT"
+    },
+    {
+      "customers": 9,
+      "m13_net_revenue_closed_cohorts_only": 3069.69,
+      "m1_net_revenue": 4408.81,
+      "state": "IN"
+    },
+    {
+      "customers": 9,
+      "m13_net_revenue_closed_cohorts_only": 4300.31,
+      "m1_net_revenue": 3984.92,
+      "state": "NV"
+    },
+    {
+      "customers": 8,
+      "m13_net_revenue_closed_cohorts_only": 14122.58,
+      "m1_net_revenue": 12150.41,
+      "state": "KY"
+    },
+    {
+      "customers": 7,
+      "m13_net_revenue_closed_cohorts_only": 3749.77,
+      "m1_net_revenue": 7841.38,
+      "state": "AR"
+    },
+    {
+      "customers": 7,
+      "m13_net_revenue_closed_cohorts_only": 13264.93,
+      "m1_net_revenue": 7072.61,
+      "state": "IA"
+    },
+    {
+      "customers": 7,
+      "m13_net_revenue_closed_cohorts_only": 7844.74,
+      "m1_net_revenue": 5952.63,
+      "state": "NH"
+    },
+    {
+      "customers": 7,
+      "m13_net_revenue_closed_cohorts_only": 7106.99,
+      "m1_net_revenue": 5033.78,
+      "state": "OR"
+    },
+    {
+      "customers": 7,
+      "m13_net_revenue_closed_cohorts_only": 265.9,
+      "m1_net_revenue": 2333.02,
+      "state": "NJ"
+    },
+    {
+      "customers": 6,
+      "m13_net_revenue_closed_cohorts_only": 7931.25,
+      "m1_net_revenue": 7576.96,
+      "state": "AL"
+    },
+    {
+      "customers": 6,
+      "m13_net_revenue_closed_cohorts_only": 4794.73,
+      "m1_net_revenue": 4885.14,
+      "state": "ND"
+    },
+    {
+      "customers": 5,
+      "m13_net_revenue_closed_cohorts_only": 1870.75,
+      "m1_net_revenue": 4107.54,
+      "state": "NM"
+    },
+    {
+      "customers": 5,
+      "m13_net_revenue_closed_cohorts_only": 2586.25,
+      "m1_net_revenue": 2751.88,
+      "state": "DE"
+    },
+    {
+      "customers": 5,
+      "m13_net_revenue_closed_cohorts_only": 975.74,
+      "m1_net_revenue": 2489.99,
+      "state": "NE"
+    },
+    {
+      "customers": 4,
+      "m13_net_revenue_closed_cohorts_only": 12975.87,
+      "m1_net_revenue": 8279.49,
+      "state": "WY"
+    },
+    {
+      "customers": 4,
+      "m13_net_revenue_closed_cohorts_only": 6555.87,
+      "m1_net_revenue": 6769.3,
+      "state": "MS"
+    },
+    {
+      "customers": 4,
+      "m13_net_revenue_closed_cohorts_only": 10792.18,
+      "m1_net_revenue": 3613.67,
+      "state": "MT"
+    },
+    {
+      "customers": 4,
+      "m13_net_revenue_closed_cohorts_only": 9853.44,
+      "m1_net_revenue": 3128.21,
+      "state": "SD"
+    },
+    {
+      "customers": 3,
+      "m13_net_revenue_closed_cohorts_only": 6171.06,
+      "m1_net_revenue": 6171.06,
+      "state": "MD"
+    },
+    {
+      "customers": 3,
+      "m13_net_revenue_closed_cohorts_only": 3693.15,
+      "m1_net_revenue": 3341.18,
+      "state": "CT"
+    },
+    {
+      "customers": 3,
+      "m13_net_revenue_closed_cohorts_only": 1450.83,
+      "m1_net_revenue": 1450.83,
+      "state": "VT"
+    },
+    {
+      "customers": 3,
+      "m13_net_revenue_closed_cohorts_only": 1374.49,
+      "m1_net_revenue": 1374.49,
+      "state": "WV"
+    },
+    {
+      "customers": 2,
+      "m13_net_revenue_closed_cohorts_only": 0.0,
+      "m1_net_revenue": 1874.7,
+      "state": "HI"
+    },
+    {
+      "customers": 2,
+      "m13_net_revenue_closed_cohorts_only": 616.0,
+      "m1_net_revenue": 616.0,
+      "state": "RI"
+    },
+    {
+      "customers": 1,
+      "m13_net_revenue_closed_cohorts_only": 0.0,
+      "m1_net_revenue": 360.0,
+      "state": "AK"
+    },
+    {
+      "customers": 1,
+      "m13_net_revenue_closed_cohorts_only": 0.0,
+      "m1_net_revenue": 270.0,
+      "state": "AB"
+    },
+    {
+      "customers": 1,
+      "m13_net_revenue_closed_cohorts_only": 91.25,
+      "m1_net_revenue": 91.25,
+      "state": "ON"
+    },
+    {
+      "customers": 1,
+      "m13_net_revenue_closed_cohorts_only": 1511.14,
+      "m1_net_revenue": 0.0,
+      "state": "MB"
+    }
+  ],
+  "category_mapping": "BUILTIN.DF(customer.category) on 2026-09-05: 2=Garage Experts (excluded), 3=DIY, 4=Contractor, 7=CA Will Call (retained), 14=Vendor (excluded).",
+  "customers_with_no_state": 10,
+  "definition": "customers: count of customer RECORDS with subsidiary=2, stage LIKE 'CUSTOMER%', firstorderdate IS NOT NULL, category NOT IN (2,14), and datecreated (cohort month) in 2025-09-01..2026-08-31, grouped by the 2-letter state of the customer's default shipping address (LEFT JOIN; customers with none are counted in customers_with_no_state). This is a record count, not the cohorts_m1 'customers' figure, which counts only customers with M1 revenue. m1_net_revenue: NET revenue (canonical join: CustInvc/CashSale/CustCred/CustRfnd, mainline='F', taxline='F', item NOT NULL, item.itemtype NOT NULL, SUM(-foreignamount)) from transactions whose trandate falls in the same calendar month as the customer's datecreated, summed over the 12 cohort months and grouped by the same state. m13_net_revenue_closed_cohorts_only: same NET join, trandate >= TRUNC(datecreated) AND trandate < TRUNC(datecreated) + 90 (first 90 calendar days starting on the creation DAY, identical to cohorts_m13.sql), summed over only the cohorts whose 90-day window is closed as of 2026-09-05 (month_end + 90 <= as_of): 2025-09..2026-05. Cohorts 2026-06..2026-08 contribute 0 to this column by construction. Each transaction-joined month was pulled as a separate SuiteQL call and summed in Python; per-cohort totals reconcile to the cent with cohorts_m1 (2025-09..2026-05, 2026-08) and cohorts_m13 (all 9 closed cohorts) snapshots. Sorted by customers desc.",
+  "m13_closed_cohorts": "2025-09..2026-05",
+  "m13_net_revenue_no_state_closed_cohorts_only": 8782.08,
+  "m13_net_revenue_total_closed_cohorts_only": 1045542.63,
+  "m1_net_revenue_no_state": 3461.7,
+  "m1_net_revenue_total": 876134.47,
+  "reporting_month": "2026-08",
+  "total_customers": 999,
+  "window": "2025-09..2026-08"
+}

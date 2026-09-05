@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "domain": "lead_routing_14mo_rollup",
+    "frozen": false,
+    "period": "2026-08",
+    "pulled_at": "2026-09-05T16:22:19+00:00",
+    "query_hash": "badf6fe4ba990cc6",
+    "query_id": "lead_routing_by_rep_month",
+    "row_count": 14,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "conversions": 6,
+  "definition": "Sum of unassigned (salesrep IS NULL) records created 2025-07 through 2026-08 inclusive (14 months), subsidiary 2, category NOT IN (2,14); conversions = those that are Customers (stage LIKE 'CUSTOMER%' AND firstorderdate IS NOT NULL) to date; rate_pct = conversions / records * 100.",
+  "rate_pct": 0.2545,
+  "records": 2358
+}

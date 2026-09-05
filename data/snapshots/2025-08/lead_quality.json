@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "domain": "lead_quality",
+    "frozen": false,
+    "period": "2025-08",
+    "pulled_at": "2026-09-05T00:00:00+00:00",
+    "query_hash": "3bdff29a1a3611d0",
+    "query_id": "lead_quality_monthly",
+    "row_count": 1,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "assigned_email_capture_pct": 97.2,
+  "assigned_phone_capture_pct": 85.9,
+  "assigned_records": 142,
+  "assigned_with_email": 138,
+  "assigned_with_phone": 122,
+  "conversion_pct": 21.8,
+  "customers": 90,
+  "definition": "Customer-table records with subsidiary = 2 (Versatile High-Performance Coatings, LLC) and category NOT IN (2 Garage Experts, 14 Vendor), bucketed by TO_CHAR(datecreated,'YYYY-MM') (record-creation month, never first-order month). total_records = COUNT(id). with_phone = COUNT(TRIM(phone)) - NULL-safe test for a non-blank phone; in SuiteQL '' IS NULL so \"TRIM(phone) <> ''\" is never true. mobilephone and altphone were checked and are NULL for every record in 2025-06..2026-08, so phone is the only capture field used. with_email = COUNT(TRIM(email)). customers = records that are Customers per METHODOLOGY.md (stage LIKE 'CUSTOMER%' AND firstorderdate IS NOT NULL), measured to date at pulled_at. assigned_records = COUNT(salesrep) (salesrep NOT NULL); assigned_with_phone / assigned_with_email = the same capture tests restricted to assigned records. phone_capture_pct = with_phone/total_records*100; email_capture_pct = with_email/total_records*100; conversion_pct = customers/total_records*100; assigned_phone_capture_pct = assigned_with_phone/assigned_records*100; all rounded to 0.1. Query: src/data/queries/lead_quality.sql.",
+  "email_capture_pct": 99.0,
+  "phone_capture_pct": 31.2,
+  "phone_fields_used": "phone (mobilephone and altphone checked: NULL for all records in range)",
+  "total_records": 413,
+  "with_email": 409,
+  "with_phone": 129
+}

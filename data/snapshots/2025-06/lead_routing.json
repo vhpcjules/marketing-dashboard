@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "domain": "lead_routing",
+    "frozen": false,
+    "period": "2025-06",
+    "pulled_at": "2026-09-05T16:22:19+00:00",
+    "query_hash": "badf6fe4ba990cc6",
+    "query_id": "lead_routing_by_rep_month",
+    "row_count": 4,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "definition": "Records in the NetSuite customer table with subsidiary = 2 and category NOT IN (2 Garage Experts, 14 Vendor), grouped by TO_CHAR(datecreated,'YYYY-MM') (cohort = record-creation month, never first-order month) and by salesrep (NULL = unassigned). assigned = COUNT(id). converted = COUNT of those records that are Customers per METHODOLOGY.md: stage LIKE 'CUSTOMER%' AND firstorderdate IS NOT NULL, measured to date at pulled_at. reps: alexis = Alexis Garcia (8766), dan = Dan Newhard (5803), parker = Parker Strong (16226); other = any other salesrep id (names listed). total_records = sum of assigned across all buckets. Query: src/data/queries/lead_routing.sql.",
+  "reps": {
+    "alexis": {
+      "assigned": 62,
+      "converted": 46
+    },
+    "dan": {
+      "assigned": 21,
+      "converted": 17
+    },
+    "other": {
+      "assigned": 0,
+      "converted": 0,
+      "names": []
+    },
+    "parker": {
+      "assigned": 44,
+      "converted": 36
+    },
+    "unassigned": {
+      "assigned": 341,
+      "converted": 0
+    }
+  },
+  "total_records": 468
+}

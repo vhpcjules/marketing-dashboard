@@ -1,0 +1,21 @@
+{
+  "_meta": {
+    "domain": "cohorts_m13",
+    "frozen": false,
+    "period": "2025-01",
+    "pulled_at": "2026-09-05T16:29:16+00:00",
+    "query_hash": "227b87dadc8873e9",
+    "query_id": "cohorts_m13_first_90_days",
+    "row_count": 1,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "customers_m13": 61,
+  "customers_m13_v1_timestamp_basis": 41,
+  "customers_m1_live": 55,
+  "definition": "m13_net_revenue: NET revenue (product only; shipping/tax excluded via i.itemtype IS NOT NULL and tl.taxline='F'; CustCred/CustRfnd deducted; SUM(-tl.foreignamount)) from subsidiary-2 transactions of Customers (stage LIKE 'CUSTOMER%', firstorderdate NOT NULL, category NOT IN (2 Garage Experts, 14 Vendor)) created in this cohort month (TO_CHAR(datecreated,'YYYY-MM')), for transactions dated trandate >= TRUNC(datecreated) AND trandate < TRUNC(datecreated) + 90, i.e. the first 90 calendar days starting on the creation day. customers_m13: COUNT(DISTINCT customer) with a qualifying line in that window. m1_net_revenue_live: same join, TO_CHAR(trandate,'YYYY-MM') = TO_CHAR(datecreated,'YYYY-MM'), pulled live. *_v1_timestamp_basis: the same window written as trandate >= datecreated (timestamp, not day), which drops same-day orders placed after the record's creation time; carried only because v1's published matched-cohort totals were computed on that basis. Query: src/data/queries/cohorts_m13.sql.",
+  "m13_net_revenue": 112641.98,
+  "m13_net_revenue_v1_timestamp_basis": 94005.82,
+  "m1_net_revenue_live": 47648.64,
+  "transactions_m13": 133,
+  "window_closed_on": "2025-05-01"
+}

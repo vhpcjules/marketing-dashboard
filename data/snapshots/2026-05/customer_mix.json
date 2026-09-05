@@ -1,0 +1,51 @@
+{
+  "_meta": {
+    "domain": "customer_mix",
+    "frozen": false,
+    "period": "2026-05",
+    "pulled_at": "2026-09-05T16:37:42+00:00",
+    "query_hash": "f77e379c286db98d",
+    "query_id": "customer_mix_by_cohort",
+    "row_count": 6,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "as_of": "2026-09-05",
+  "categories": {
+    "Contractor": {
+      "category_id": 4,
+      "customers": 62,
+      "customers_m1": 53,
+      "customers_m13": 62,
+      "m13_net_revenue": 117643.83,
+      "m13_net_revenue_v1_timestamp_basis": 99130.47,
+      "m13_transactions": 105,
+      "m1_net_revenue": 77829.79,
+      "m1_transactions": 75
+    },
+    "DIY": {
+      "category_id": 3,
+      "customers": 17,
+      "customers_m1": 16,
+      "customers_m13": 17,
+      "m13_net_revenue": 13867.64,
+      "m13_net_revenue_v1_timestamp_basis": 10826.39,
+      "m13_transactions": 26,
+      "m1_net_revenue": 10010.81,
+      "m1_transactions": 20
+    }
+  },
+  "category_map": {
+    "3": "DIY",
+    "4": "Contractor",
+    "7": "CA Will Call",
+    "excluded": "2 = Garage Experts, 14 = Vendor"
+  },
+  "definition": "customers: COUNT(customer.id) of Customers (subsidiary 2, stage LIKE 'CUSTOMER%', firstorderdate NOT NULL, category NOT IN (2 Garage Experts, 14 Vendor)) created in this cohort month (TO_CHAR(datecreated,'YYYY-MM')), grouped by customer.category; names from the customercategory table (3 = DIY, 4 = Contractor, 7 = CA Will Call). m1_net_revenue: NET revenue (product only; shipping/tax excluded via i.itemtype IS NOT NULL and tl.taxline='F'; CustCred/CustRfnd deducted; SUM(-tl.foreignamount); t.type IN CustInvc/CashSale/CustCred/CustRfnd; t.subsidiary=2; tl.mainline='F') from those customers' transactions dated in the cohort month (TO_CHAR(trandate,'YYYY-MM') = TO_CHAR(datecreated,'YYYY-MM')). customers_m1: COUNT(DISTINCT customer) with an M1 line. m13_net_revenue: same join, trandate >= TRUNC(datecreated) AND trandate < TRUNC(datecreated) + 90 (first 90 calendar days from the creation day; the basis used by cohorts_m13.sql); null until the window has closed (month_end + 90 days <= as-of). m13_net_revenue_v1_timestamp_basis: the same window written trandate >= datecreated (timestamp, drops same-day orders placed after the record's creation time); carried because the Aug 18 2026 build's M1-3/M1 multiples were on this basis. customers_m13: COUNT(DISTINCT customer) with a line in the 90-day window. Query: src/data/queries/customer_mix.sql, one cohort month per call.",
+  "m13_window_closed": true,
+  "m13_window_closes_on": "2026-08-29",
+  "totals": {
+    "customers": 79,
+    "m13_net_revenue": 131511.47,
+    "m1_net_revenue": 87840.6
+  }
+}

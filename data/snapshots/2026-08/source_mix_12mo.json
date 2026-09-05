@@ -1,0 +1,203 @@
+{
+  "_meta": {
+    "domain": "source_mix_12mo",
+    "frozen": false,
+    "period": "2026-08",
+    "pulled_at": "2026-09-05T16:44:38+00:00",
+    "query_hash": "2e679af98578e4b0",
+    "query_id": "source_mix_by_cohort_12mo",
+    "row_count": 22,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "as_of": "2026-09-05",
+  "definition": "Sum of the twelve source_mix monthly snapshots 2025-09..2026-08 (cohort = record-creation month). sources: keyed by BUILTIN.DF(customer.leadsource); NULL leadsource -> 'Untracked'. customers: COUNT(customer.id) of Customers (subsidiary 2, stage LIKE 'CUSTOMER%', firstorderdate NOT NULL, category NOT IN (2 Garage Experts, 14 Vendor)) created in this cohort month (TO_CHAR(datecreated,'YYYY-MM')), grouped by customer.leadsource. records: COUNT(customer.id) of ALL customer-table records (leads, prospects and customers) created in the month under the same subsidiary/category filters, grouped by leadsource. m1_net_revenue: NET revenue (product only; shipping/tax excluded via i.itemtype IS NOT NULL and tl.taxline='F'; CustCred/CustRfnd deducted; SUM(-tl.foreignamount); t.type IN CustInvc/CashSale/CustCred/CustRfnd; t.subsidiary=2; tl.mainline='F') from those Customers' transactions dated in the cohort month (TO_CHAR(trandate,'YYYY-MM') = TO_CHAR(datecreated,'YYYY-MM')), grouped by the customer's leadsource. customers_m1: COUNT(DISTINCT customer) with an M1 line. m1_transactions: COUNT(DISTINCT transaction.id). untracked_customers / untracked_records: the 'Untracked' (NULL leadsource) counts repeated at top level; untracked_customer_share_pct = untracked_customers / total_customers * 100, untracked_record_share_pct likewise (denominators carried). Query: src/data/queries/source_mix.sql; queries 1-2 run once for the range, query 3 one cohort month per call. Pulled 2026-09-05.",
+  "sources": {
+    "CAM12 Concrete Network": {
+      "customers": 4,
+      "customers_m1": 3,
+      "leadsource_id": 905,
+      "m1_net_revenue": 2093.93,
+      "m1_transactions": 3,
+      "records": 8
+    },
+    "CAM13 Personal Social": {
+      "customers": 1,
+      "customers_m1": 1,
+      "leadsource_id": 945,
+      "m1_net_revenue": 159.9,
+      "m1_transactions": 1,
+      "records": 2
+    },
+    "CAM14 Google Search": {
+      "customers": 1,
+      "customers_m1": 0,
+      "leadsource_id": 946,
+      "m1_net_revenue": 0.0,
+      "m1_transactions": 0,
+      "records": 4
+    },
+    "CAM15 Web Referral": {
+      "customers": 22,
+      "customers_m1": 20,
+      "leadsource_id": 947,
+      "m1_net_revenue": 14815.88,
+      "m1_transactions": 28,
+      "records": 42
+    },
+    "CAM16 Phone Call": {
+      "customers": 6,
+      "customers_m1": 4,
+      "leadsource_id": 948,
+      "m1_net_revenue": 14392.5,
+      "m1_transactions": 5,
+      "records": 16
+    },
+    "CAM17 Specified Job": {
+      "customers": 2,
+      "customers_m1": 1,
+      "leadsource_id": 949,
+      "m1_net_revenue": 47.75,
+      "m1_transactions": 1,
+      "records": 4
+    },
+    "CAM3 Website Newsletter Sign-ups": {
+      "customers": 5,
+      "customers_m1": 3,
+      "leadsource_id": 361,
+      "m1_net_revenue": 1844.31,
+      "m1_transactions": 3,
+      "records": 147
+    },
+    "CAM34 Organic Social": {
+      "customers": 2,
+      "customers_m1": 1,
+      "leadsource_id": 1368,
+      "m1_net_revenue": 406.21,
+      "m1_transactions": 2,
+      "records": 4
+    },
+    "CAM35 Direct": {
+      "customers": 155,
+      "customers_m1": 140,
+      "leadsource_id": 1369,
+      "m1_net_revenue": 105575.38,
+      "m1_transactions": 177,
+      "records": 157
+    },
+    "CAM36 Organic Shopping": {
+      "customers": 1,
+      "customers_m1": 1,
+      "leadsource_id": 1370,
+      "m1_net_revenue": 1814.45,
+      "m1_transactions": 1,
+      "records": 2
+    },
+    "CAM37 Organic Search": {
+      "customers": 260,
+      "customers_m1": 239,
+      "leadsource_id": 1371,
+      "m1_net_revenue": 180417.44,
+      "m1_transactions": 303,
+      "records": 264
+    },
+    "CAM38 Test Campaign": {
+      "customers": 0,
+      "customers_m1": 0,
+      "leadsource_id": 1404,
+      "m1_net_revenue": 0.0,
+      "m1_transactions": 0,
+      "records": 1
+    },
+    "CAM43 Paid Search": {
+      "customers": 120,
+      "customers_m1": 114,
+      "leadsource_id": 86774,
+      "m1_net_revenue": 109201.15,
+      "m1_transactions": 156,
+      "records": 260
+    },
+    "CAM44 PMAX": {
+      "customers": 22,
+      "customers_m1": 21,
+      "leadsource_id": 86775,
+      "m1_net_revenue": 20524.22,
+      "m1_transactions": 23,
+      "records": 55
+    },
+    "CAM45 Meta": {
+      "customers": 44,
+      "customers_m1": 37,
+      "leadsource_id": 86776,
+      "m1_net_revenue": 18916.72,
+      "m1_transactions": 41,
+      "records": 1077
+    },
+    "CAM6 Concrete D\u00e9cor": {
+      "customers": 0,
+      "customers_m1": 0,
+      "leadsource_id": 896,
+      "m1_net_revenue": 0.0,
+      "m1_transactions": 0,
+      "records": 2
+    },
+    "CAM9 MailChimp Email": {
+      "customers": 5,
+      "customers_m1": 5,
+      "leadsource_id": 899,
+      "m1_net_revenue": 3580.48,
+      "m1_transactions": 6,
+      "records": 12
+    },
+    "Other": {
+      "customers": 1,
+      "customers_m1": 1,
+      "leadsource_id": -3,
+      "m1_net_revenue": 680.04,
+      "m1_transactions": 1,
+      "records": 1
+    },
+    "Partner Referral": {
+      "customers": 12,
+      "customers_m1": 7,
+      "leadsource_id": -4,
+      "m1_net_revenue": 16935.24,
+      "m1_transactions": 11,
+      "records": 25
+    },
+    "Trade Show": {
+      "customers": 1,
+      "customers_m1": 0,
+      "leadsource_id": -5,
+      "m1_net_revenue": 0.0,
+      "m1_transactions": 0,
+      "records": 124
+    },
+    "Untracked": {
+      "customers": 334,
+      "customers_m1": 282,
+      "leadsource_id": null,
+      "m1_net_revenue": 383928.12,
+      "m1_transactions": 369,
+      "records": 1449
+    },
+    "Web": {
+      "customers": 1,
+      "customers_m1": 1,
+      "leadsource_id": -6,
+      "m1_net_revenue": 800.75,
+      "m1_transactions": 1,
+      "records": 7
+    }
+  },
+  "totals": {
+    "customers": 999,
+    "customers_m1": 881,
+    "m1_net_revenue": 876134.47,
+    "records": 3663
+  },
+  "untracked_customer_share_pct": 33.43,
+  "untracked_customers": 334,
+  "untracked_record_share_pct": 39.56,
+  "untracked_records": 1449,
+  "window": "2025-09..2026-08 (12 cohort months)"
+}

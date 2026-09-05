@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "domain": "retention",
+    "frozen": false,
+    "period": "2026-08",
+    "pulled_at": "2026-09-05T16:50:21+00:00",
+    "query_hash": "794b12d4482a7a4e",
+    "query_id": "retention",
+    "row_count": 598,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "by_band": {
+    "2500_plus": {
+      "customers": 104,
+      "one_and_done": 54,
+      "reorder_rate_pct": 48.1,
+      "reordered": 50
+    },
+    "400_2499": {
+      "customers": 673,
+      "one_and_done": 342,
+      "reorder_rate_pct": 49.2,
+      "reordered": 331
+    },
+    "under_400": {
+      "customers": 703,
+      "one_and_done": 470,
+      "reorder_rate_pct": 33.1,
+      "reordered": 233
+    }
+  },
+  "category_mapping": "BUILTIN.DF(customer.category) 2026-09-05: 2 = Garage Experts (excluded), 3 = DIY, 4 = Contractor, 7 = CA Will Call (kept), 14 = Vendor (excluded)",
+  "cohort_window": "2025-01..2026-05",
+  "customers_total": 1480,
+  "definition": "Population: customer.stage LIKE 'CUSTOMER%' AND firstorderdate IS NOT NULL, c.subsidiary = 2, category NOT IN (2,14), datecreated in 2025-01-01..2026-05-31 (cohort = creation month; 1,480 customers, all present in the transaction join). NET revenue = canonical join from net_revenue_monthly.sql (CustInvc/CashSale/CustCred/CustRfnd, t.subsidiary=2, mainline='F', taxline='F', item not null, itemtype not null, SUM(-foreignamount)). First order date = the customer's earliest NET-positive transaction date (NOT customer.firstorderdate: 688 of 1,480 customers have $0 NET dated firstorderdate because the invoice/cash sale posts 1-5 days after the order date; the literal definition would count those first invoices as reorders). first_order_net = NET of all lines dated that first date; bands <400, 400-2499, >=2500. reordered = any transaction with transaction-level NET > 0 dated strictly after the first order date; one_and_done = customers - reordered; reorder_rate_pct = reordered/customers*100. time_to_second_order: gap = first such later date minus first order date, over reorderers only; median and share of reorderers with gap <= 17/30/60/90/180 days. small_vs_mid_relative_gap_pct = (rate_under_400 - rate_400_2499) / rate_400_2499 * 100 (relative, not points). Pulled as a band x gap_days histogram, one creation month per SuiteQL call (17 calls, 598 histogram rows), aggregated in Python.",
+  "small_vs_mid_relative_gap_pct": -32.7,
+  "time_to_second_order": {
+    "median_days": 22.0,
+    "n_reorderers": 614,
+    "pct_by_day_17": 44.0,
+    "pct_by_day_180": 90.6,
+    "pct_by_day_30": 57.8,
+    "pct_by_day_60": 72.8,
+    "pct_by_day_90": 80.9
+  }
+}

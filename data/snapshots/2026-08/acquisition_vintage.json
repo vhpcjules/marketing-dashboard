@@ -1,0 +1,344 @@
+{
+  "_meta": {
+    "domain": "acquisition_vintage",
+    "frozen": false,
+    "period": "2026-08",
+    "pulled_at": "2026-09-05T17:00:06+00:00",
+    "query_hash": "354a1d779d816a47",
+    "query_id": "acquisition_vintage",
+    "row_count": 29,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "basis_field": "customer.datecreated (NetSuite) -> TO_CHAR(datecreated,'YYYY'), banded. NO field in NetSuite carries the original Sage acquisition date: all 108 ENTITY-type custom fields checked (none is a legacy/original/Sage date); firstorderdate, firstsaledate, startdate, firstvisit, dateclosed, datelead, dateprospect, dateconversion are all 2023+ on migrated accounts (one record has firstorderdate 2002); comments never mention 'since'/'sage'; the transaction table has no pre-go-live history (12 revenue-type transactions dated 2023, 5,481 in 2024, none earlier).",
+  "category_mapping": "BUILTIN.DF(customer.category) 2026-09-05: 2 = Garage Experts (excluded), 3 = DIY, 4 = Contractor, 7 = CA Will Call (kept), 14 = Vendor (excluded)",
+  "coverage_note": "datecreated is a MIGRATION date for legacy accounts. Of 3,043 Customers (sub 2, stage CUSTOMER%, firstorderdate not null, excl cat 2/14): 823 show datecreated 2023 (loads on 2023-08-21: 610, 09-27: 3, 10-13: 1, 10-30: 209; Sage account numbers 22..10694) and a further 235 were loaded 2024-09-10/27/29/30 before the Oct-2024 go-live; only 256 of the 491 '2024' accounts were genuinely created in 2024. Consequently the 2007-2009 .. 2020-2021 bands are EMPTY under this basis, the 2022-2023 band is entirely migration-dated legacy accounts (683 active in FY2025) and the 2024 band mixes ~235 loaded legacy accounts with genuine post-go-live accounts. v1 (Aug 18 2026) used Sage created dates from a source outside NetSuite that is not in this repository; its pre-2018 / 2010-2012 figures cannot be reproduced from NetSuite. Genuine eras are reliable for 2025 and 2026 only.",
+  "definition": "For each account (customer.id) with at least one NET-positive transaction in the window: era = TO_CHAR(customer.datecreated,'YYYY') banded 2007-2009/2010-2012/2013-2015/2016-2017/2018-2019/2020-2021/2022-2023/2024/2025/2026; net_revenue = the canonical NET join from net_revenue_monthly.sql (t.type IN CustInvc/CashSale/CustCred/CustRfnd, t.subsidiary=2, tl.mainline='F', tl.taxline='F', tl.item NOT NULL, i.itemtype NOT NULL, c.category NOT IN (2,14), SUM(-tl.foreignamount), COALESCE) summed over the window for those accounts; revenue_per_account = net_revenue/accounts; shares are of the window totals. Query src/data/queries/acquisition_vintage.sql, run per datecreated-year slice (<2024, 2024, 2025, >=2026) per window; 8 calls, 29 rows, 2026-09-05. Accounts whose datecreated is 2026 yet have 2025 revenue (9 in FY2025) are record re-creations/merges and are kept under their datecreated year.",
+  "fy2025": {
+    "active_definition": "account has >= 1 transaction with NET > 0 in the window (pos_txns > 0); revenue is those accounts' full window NET incl. their credits",
+    "alt_all_transacting_accounts": 2047,
+    "alt_all_transacting_net": 20590950.41,
+    "alt_window_net_positive_accounts": 2029,
+    "alt_window_net_positive_net": 20594462.56,
+    "bands": [
+      {
+        "accounts": 0,
+        "era": "2007-2009",
+        "net_revenue": 0.0,
+        "revenue_per_account": 0.0,
+        "share_of_accounts_pct": 0.0,
+        "share_of_revenue_pct": 0.0
+      },
+      {
+        "accounts": 0,
+        "era": "2010-2012",
+        "net_revenue": 0.0,
+        "revenue_per_account": 0.0,
+        "share_of_accounts_pct": 0.0,
+        "share_of_revenue_pct": 0.0
+      },
+      {
+        "accounts": 0,
+        "era": "2013-2015",
+        "net_revenue": 0.0,
+        "revenue_per_account": 0.0,
+        "share_of_accounts_pct": 0.0,
+        "share_of_revenue_pct": 0.0
+      },
+      {
+        "accounts": 0,
+        "era": "2016-2017",
+        "net_revenue": 0.0,
+        "revenue_per_account": 0.0,
+        "share_of_accounts_pct": 0.0,
+        "share_of_revenue_pct": 0.0
+      },
+      {
+        "accounts": 0,
+        "era": "2018-2019",
+        "net_revenue": 0.0,
+        "revenue_per_account": 0.0,
+        "share_of_accounts_pct": 0.0,
+        "share_of_revenue_pct": 0.0
+      },
+      {
+        "accounts": 0,
+        "era": "2020-2021",
+        "net_revenue": 0.0,
+        "revenue_per_account": 0.0,
+        "share_of_accounts_pct": 0.0,
+        "share_of_revenue_pct": 0.0
+      },
+      {
+        "accounts": 683,
+        "era": "2022-2023",
+        "net_revenue": 15076893.42,
+        "revenue_per_account": 22074.51,
+        "share_of_accounts_pct": 33.51,
+        "share_of_revenue_pct": 73.21
+      },
+      {
+        "accounts": 259,
+        "era": "2024",
+        "net_revenue": 2887344.07,
+        "revenue_per_account": 11148.05,
+        "share_of_accounts_pct": 12.71,
+        "share_of_revenue_pct": 14.02
+      },
+      {
+        "accounts": 1087,
+        "era": "2025",
+        "net_revenue": 2615967.32,
+        "revenue_per_account": 2406.59,
+        "share_of_accounts_pct": 53.34,
+        "share_of_revenue_pct": 12.7
+      },
+      {
+        "accounts": 9,
+        "era": "2026",
+        "net_revenue": 13539.42,
+        "revenue_per_account": 1504.38,
+        "share_of_accounts_pct": 0.44,
+        "share_of_revenue_pct": 0.07
+      }
+    ],
+    "by_datecreated_year_x_firstorderdate_year": {
+      "dc2023_fo2002": {
+        "accounts": 1,
+        "net_revenue": 31975.82
+      },
+      "dc2023_fo2024": {
+        "accounts": 376,
+        "net_revenue": 14115657.19
+      },
+      "dc2023_fo2025": {
+        "accounts": 306,
+        "net_revenue": 929260.41
+      },
+      "dc2023_fonull": {
+        "accounts": 0,
+        "net_revenue": 0.0
+      },
+      "dc2024_fo2024": {
+        "accounts": 178,
+        "net_revenue": 2531898.28
+      },
+      "dc2024_fo2025": {
+        "accounts": 81,
+        "net_revenue": 355445.79
+      },
+      "dc2024_fonull": {
+        "accounts": 0,
+        "net_revenue": 0.0
+      },
+      "dc2025_fo2024": {
+        "accounts": 7,
+        "net_revenue": 42342.66
+      },
+      "dc2025_fo2025": {
+        "accounts": 1078,
+        "net_revenue": 2426070.35
+      },
+      "dc2025_fo2026": {
+        "accounts": 0,
+        "net_revenue": 0.0
+      },
+      "dc2025_fonull": {
+        "accounts": 2,
+        "net_revenue": 147554.31
+      },
+      "dc2026_fo2024": {
+        "accounts": 1,
+        "net_revenue": 1167.79
+      },
+      "dc2026_fo2025": {
+        "accounts": 8,
+        "net_revenue": 12371.63
+      }
+    },
+    "total_accounts": 2038,
+    "total_revenue": 20593744.23
+  },
+  "population_note": "Active = any NET-positive transaction in the window, subsidiary 2 (t.subsidiary), category NOT IN (2,14); no stage/firstorderdate filter (2 of 2,047 accounts transacting in 2025 are stage LEAD). Cross-checks 2026-09-05 for 2025: distinct accounts on any revenue-type transaction 2,047; on any product line 2,047; with a SalesOrd 2,093; no account has freight-only lines. NetSuite yields ~2,040-2,090 accounts under every reading, so the published 2,676 active accounts is not reproducible from NetSuite and probably came from the same external Sage-based source (or was not de-duplicated).",
+  "pre_2018_summary": {
+    "accounts": 0,
+    "avg_annual_net": 0.0,
+    "share_of_accounts_pct": 0.0,
+    "share_of_revenue_pct": 0.0,
+    "status": "NOT REPRODUCIBLE from NetSuite: no pre-2018 datecreated exists (see coverage_note). Published Aug 18 2026: 275 accounts, 10.3% of accounts, 34.3% of revenue, avg $25,574 - carried in published_reference_2026_08_18, not recomputed."
+  },
+  "published_reference_2026_08_18": {
+    "band_2010_2012_accounts": 36,
+    "band_2010_2012_net_revenue": 1710260,
+    "band_2025_accounts": 1126,
+    "band_2025_net_revenue": 2608348,
+    "band_2025_revenue_per_account": 2316,
+    "basis": "v1 Sage created dates (external to NetSuite; not in repo)",
+    "fy2025_active_accounts": 2676,
+    "fy2025_net_revenue": 20496819,
+    "pre_2018_accounts": 275,
+    "pre_2018_avg_annual_net": 25574,
+    "pre_2018_share_of_accounts_pct": 10.3,
+    "pre_2018_share_of_revenue_pct": 34.3
+  },
+  "ttm_2026_08": {
+    "active_definition": "account has >= 1 transaction with NET > 0 in the window (pos_txns > 0); revenue is those accounts' full window NET incl. their credits",
+    "alt_all_transacting_accounts": 2040,
+    "alt_all_transacting_net": 22179733.45,
+    "alt_window_net_positive_accounts": 2022,
+    "alt_window_net_positive_net": 22182364.78,
+    "bands": [
+      {
+        "accounts": 0,
+        "era": "2007-2009",
+        "net_revenue": 0.0,
+        "revenue_per_account": 0.0,
+        "share_of_accounts_pct": 0.0,
+        "share_of_revenue_pct": 0.0
+      },
+      {
+        "accounts": 0,
+        "era": "2010-2012",
+        "net_revenue": 0.0,
+        "revenue_per_account": 0.0,
+        "share_of_accounts_pct": 0.0,
+        "share_of_revenue_pct": 0.0
+      },
+      {
+        "accounts": 0,
+        "era": "2013-2015",
+        "net_revenue": 0.0,
+        "revenue_per_account": 0.0,
+        "share_of_accounts_pct": 0.0,
+        "share_of_revenue_pct": 0.0
+      },
+      {
+        "accounts": 0,
+        "era": "2016-2017",
+        "net_revenue": 0.0,
+        "revenue_per_account": 0.0,
+        "share_of_accounts_pct": 0.0,
+        "share_of_revenue_pct": 0.0
+      },
+      {
+        "accounts": 0,
+        "era": "2018-2019",
+        "net_revenue": 0.0,
+        "revenue_per_account": 0.0,
+        "share_of_accounts_pct": 0.0,
+        "share_of_revenue_pct": 0.0
+      },
+      {
+        "accounts": 0,
+        "era": "2020-2021",
+        "net_revenue": 0.0,
+        "revenue_per_account": 0.0,
+        "share_of_accounts_pct": 0.0,
+        "share_of_revenue_pct": 0.0
+      },
+      {
+        "accounts": 622,
+        "era": "2022-2023",
+        "net_revenue": 15191288.38,
+        "revenue_per_account": 24423.29,
+        "share_of_accounts_pct": 30.6,
+        "share_of_revenue_pct": 68.49
+      },
+      {
+        "accounts": 199,
+        "era": "2024",
+        "net_revenue": 2789958.85,
+        "revenue_per_account": 14019.89,
+        "share_of_accounts_pct": 9.79,
+        "share_of_revenue_pct": 12.58
+      },
+      {
+        "accounts": 623,
+        "era": "2025",
+        "net_revenue": 3197917.58,
+        "revenue_per_account": 5133.09,
+        "share_of_accounts_pct": 30.64,
+        "share_of_revenue_pct": 14.42
+      },
+      {
+        "accounts": 589,
+        "era": "2026",
+        "net_revenue": 1002190.02,
+        "revenue_per_account": 1701.51,
+        "share_of_accounts_pct": 28.97,
+        "share_of_revenue_pct": 4.52
+      }
+    ],
+    "by_datecreated_year_x_firstorderdate_year": {
+      "dc2023_fo2002": {
+        "accounts": 1,
+        "net_revenue": 38880.18
+      },
+      "dc2023_fo2024": {
+        "accounts": 349,
+        "net_revenue": 14188794.64
+      },
+      "dc2023_fo2025": {
+        "accounts": 189,
+        "net_revenue": 838908.77
+      },
+      "dc2023_fo2026": {
+        "accounts": 83,
+        "net_revenue": 124704.79
+      },
+      "dc2023_fonull": {
+        "accounts": 0,
+        "net_revenue": 0.0
+      },
+      "dc2024_fo2024": {
+        "accounts": 131,
+        "net_revenue": 2448814.13
+      },
+      "dc2024_fo2025": {
+        "accounts": 43,
+        "net_revenue": 303125.8
+      },
+      "dc2024_fo2026": {
+        "accounts": 25,
+        "net_revenue": 38018.92
+      },
+      "dc2025_fo2024": {
+        "accounts": 4,
+        "net_revenue": 29920.39
+      },
+      "dc2025_fo2025": {
+        "accounts": 587,
+        "net_revenue": 2819324.4
+      },
+      "dc2025_fo2026": {
+        "accounts": 30,
+        "net_revenue": 201118.48
+      },
+      "dc2025_fonull": {
+        "accounts": 2,
+        "net_revenue": 147554.31
+      },
+      "dc2026_fo2024": {
+        "accounts": 2,
+        "net_revenue": 2475.74
+      },
+      "dc2026_fo2025": {
+        "accounts": 8,
+        "net_revenue": 13980.36
+      },
+      "dc2026_fo2026": {
+        "accounts": 579,
+        "net_revenue": 985733.92
+      },
+      "dc2026_fonull": {
+        "accounts": 0,
+        "net_revenue": 0.0
+      }
+    },
+    "total_accounts": 2033,
+    "total_revenue": 22181354.83
+  },
+  "windows": {
+    "fy2025": "trandate >= 2025-01-01 AND < 2026-01-01",
+    "ttm_2026_08": "trandate >= 2025-09-01 AND < 2026-09-01"
+  }
+}

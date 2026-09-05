@@ -235,3 +235,79 @@ found on 2026-09-04 is logged in `reports/restatement_2026-08.md` and
 This matters for the target: FY2025 M1 is held at the published **$878,098**,
 not the $872,631 a live pull returns today. Without that pin, the target
 would silently re-baseline on every build.
+
+## Findings from the 2026-09-05 data pulls
+
+Eight metric families were pulled from NetSuite and reconciled against the
+August 18 build. Four changed the methodology; two could not be reproduced.
+
+**First 90 days uses the customer's creation *date*, not timestamp.**
+`customer.datecreated` carries a time of day. The inherited SQL
+`trandate >= datecreated` therefore excluded a first order placed earlier on
+the creation day than the record itself — which is common, since the record
+is often created at order entry. The published matched Jan–Apr figures
+($460,932 / $310,602; $1,945 / $1,618 per customer) reproduce *to the cent*
+on that flawed basis. On the corrected basis
+(`trandate >= TRUNC(datecreated) AND trandate < TRUNC(datecreated) + 90`)
+first-90-days revenue is about 20% higher in both years, and the year-over-
+year story survives (−30.6% on matched Jan–Apr against −32.6% before). The
+corrected basis is the one used. `src/data/queries/cohorts_m13.sql` documents
+both. A related v1 defect: the Leadership chart's Sep 2025 first-90-days bar
+of $308,048 was the cohort's *lifetime* revenue, not its 90-day figure.
+
+**The acquisition-vintage table cannot be produced from NetSuite.** Every
+account migrated at go-live carries a `datecreated` equal to the migration
+load date (Aug–Oct 2023 or Sep 2024), so no pre-2023 era exists in the
+system. v1 used Sage created dates from a workbook. All 108 entity custom
+fields were checked; none carries the original date. Sage account numbers
+survive in `entityid` and are sequential, so a Sage export or a
+number→year anchor table supplied as a manual file would restore the eras.
+Until then the vintage section renders as pending, and the published pre-2018
+figures (275 accounts, 34.3% of FY2025 revenue, about 11× a 2025 account) are
+carried with their source named and their non-reproducibility stated. FY2025
+revenue totals *do* reconcile within 0.5%; the published active-account count
+(2,676) is ~31% above anything NetSuite returns (2,038–2,093) and most
+likely counted sales orders rather than NET-positive invoices.
+
+**"First order" is the first NET-positive transaction, not `firstorderdate`.**
+46.5% of customers have zero NET on their `firstorderdate` (the field is set
+at order entry, before invoicing). Retention bands use the first NET-positive
+date. On that basis the under-$400 band reorders at 33.1% (published 35.4%),
+the median time to second order is 22 days (published 17), and 80.9% of
+eventual reorders happen inside 90 days (published 83%). The 90-day
+retargeting window is still correctly sized; the published under-$400
+population (~915 implied) could not be reproduced from any variant (703 live).
+
+**Phone capture uses a NULL-safe test.** In SuiteQL the empty string *is*
+NULL, so `TRIM(phone) <> ''` is never true and returns zero for every month.
+`COUNT(TRIM(phone))` is the equivalent test. Published July 2026 phone
+capture of 55.7% reads 56.9% today because 22 July records gained a phone
+number after the build — conversion and capture are to-date measures and rise
+until frozen.
+
+**Customer mix and source mix do not reproduce v1's buckets.** The published
+12-month mix (1,055 customers, $900,702 M1) matches no 12-month `datecreated`
+window; its M1 total exceeds the frozen cohort sum by $24,578, consistent
+with the shipping-inclusion bug. Live: Contractor 81% of customers and 87.5%
+of M1 (published 85% / 91%); 12–13 customers were reclassified Contractor →
+DIY after August 18. Lead-source buckets: only Organic Search and Trade Show
+reproduce; Paid Google is 165 (published 193), Direct 192–219 (328), Email
+10 (27). The raw `leadsource` → bucket mapping is recorded in the source_mix
+query header. **Untracked share is rising steeply in the two newest cohorts**
+(56% of July customers, 70% of August) — partly because recent leads have not
+converted yet, partly a real attribution gap worth a flag.
+
+**Lead routing reproduces within one or two records per rep-month.** The
+differences are to-date conversions and records deleted or re-dated since
+August 18 (e.g. July 2026: Alexis 59/30 vs published 59/29; Parker 71/33 vs
+72/31). v1's own page carried three different July totals (277, 278, 287);
+the live definition gives 276.
+
+**Geography** reproduces in total (1,011 vs 1,028) and in the TX+CA share
+(43%), with individual states moving ±5 in both directions since August 18.
+State comes from the default shipping address-book entry; `shipstate` is not
+exposed to SuiteQL.
+
+**Reading frozen values against live ones.** Published figures were rounded
+to the dollar. Drift detection ignores differences of 50 cents or less so a
+cent-level live value is not reported as movement.
