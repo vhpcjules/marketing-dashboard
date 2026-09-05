@@ -106,9 +106,13 @@ EXECUTIVE = PageContract(
             "{ytd}.spend": "currency",
             "{ytd}.roas_m1": "ratio", "{ytd}.roas_to_date": "ratio",
             "{ytd}.roas_maturity": "text", "{ytd}.repeat_share": "pct",
-            "{fy}.target": "currency", "{ytd}.m1_net": "currency",
-            "{fy}.required_monthly": "currency", "{fy}.forecast_at_run_rate": "currency",
+            "{fy}.target": "currency", "{fy}.target_growth": "pct", "{ytd}.m1_net": "currency",
         })
+        # pace against the total-revenue target (pendable until revenue_total is ingested)
+        + _m({
+            "{ytd}.total_net": "currency", "{pytd}.total_net": "currency",
+            "{fy}.required_monthly": "currency", "{fy}.forecast_at_run_rate": "currency",
+        }, section="pace")
         + _m({"{ytd}.spend_share_of_revenue": "pct"}, hib=False)
         # year over year
         + _m({
@@ -117,7 +121,10 @@ EXECUTIVE = PageContract(
             "{ytd}.return_per_dollar": "ratio", "{pytd}.return_per_dollar": "ratio",
         })
         + _m({"{pytd}.spend": "currency"}, hib=False)
-        # legacy accounts, published basis (pendable)
+        # legacy accounts (pendable). The published-basis ids are what the template asks for
+        # when report.vintage_basis == 'published'; the computed ids when it is 'computed'.
+        # The contract lists the published set; the computed set is checked by the template
+        # itself failing loudly on a missing id.
         + _m({
             "vintage.pre2018_accounts": "count", "vintage.pre2018_share_of_accounts": "pct",
             "vintage.pre2018_share_of_revenue": "pct", "vintage.pre2018_avg_annual_net": "currency",
@@ -130,7 +137,7 @@ EXECUTIVE = PageContract(
     ),
     charts=("new_customers_12m", "m1_net_12m", "sources_customers"),
     tables=("budget_vs_actual", "online"),
-    pendable_sections=("m13_quality", "sources", "online", "vintage"),
+    pendable_sections=("m13_quality", "sources", "online", "vintage", "pace"),
 )
 
 MARKETING_OPS = PageContract(
@@ -160,16 +167,17 @@ MARKETING_OPS = PageContract(
               "retention.under_400.rate": "pct", "retention.400_2499.rate": "pct"}, section="retention")
         # asks (pendable)
         + _m({"ask{yy}.total": "currency", "budget{yy}.released_by_cancellation": "currency",
-              "ask{yy}.agency_rate": "pct"}, section="asks")
-        + _m({"{fy}.shortfall_after_available": "currency",
-              "{fy}.shortfall_after_available_conservative": "currency"}, hib=False)
+              "ask{yy}.agency_rate": "pct", "{fy}.available_within_plan": "currency"}, section="asks")
+        + _m({"{fy}.shortfall_after_available": "currency", "{fy}.spend_to_close_conservative": "currency",
+              "{fy}.spend_to_close_at_marketing_return": "currency",
+              "{fy}.shortfall_after_available_conservative": "currency"}, hib=False, section="pace")
     ),
     claims=("{fy}.on_track", "budget{yy}.vs_plan_story"),
     charts=("m13_first90_12",),
     tables=("paid_media_recon", "budget_vs_actual", "yoy_channel", "m13_cohorts", "cohorts_by_age",
             "retention_bands", "asks"),
     pendable_sections=("paid_media", "meta_ads", "social", "google_web", "initiatives", "yoy_channel", "m13_quality",
-                       "retention", "lapsed", "asks"),
+                       "retention", "lapsed", "asks", "pace"),
 )
 
 SALES = PageContract(

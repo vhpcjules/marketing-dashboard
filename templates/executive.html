@@ -55,7 +55,11 @@
       <div class="desc">{{ c(ytd ~ '.roas_story') }}</div>
     </div>
     <div class="headline">
-      <div class="num">{{ m(ytd ~ '.m1_net') }} of a {{ m(fy ~ '.target') }} target</div>
+      {% if 'pace' in pending %}
+      <div class="num">{{ m(ytd ~ '.m1_net') }} new-customer NET {{ term('m1') }} · {{ delta_between(ytd ~ '.m1_net', pytd ~ '.m1_net') }} on last year</div>
+      {% else %}
+      <div class="num">{{ m(ytd ~ '.total_net') }} of a {{ m(fy ~ '.target') }} total-revenue target</div>
+      {% endif %}
       <div class="desc">{{ c(fy ~ '.pace_story') }}</div>
     </div>
   </div>
@@ -145,13 +149,22 @@
     {{ t.tile('Spend as a share of month-one revenue', m(ytd ~ '.spend_share_of_revenue'), None, 'Lower is better.') }}
   </div>
 
-  {{ b.band_label('Pace against the target', 'graded on month one') }}
+  {{ b.band_label('Pace against the company target', 'total NET revenue, all customers') }}
+  <p class="section-explain">Leadership's target is {{ m(fy ~ '.target_growth') }} growth in total NET revenue over last year. New-customer revenue is marketing's contribution to it, shown above; it is not the target and is not graded as if it were.</p>
+  {% if 'pace' in pending %}
+  <div class="tile-grid tile-grid-pair">
+    {{ t.tile('Full-year target, total NET revenue', m(fy ~ '.target')) }}
+    {{ t.tile('New-customer NET revenue to date, month one', m(ytd ~ '.m1_net'), delta_between(ytd ~ '.m1_net', pytd ~ '.m1_net'), 'Same months last year:', m(pytd ~ '.m1_net')) }}
+  </div>
+  {{ p.pending('pace', pending.pace) }}
+  {% else %}
   <div class="tile-grid">
     {{ t.tile('Full-year target', m(fy ~ '.target')) }}
-    {{ t.tile('Month-one NET to date', m(ytd ~ '.m1_net')) }}
+    {{ t.tile('Total NET revenue to date', m(ytd ~ '.total_net'), delta_between(ytd ~ '.total_net', pytd ~ '.total_net'), 'Same months last year:', m(pytd ~ '.total_net')) }}
     {{ t.tile('Required per remaining month', m(fy ~ '.required_monthly')) }}
     {{ t.tile('Forecast at current run rate', m(fy ~ '.forecast_at_run_rate')) }}
   </div>
+  {% endif %}
   <div class="callout">{{ c(fy ~ '.on_track') }}</div>
 
   {{ narrative.section('are-we-spending-wisely') }}
@@ -168,10 +181,21 @@
     {{ t.tile('Return per dollar, month one', m(ytd ~ '.return_per_dollar'), delta_between(ytd ~ '.return_per_dollar', pytd ~ '.return_per_dollar'), 'Same months last year:', m(pytd ~ '.return_per_dollar')) }}
   </div>
 
-  {{ b.band_label('Legacy accounts', 'published basis; refresh pending') }}
-  {% if 'vintage' in pending %}
+  {% if report.vintage_basis == 'computed' %}
+  {{ b.band_label('Legacy accounts', 'Sage sales history joined to NetSuite') }}
+  <div class="tile-grid">
+    {{ t.tile('Legacy accounts', m('vintage.legacy_accounts'), None, 'Already buying when the Sage reports begin; the band is a floor, not a birth year.') }}
+    {{ t.tile('Their share of active accounts', m('vintage.legacy_share_of_accounts'), None, 'Active accounts in the year:', m('vintage.active_accounts')) }}
+    {{ t.tile('Their share of revenue', m('vintage.legacy_share_of_revenue')) }}
+    {{ t.tile('Average annual NET per legacy account', m('vintage.legacy_avg_annual_net'), None, 'Against an account acquired last year:', m('vintage.newest_avg_annual_net')) }}
+  </div>
+  {{ tb.table('vintage_bands', tables.vintage_bands.columns, tables.vintage_bands.rows, total_label='All active accounts') }}
+  <div class="callout">{{ c('vintage.basis_story') }} Accounts dated from Sage: {{ m('vintage.sage_dated_accounts') }}.</div>
+  {% elif 'vintage' in pending %}
+  {{ b.band_label('Legacy accounts', 'refresh pending') }}
   {{ p.pending('vintage', pending.vintage) }}
   {% else %}
+  {{ b.band_label('Legacy accounts', 'published basis; refresh pending') }}
   <div class="tile-grid">
     {{ t.tile('Legacy accounts', m('vintage.pre2018_accounts'), None, 'Acquired before the NetSuite migration, on the published Sage created-date basis.') }}
     {{ t.tile('Their share of active accounts', m('vintage.pre2018_share_of_accounts'), None, 'Active accounts in the year:', m('vintage.active_accounts')) }}

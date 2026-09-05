@@ -3,27 +3,11 @@ period: 2026-08
 dashboard: executive
 prepared: 2026-09-05
 claims:
-  required_uplift_remaining_months:
-    expr: "delta(fy26.still_needed, fy25.m1_remaining_months)"
-    assert: "positive"
-    render: "{:+.0f}%"
-    note: "What the remaining months must deliver, relative to the same months last year. Positive means an acceleration is required."
-  forecast_vs_prior_year:
-    expr: "delta(fy26.forecast_at_run_rate, fy25.m1_net)"
+  m1_growth_vs_prior_year:
+    expr: "delta(ytd26.m1_net, ytd25.m1_net)"
     assert: "between(-50, 50)"
     render: "{:+.1f}%"
-  shortfall_at_m1_return:
-    expr: "fy26.shortfall_after_available"
-    assert: "nonzero"
-    render:
-      positive: "leaves roughly ${:,.0f} still to find beyond the approved plan"
-      negative: "fits inside the approved plan with roughly ${:,.0f} to spare"
-  shortfall_at_cautious_return:
-    expr: "fy26.shortfall_after_available_conservative"
-    assert: "nonzero"
-    render:
-      positive: "the ask rises to roughly ${:,.0f} of new money"
-      negative: "it still fits, with roughly ${:,.0f} to spare"
+    note: "Marketing's frame: new-customer month-one NET revenue, same months a year apart."
   roas_exceeds_prior_year_at_a_third_of_maturity:
     expr: "ytd26.roas_to_date - fy25.roas_to_date"
     assert: "positive"
@@ -44,36 +28,38 @@ not_carried_forward:
   - "v1 Leadership: the 8-wedge source donut. Replaced by sorted bars in one colour with the untracked bucket highlighted."
   - "v1 Leadership: 'Are we spending wisely?' channel ROI table with an OVERALL row that did not sum ($260,250 gap). Rebuilt from the data layer with a computed total."
   - "v1 Budget: the '$41,777 under-reported actual' figure quoted in early drafts of this rebuild. It was a transcription error in the fixture file, not a v1 defect, and is withdrawn."
+  - "This rebuild's first draft: 'the 19% target is on new-customer M1 revenue, $1,044,937'. Leadership's 19% is on total company NET revenue. The M1 figure is now marketing's contribution frame, not the target."
 ---
 
 # Marketing performance — August 2026
 
 ## The three things to take from this month
 
-### Hitting the target now requires a second-half acceleration
+### The company target is total revenue; marketing's share of it is not yet growing at that rate
 
-Leadership's target is {{ m("fy26.target_growth") }} growth in new-customer
-first-month NET revenue over last year. Through August we have booked
-{{ m("ytd26.m1_net") }} against a full-year target of {{ m("fy26.target") }}.
-The remaining months must deliver {{ m("fy26.still_needed") }}, or
-{{ m("fy26.required_monthly") }} every month — {{ c("required_uplift_remaining_months") }}
-above the same months last year ({{ m("fy25.m1_remaining_months") }}), after
-a first eight months that ran roughly flat. At the recent run rate of
-{{ m("ytd26.run_rate") }} a month, the year lands at
-{{ m("fy26.forecast_at_run_rate") }}, or {{ c("forecast_vs_prior_year") }}
-against last year's {{ m("fy25.m1_net") }}. The gap is
-{{ m("fy26.gap_at_run_rate") }}.
+Leadership's target is {{ m("fy26.target_growth") }} growth in total NET
+revenue over last year, a full-year figure of {{ m("fy26.target") }}. Pace
+against it is not yet measurable in this build: monthly total revenue has
+not been pulled into the data layer, and nothing is estimated in its place.
+What marketing can measure is its own contribution — the revenue of the
+customers it acquires. On that frame, January through August produced
+{{ m("ytd26.m1_net") }} of new-customer first-month NET revenue against
+{{ m("ytd25.m1_net") }} for the same months last year:
+{{ c("m1_growth_vs_prior_year") }}, against a company growth rate of
+{{ m("fy26.target_growth") }}. Since May, new-customer first-month revenue
+has run at {{ m("ytd26.run_rate") }} a month; the same remaining months last
+year produced {{ m("fy25.m1_remaining_months") }} in total. Customer count is
+down and deal size is up; the next section takes that apart.
 
-That gap is close to closable with money already inside the plan. At the
-year-to-date first-month return of {{ m("ytd26.roas_m1") }} per dollar,
-closing it needs about {{ m("fy26.spend_to_close_at_m1_roas") }} of
-additional spend. Cancelling World of Concrete released
-{{ m("budget26.released_by_cancellation") }}, and the year is running
-{{ c("budget26.vs_plan_story") }}, so that spend
-{{ c("shortfall_at_m1_return") }}. On a more cautious marginal return of two
-dollars and fifty cents, {{ c("shortfall_at_cautious_return") }}. Either way
-it is a September decision, not an October one: the window is four months and
-the lag from record creation to first order eats into it.
+Two things follow. First, a company growth target of this size will not be
+met by new-customer acquisition alone: the legacy base carries the revenue,
+and protecting it is the larger lever (see the year-over-year headline).
+Second, the money to accelerate acquisition is already inside the plan —
+World of Concrete's cancellation released {{ m("budget26.released_by_cancellation") }},
+the year is running {{ c("budget26.vs_plan_story") }}, and the re-priced
+September asks below fit inside that with room to spare. Pricing what it
+would take to close the company gap has to wait for the total-revenue
+series; it will appear on the Marketing Ops page the month it lands.
 
 ### August rebounded; July was a dip, not a trend
 
@@ -102,7 +88,7 @@ prior-year class's {{ m("fy25.roas_to_date") }}, with this year's cohorts
 averaging {{ m("ytd26.avg_maturity") }} of age against
 {{ m("fy25.avg_maturity") }}. First-month return closes fast enough to steer
 on; revenue to date is the truer measure of what the money bought. Both are
-shown, always labelled, and the target is graded on the first.
+shown, always labelled. Neither is the company target.
 
 ## Are we growing?
 

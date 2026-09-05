@@ -173,6 +173,8 @@ class Inputs:
     vintage: dict | None = None
     truad: dict | MissingManualInput | None = None                  # manual: agency platform media by month
     asks: dict | MissingManualInput | None = None                   # manual: priced budget asks
+    revenue_total: dict[str, dict] = field(default_factory=dict)    # month -> total NET revenue body (the target's series)
+    vintage_accounts: dict | None = None                            # per-account revenue for the Sage join
     notes: list[str] = field(default_factory=list)
 
     @property
@@ -253,11 +255,15 @@ def load_inputs(as_of: date, store: SnapshotStore | None = None, *, log: Log = p
             return MissingManualInput(name, rm, f"{p} does not exist")
         return json.loads(p.read_text())
 
+    revenue_total = {m: store.read(m, "revenue_total").body for m in store.periods("revenue_total")}
+    if not revenue_total:
+        notes.append("no revenue_total snapshots: the company target is shown but pace against it is pending "
+                     "until 'python -m src.ingest write revenue_total YYYY-MM' has run for each month")
     inputs = Inputs(as_of, rm, store, spend, prior, cohorts, repeat_source, m13, load_target(year),
                     manual, lead_quality, routing, month_body("lead_routing_14mo_rollup"), source_mix,
                     month_body("source_mix_12mo"), month_body("geography_12mo"), month_body("retention"),
                     month_body("acquisition_vintage"), manual_json("truad_media_spend"), manual_json("budget_asks"),
-                    notes)
+                    revenue_total, month_body("vintage_accounts"), notes)
     for n in notes:
         log(f"inputs: {n}")
     return inputs

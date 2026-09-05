@@ -19,18 +19,6 @@ claims:
     assert: "between(-10, 10)"
     render: "{:+.0f}%"
     note: "Google account plus the pre-split Advertising account, against Google's own approved line. Inside ten percent either way is 'on plan'."
-  shortfall_at_m1_return:
-    expr: "fy26.shortfall_after_available"
-    assert: "nonzero"
-    render:
-      positive: "roughly ${:,.0f} of incremental paid media"
-      negative: "no new money - the plan already covers it with ${:,.0f} to spare"
-  shortfall_at_cautious_return:
-    expr: "fy26.shortfall_after_available_conservative"
-    assert: "nonzero"
-    render:
-      positive: "roughly ${:,.0f}"
-      negative: "nothing, with ${:,.0f} to spare"
 not_carried_forward:
   - "v1 Social: the 'May quick read' callout that sat under a July default view. Month-specific prose is now bound to the month it describes."
   - "v1 Social: the LinkedIn table left at pre-restatement values under a banner saying it had been corrected. There is now one series."
@@ -149,10 +137,12 @@ Both asks total {{ m("ask26.total") }}, inside the
 {{ m("budget26.released_by_cancellation") }} released by the trade-show
 cancellation. They are a reallocation within the approved plan.
 
-If leadership holds the growth target, a third line belongs here. Closing the
-run-rate gap at the year-to-date first-month return needs
-{{ c("shortfall_at_m1_return") }} in September; at a cautious marginal return
-of two dollars and fifty cents, {{ c("shortfall_at_cautious_return") }}.
+Leadership's target is growth in total company NET revenue, not in
+new-customer revenue. Pricing what it would take to close the company's
+run-rate gap needs the monthly total-revenue series, which has not yet been
+pulled into this build; the tiles above say so rather than estimating. Money
+already available inside the approved plan — released trade-show budget plus
+the year-to-date variance — is {{ m("fy26.available_within_plan") }}.
 
 ## Data-quality notes
 

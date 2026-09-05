@@ -162,10 +162,18 @@
     {{ t.tile('Both asks, all-in', m('ask' ~ yy ~ '.total')) }}
     {{ t.tile('Released by the trade-show cancellation', m('budget' ~ yy ~ '.released_by_cancellation'), None, 'Approved budget that will not be executed; available for reallocation within the plan.') }}
     {{ t.tile('Available within the approved plan', m(fy ~ '.available_within_plan'), None, 'Released budget plus the year-to-date variance to the effective plan.') }}
-    {{ t.tile('Spend to close the gap, cautious return', m(fy ~ '.spend_to_close_conservative'), None, 'At the year-to-date month-one return instead:', m(fy ~ '.spend_to_close_at_m1_roas')) }}
-    {{ t.tile('Still needed to close the target gap', m(fy ~ '.shortfall_after_available'), None, 'At the year-to-date month-one return per dollar, after the money already available within the plan. Negative means it fits.') }}
-    {{ t.tile('Still needed, cautious return', m(fy ~ '.shortfall_after_available_conservative'), None, 'At an assumed marginal return well below the average.') }}
   </div>
+  {{ b.band_label('Closing the gap to the company target', 'total NET revenue basis') }}
+  {% if 'pace' in pending %}
+  {{ p.pending('pace', pending.pace) }}
+  {% else %}
+  <div class="tile-grid tile-grid-pair">
+    {{ t.tile('Spend to close the gap, at this year\'s return', m(fy ~ '.spend_to_close_at_marketing_return'), None, 'Gap divided by the revenue-to-date return per marketing dollar; an average, so it understates the marginal cost.') }}
+    {{ t.tile('Spend to close the gap, cautious return', m(fy ~ '.spend_to_close_conservative'), None, 'At an assumed marginal return well below the average.') }}
+    {{ t.tile('Still needed beyond the plan', m(fy ~ '.shortfall_after_available'), None, 'After the money already available within the plan. Negative means it fits.') }}
+    {{ t.tile('Still needed, cautious return', m(fy ~ '.shortfall_after_available_conservative')) }}
+  </div>
+  {% endif %}
   {% endif %}
   {{ narrative.section('budget-asks') }}
 </section>

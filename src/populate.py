@@ -312,61 +312,107 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
             r.cur(f"{B}.ytd_variance_true", variance, ytd_label,
                   source="computed:approved_marketing_budget/marketing_spend",
                   note="effective plan to date minus true operating spend; positive means under plan")
+            r.cur(f"{FY}.available_within_plan", released.amount + variance, fy_label,
+                  note="budget released by cancellation plus the year-to-date variance to the effective plan")
             r.claim(f"{B}.vs_plan_story", lambda v=variance: v,
                     render=lambda v: (f"{Money(abs(v), ytd_label).usd0} under the effective plan" if v > 0 else
                                       f"{Money(abs(v), ytd_label).usd0} over the effective plan" if v < 0 else
                                       "on the effective plan to the dollar"))
 
-    # -- pace against the target -------------------------------------------
+    # -- the company target: total NET revenue -----------------------------------
+    # Leadership's 19% is on TOTAL revenue (Jules, 2026-09-05). Marketing's own
+    # frame (M1, revenue to date) is a subset formed by the same join; it is
+    # reported alongside, never graded as if it were the target.
     pace = None
-    if cs is not None:
-        target_amount = _d(inp.target["target_amount"])
-        elapsed = int(rm[5:])
-        remaining = 12 - elapsed
-        rem_months = [f"{y - 1}-{m:02d}" for m in range(elapsed + 1, 13)]
-        run_months = months_between(shift_month(rm, -(RUN_RATE_MONTHS - 1)), rm)
-        if any(m not in inp.cohorts for m in rem_months):
-            problems.append(f"prior-year cohorts {rem_months} incomplete; pace against target undefined")
-        elif any(m not in inp.cohorts for m in run_months):
-            problems.append(f"run-rate months {run_months} incomplete")
+    basis = str(inp.target.get("basis", ""))
+    if basis != "total_net_revenue":
+        problems.append(f"target basis is {basis!r}; the build paces total_net_revenue only")
+    target_amount = _d(inp.target["target_amount"])
+    r.cur(f"{FY}.target", target_amount, fy_label, source=f"{SRC_BUDGET}.targets",
+          note="total NET revenue, all customers; 19% over the prior year")
+    r.pct(f"{FY}.target_growth", _d(inp.target["growth_over_prior_year_pct"]), fy_label, source=f"{SRC_BUDGET}.targets")
+    elapsed = int(rm[5:])
+    remaining = 12 - elapsed
+    rem_months = [f"{y - 1}-{m:02d}" for m in range(elapsed + 1, 13)]
+    run_months = months_between(shift_month(rm, -(RUN_RATE_MONTHS - 1)), rm)
+    pfy_months = months_between(f"{y - 1}-01", f"{y - 1}-12")
+    rt = inp.revenue_total
+    missing_rt = [m for m in ytd_months + pfy_months if m not in rt]
+    if missing_rt:
+        pending["pace"] = (f"Pace against the total-revenue target needs monthly total NET revenue for "
+                           f"{_range_label(pfy_months[0], rm)}; not yet ingested for {len(missing_rt)} month(s) "
+                           f"({missing_rt[0]}..{missing_rt[-1]}). Run 'python -m src.ingest write revenue_total'. "
+                           f"Nothing is estimated in its place.")
+        r.claim(f"{FY}.pace_story", lambda: True,
+                render=lambda _: ("Pace against the total-revenue target is not yet measurable in this build: "
+                                  "monthly total NET revenue has not been ingested. New-customer revenue is shown "
+                                  "as marketing's contribution, not as the target."))
+        r.claim(f"{FY}.on_track", lambda: True,
+                render=lambda _: ("Pace against the target is pending the total-revenue series. The gap and what "
+                                  "closing it would cost cannot be priced until it lands."))
+    else:
+        RT = "netsuite:revenue_total"
+        ytd_total = sum((_d(rt[m]["net_revenue"]) for m in ytd_months), Decimal(0))
+        pytd_total = sum((_d(rt[m]["net_revenue"]) for m in prior_ytd_months), Decimal(0))
+        pfy_total = sum((_d(rt[m]["net_revenue"]) for m in pfy_months), Decimal(0))
+        prior_rem = sum((_d(rt[m]["net_revenue"]) for m in rem_months), Decimal(0))
+        run_rate = _mean([_d(rt[m]["net_revenue"]) for m in run_months])
+        r.cur(f"{YTD}.total_net", ytd_total, ytd_label, source=RT)
+        r.cur(f"{PYTD}.total_net", pytd_total, pytd_label, source=RT)
+        r.cur(f"{PFY}.total_net", pfy_total, pfy_label, source=RT)
+        declared = _d(inp.target.get("prior_year_actual") or 0)
+        if declared and abs(declared - pfy_total) > Decimal("1"):
+            problems.append(f"target file says prior-year total NET is {declared} but revenue_total snapshots sum to "
+                            f"{pfy_total}; reconcile before publishing a pace figure")
+        pace = Pace(Money(target_amount, fy_label), Money(ytd_total, fy_label), elapsed, remaining,
+                    Money(prior_rem, fy_label), Money(run_rate, fy_label))
+        core.pace = pace
+        r.cur(f"{FY}.still_needed", pace.still_needed.amount, fy_label)
+        if remaining:
+            r.cur(f"{FY}.required_monthly", pace.required_monthly.amount, fy_label)
+            r.cur(f"{PFY}.total_remaining_months", prior_rem, _range_label(rem_months[0], rem_months[-1]),
+                  source=RT, note="the same remaining months last year, total NET")
         else:
-            prior_rem = sum((inp.cohorts[m].m1_net for m in rem_months), Decimal(0))
-            run_rate = _mean([inp.cohorts[m].m1_net for m in run_months])
-            pace = Pace(Money(target_amount, fy_label), Money(cs.m1_net.amount, fy_label), elapsed, remaining,
-                        Money(prior_rem, fy_label), Money(run_rate, fy_label))
-            core.pace = pace
-            r.cur(f"{FY}.target", target_amount, fy_label, source=f"{SRC_BUDGET}.targets")
-            r.pct(f"{FY}.target_growth", _d(inp.target["growth_over_prior_year_pct"]), fy_label,
-                  source=f"{SRC_BUDGET}.targets")
-            r.cur(f"{FY}.still_needed", pace.still_needed.amount, fy_label)
-            if remaining:
-                r.cur(f"{FY}.required_monthly", pace.required_monthly.amount, fy_label)
-                r.cur(f"{PFY}.m1_remaining_months", prior_rem, _range_label(rem_months[0], rem_months[-1]),
-                      note="the same remaining months last year, month-one NET")
-            else:
-                r.cur(f"{FY}.required_monthly", pace.still_needed.amount, fy_label,
-                      note="year complete: this is the full-year shortfall, not a monthly figure")
-            r.cur(f"{FY}.forecast_at_run_rate", pace.forecast_at_run_rate.amount, fy_label,
-                  note=f"run rate = mean M1 of {_short(run_months[0])}–{_short(run_months[-1])}")
-            r.cur(f"{YTD}.run_rate", run_rate, _range_label(run_months[0], run_months[-1]),
-                  note="mean month-one NET of the last four cohort months")
-            gap = pace.gap_at_run_rate.amount
-            r.cur(f"{FY}.gap_at_run_rate", gap, fy_label, higher_is_better=False,
-                  note="target minus forecast at run rate; positive means short of the target")
-            to_close = gap / cs.roas_m1.value
+            r.cur(f"{FY}.required_monthly", pace.still_needed.amount, fy_label,
+                  note="year complete: this is the full-year shortfall, not a monthly figure")
+        r.cur(f"{FY}.forecast_at_run_rate", pace.forecast_at_run_rate.amount, fy_label,
+              note=f"run rate = mean total NET of {_short(run_months[0])}–{_short(run_months[-1])}")
+        r.cur(f"{YTD}.total_run_rate", run_rate, _range_label(run_months[0], run_months[-1]), source=RT,
+              note="mean monthly total NET over the last four months")
+        gap = pace.gap_at_run_rate.amount
+        r.cur(f"{FY}.gap_at_run_rate", gap, fy_label, higher_is_better=False,
+              note="target minus forecast at run rate; positive means short of the target")
+        if cs is not None:
+            to_close = gap / cs.roas_to_date.value
             to_close_cons = gap / CONSERVATIVE_RETURN
-            r.cur(f"{FY}.spend_to_close_at_m1_roas", to_close, fy_label, higher_is_better=False,
-                  note="gap divided by the year-to-date month-one return per dollar")
+            r.cur(f"{FY}.spend_to_close_at_marketing_return", to_close, fy_label, higher_is_better=False,
+                  note="gap divided by this year's revenue-to-date return per marketing dollar; an average, "
+                       "so it understates the marginal cost")
             r.cur(f"{FY}.spend_to_close_conservative", to_close_cons, fy_label, higher_is_better=False,
                   note=f"gap at an assumed marginal return of {Ratio(CONSERVATIVE_RETURN).per_dollar} per dollar")
             if inp.spend.budget["accounts"]:
                 available = inp.spend.released_by_cancellation().amount + (ytd_eff.amount - ytd_spend.amount)
-                r.cur(f"{FY}.available_within_plan", available, fy_label,
-                      note="budget released by cancellation plus the year-to-date variance to the effective plan")
                 r.cur(f"{FY}.shortfall_after_available", to_close - available, fy_label, higher_is_better=False,
                       note="positive means new money is needed beyond the approved plan")
                 r.cur(f"{FY}.shortfall_after_available_conservative", to_close_cons - available, fy_label,
                       higher_is_better=False)
+        behind = lambda: not pace.on_track  # noqa: E731
+        r.claim(f"{FY}.pace_story", behind,
+                render=lambda b: ("Behind the total-revenue target at the current run rate: the remaining months "
+                                  "must beat the same months last year." if b else
+                                  "On track for the total-revenue target at the current run rate."))
+        r.claim(f"{FY}.on_track", behind,
+                render=lambda b: ("Not on track at the current run rate. The gap and what closing it "
+                                  "would cost are priced on the Marketing Ops page." if b else
+                                  "On track at the current run rate; hold the plan."))
+
+    # -- marketing's frame: new-customer revenue, prior-year remaining months ---
+    if cs is not None and all(m in inp.cohorts for m in rem_months + run_months):
+        r.cur(f"{YTD}.run_rate", _mean([inp.cohorts[m].m1_net for m in run_months]),
+              _range_label(run_months[0], run_months[-1]), note="mean month-one NET of the last four cohort months")
+        if remaining:
+            r.cur(f"{PFY}.m1_remaining_months", sum((inp.cohorts[m].m1_net for m in rem_months), Decimal(0)),
+                  _range_label(rem_months[0], rem_months[-1]), note="the same remaining months last year, month-one NET")
 
     # -- year over year: the same months last year -----------------------------
     prior_cohorts = [inp.cohorts[m] for m in prior_ytd_months if m in inp.cohorts]
@@ -420,10 +466,6 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
             r.rat(f"{PFY}.roas_to_date", pfy.roas_to_date.value, pfy_label)
             r.rat(f"{PFY}.multiple_to_date", pfy.revenue_to_date.amount / pfy.m1_net.amount, pfy_label, fmt="multiple")
             r.txt(f"{PFY}.avg_maturity", f"{_q1(pfy.avg_maturity_months)} months", pfy_label)
-            declared = _d(inp.target.get("prior_year_actual") or 0)
-            if declared and abs(declared - pfy.m1_net.amount) > Decimal("1"):
-                problems.append(f"target file says prior-year M1 NET is {declared} but the frozen cohorts sum to "
-                                f"{pfy.m1_net.amount}; reconcile before publishing a pace figure")
 
     # -- rolling twelve months -------------------------------------------------
     if all(m in inp.cohorts for m in window):
@@ -492,8 +534,55 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
             r.cnt(f"retention.{key}.one_and_done", b["one_and_done"], rl, source=S, higher_is_better=False)
             r.pct(f"retention.{key}.rate", b["reorder_rate_pct"], rl, source=S)
 
-    # -- account vintage: published basis only -----------------------------------
-    if inp.vintage is not None:
+    # -- account vintage ---------------------------------------------------------
+    core.report["vintage_basis"] = "pending"
+    if inp.vintage_accounts is not None:
+        from .data.vintage import LEGACY_BAND, load_sage, vintage_table
+        sage = load_sage()
+        fyv = inp.vintage_accounts["fy_prior"]
+        vt = vintage_table(fyv["accounts"], sage)
+        vl = str(fyv.get("window") or f"FY{y - 1}")
+        SV = "computed:vintage_accounts/sage_customer_sales_history"
+        legacy = next(b for b in vt["bands"] if b["band"] == LEGACY_BAND)
+        newest = next((b for b in vt["bands"] if b["band"] == str(y - 1)), None)
+        r.cnt("vintage.legacy_accounts", legacy["accounts"], vl, source=SV,
+              note=f"acquired {LEGACY_BAND}: first Sage sales year at the report's floor")
+        r.pct("vintage.legacy_share_of_accounts", legacy["share_of_accounts_pct"], vl, source=SV)
+        r.pct("vintage.legacy_share_of_revenue", legacy["share_of_revenue_pct"], vl, source=SV)
+        r.cur("vintage.legacy_avg_annual_net", legacy["revenue_per_account"], vl, source=SV)
+        if newest and newest["accounts"]:
+            r.cur("vintage.newest_avg_annual_net", newest["revenue_per_account"], vl, source=SV,
+                  note=f"accounts acquired in {y - 1}")
+        r.cnt("vintage.active_accounts", vt["total_accounts"], vl, source=SV)
+        r.cnt("vintage.sage_dated_accounts", vt["matched_sage"], vl, source=SV,
+              note="accounts whose acquisition year comes from Sage sales history rather than NetSuite creation")
+        rows = []
+        for b in vt["bands"]:
+            key = b["band"].replace(" ", "_")
+            r.txt(f"vintage.band.{key}.label", b["band"], vl, source=SV)
+            r.cnt(f"vintage.band.{key}.accounts", b["accounts"], vl, source=SV)
+            r.cur(f"vintage.band.{key}.net_revenue", b["net_revenue"], vl, source=SV)
+            r.pct(f"vintage.band.{key}.share_of_revenue", b["share_of_revenue_pct"], vl, source=SV)
+            r.cur(f"vintage.band.{key}.per_account", b["revenue_per_account"], vl, source=SV)
+            rows.append({"band": f"vintage.band.{key}.label", "accounts": f"vintage.band.{key}.accounts",
+                         "revenue": f"vintage.band.{key}.net_revenue", "share": f"vintage.band.{key}.share_of_revenue",
+                         "per_account": f"vintage.band.{key}.per_account", "status": None})
+        core.tables["vintage_bands"] = {
+            "columns": [
+                {"key": "band", "label": "Acquired", "kind": "metric"},
+                {"key": "accounts", "label": "Active accounts", "kind": "metric", "align": "right", "total": True},
+                {"key": "revenue", "label": "NET revenue", "kind": "metric", "align": "right", "total": True},
+                {"key": "share", "label": "Share of revenue", "kind": "metric", "align": "right"},
+                {"key": "per_account", "label": "Per account", "kind": "metric", "align": "right"},
+            ],
+            "rows": rows,
+        }
+        r.claim("vintage.basis_story", lambda: vt["matched_sage"],
+                render=lambda n: (f"Acquisition year comes from the Sage sales history for accounts Sage saw and "
+                                  f"from the NetSuite creation date for the rest. The oldest band is a floor: the "
+                                  f"Sage reports start in 2019, so an account selling then may be far older."))
+        core.report["vintage_basis"] = "computed"
+    elif inp.vintage is not None:
         pr = inp.vintage.get("published_reference_2026_08_18")
         if pr:
             vl = f"FY{y - 1}, published Aug 18, 2026"
@@ -503,6 +592,7 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
             r.cur("vintage.pre2018_avg_annual_net", pr["pre_2018_avg_annual_net"], vl, source=SRC_V1_VINTAGE)
             r.cur("vintage.band_2025_avg_annual_net", pr["band_2025_revenue_per_account"], vl, source=SRC_V1_VINTAGE)
             r.cnt("vintage.active_accounts", pr["fy2025_active_accounts"], vl, source=SRC_V1_VINTAGE)
+            core.report["vintage_basis"] = "published"
             r.claim("vintage.basis_story", lambda: str(inp.vintage["pre_2018_summary"]["status"]),
                     render=lambda s: ("These are the figures published in August on the Sage created-date basis. "
                                       "NetSuite cannot reproduce them because legacy accounts carry a migration "
@@ -580,16 +670,6 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
                 assert_fn=lambda p: Decimal(0) <= p.value < Decimal(100),
                 render=lambda p: f"Repeat revenue is {p} of what these cohorts have produced so far; "
                                  f"judging on month one alone leaves that out.")
-    if pace is not None:
-        behind = lambda: not pace.on_track  # noqa: E731
-        r.claim(f"{FY}.pace_story", behind,
-                render=lambda b: ("Behind at the current run rate: the remaining months must beat "
-                                  "the same months last year." if b else "On track at the current run rate."))
-        r.claim(f"{FY}.on_track", behind,
-                render=lambda b: ("Not on track at the current run rate. The gap and what closing it "
-                                  "would cost are priced on the Marketing Ops page." if b else
-                                  "On track at the current run rate; hold the plan."))
-
     # -- flags -----------------------------------------------------------------
     if pace is not None and not pace.on_track:
         core.flags.append({"severity": "red", "title": "Not on pace for the full-year target",

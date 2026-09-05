@@ -201,20 +201,24 @@
     ]
   },
   "targets": {
-    "basis": "m1_net_revenue",
+    "basis": "total_net_revenue",
     "growth_over_prior_year_pct": 19.0,
-    "set_by": "Jules, 2026-09-04",
-    "definition": "Grow 2026 new-customer (M1) NET revenue 19% over 2025 new-customer (M1) NET revenue.",
-    "prior_year_actual": 878098.0,
-    "prior_year_basis_note": "FY2025 M1 NET on the FROZEN (published) basis. Per Jules 2026-09-04: keep the frozen revenue we are tracking. Closed months use their frozen snapshot values; months not previously published (2026-08 onward) use live figures. The -1.1% drift detected on 2026-09-04 is logged in reports/restatement_2026-08.md and deliberately NOT applied.",
-    "target_amount": 1044936.62,
-    "new_customers": null,
-    "caveat": "M1 NET revenue is a FLOOR, not total marketing-attributable revenue: any customer whose sales cycle crossed a month boundary contributes zero M1 by construction, and repeat revenue from prior cohorts is excluded entirely. The 2025 cohort alone contributed roughly $1.66M of repeat revenue in Jan-Jul 2026. If leadership's 19% means total revenue growth rather than new-customer revenue growth, this target is materially harder than intended - confirm before publishing.",
-    "secondary_frame": {
-      "name": "cohort revenue to date (M1 + repeat)",
-      "why": "M1 is the target frame, but it is not what the spend bought. Jan-Aug 2026 cohorts have produced $1,031,222 against $552,656 of M1 - repeat revenue is 46.4% of the total. ROAS on M1 is $4.07; on revenue to date it is $7.59, which already exceeds FY2025's full-year $7.51 at a third of the maturity. Both are reported, always labelled with basis and average maturity.",
-      "not_a_target": true,
-      "maturity_caveat": "2026 cohorts average 4.3 months of maturity against 14.3 for 2025 cohorts. To-date multiples are not comparable across cohorts of different ages: 1.13x at one month, 3.34x at eight."
+    "set_by": "Jules, 2026-09-04; basis confirmed as TOTAL revenue by Jules 2026-09-05",
+    "definition": "Grow 2026 total NET revenue (subsidiary 2, all customers, categories 2 and 14 excluded) 19% over 2025 total NET revenue.",
+    "prior_year_actual": 20590950.41,
+    "prior_year_basis_note": "FY2025 total NET revenue = alt_all_transacting_net in data/snapshots/2026-08/acquisition_vintage.json (trandate in 2025, every transacting account, credits and refunds deducted). Replace with the sum of the twelve 2025 revenue_total monthly snapshots once ingested; the two must agree to the cent.",
+    "target_amount": 24503230.99,
+    "series": "revenue_total (data/snapshots/YYYY-MM/revenue_total.json; src/ingest/queries/revenue_total_monthly.sql). Until 2026 monthly snapshots exist the pages show the target and mark pace as pending; nothing is estimated in its place.",
+    "marketing_frame": {
+      "name": "new-customer revenue (M1, and revenue to date)",
+      "why": "The target is a company figure. Marketing's measurable contribution is the revenue of the customers it acquires, shown on the frozen M1 basis and on the revenue-to-date basis, always with maturity. Neither is the target and neither is graded as if it were.",
+      "not_a_target": true
+    },
+    "superseded_2026_09_05": {
+      "basis": "m1_net_revenue",
+      "prior_year_actual": 878098.0,
+      "target_amount": 1044936.62,
+      "note": "Set 2026-09-04 on the reading that 19% applied to new-customer M1 revenue. Jules confirmed 2026-09-05 that leadership means total revenue. Kept for the record; not used."
     }
   }
 }

@@ -146,8 +146,10 @@ def executive_context(registry: MetricRegistry, *, pending: dict | None = None) 
     txt("ytd26.roas_maturity", "4.3 months average customer-weighted maturity", P["ytd26"])
     pct("ytd26.repeat_share", "46.4", P["ytd26"])
     pct("ytd26.spend_share_of_revenue", "24.6", P["ytd26"], higher_is_better=False)
-    cur("fy26.target", "1044937.00", P["fy26"]); cur("ytd26.m1_net", "552656.00", P["ytd26"])
-    cur("fy26.required_monthly", "123070.25", P["fy26"]); cur("fy26.forecast_at_run_rate", "828984.00", P["fy26"])
+    cur("fy26.target", "24503231.00", P["fy26"]); cur("ytd26.m1_net", "552656.00", P["ytd26"])
+    pct("fy26.target_growth", "19.0", P["fy26"])
+    cur("ytd26.total_net", "14900000.00", P["ytd26"]); cur("ytd25.total_net", "13600000.00", P["ytd25"])
+    cur("fy26.required_monthly", "2400807.75", P["fy26"]); cur("fy26.forecast_at_run_rate", "22300000.00", P["fy26"])
 
     cur("ytd25.m1_net", "612040.00", P["ytd25"])
     cnt("ytd26.new_customers", 517, P["ytd26"]); cnt("ytd25.new_customers", 640, P["ytd25"])
@@ -243,7 +245,7 @@ def executive_context(registry: MetricRegistry, *, pending: dict | None = None) 
                 "yy": "26", "pyy": "25"},
         "narrative": RenderedNarrative.empty("2026-08", "executive"),
         "report": {"month_label": "August 2026", "month_iso": "2026-08", "prev_month_label": "July 2026",
-                   "prev_month_iso": "2026-07",
+                   "prev_month_iso": "2026-07", "vintage_basis": "published",
                    "ytd_label": "January–August 2026", "ytd_iso": "2026-01/2026-08",
                    "prior_ytd_label": "January–August 2025", "prior_ytd_iso": "2025-01/2025-08",
                    "r12_label": "September 2025–August 2026", "r12_iso": "2025-09/2026-08"},

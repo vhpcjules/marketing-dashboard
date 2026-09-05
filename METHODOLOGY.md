@@ -222,8 +222,31 @@ Every aggregate reports the **customer-weighted** average maturity that
 produced it — month-weighting would let a 55-customer month pull the average
 as hard as a 127-customer one.
 
-Revenue-to-date is a **reading frame, not a target**. The 19% growth target
-is set and graded on M1.
+Revenue-to-date is a **reading frame, not a target**. Neither ROAS basis is
+the company target (next section); both describe what marketing's spend
+bought.
+
+## The target, restated 2026-09-05
+
+Leadership's 19% is growth in **total company NET revenue** over 2025, not in
+new-customer revenue (confirmed by Jules 2026-09-05; the 2026-09-04 reading
+that it applied to M1 is recorded as superseded in the budget file's
+`targets`). Consequences for the build:
+
+- The target series is `revenue_total`: monthly total NET revenue, all
+  customers, same canonical join as the cohort queries without the cohort
+  restriction (`src/ingest/queries/revenue_total_monthly.sql`). FY2025 on
+  that basis is $20,590,950.41 (every transacting account, from the
+  acquisition-vintage pull); the target is $24,503,230.99.
+- Until the monthly series is ingested the pages show the target and mark
+  **pace as pending**. Nothing is estimated in its place.
+- M1 and revenue-to-date remain **marketing's contribution frame**: the
+  revenue of the customers marketing acquired, a subset of the total formed
+  by the same join. They are shown alongside the target with their growth
+  rate, never graded as if they were the target.
+- "Spend to close the gap" is computed only once the total series exists,
+  at this year's revenue-to-date return per marketing dollar (an average,
+  so it understates the marginal cost) and at a cautious $2.50.
 
 ## The freeze decision, 2026-09-04
 
@@ -232,9 +255,9 @@ published use live figures. The −1.1% (2025) and −1.2% (2026) cohort drift
 found on 2026-09-04 is logged in `reports/restatement_2026-08.md` and
 **deliberately not applied**.
 
-This matters for the target: FY2025 M1 is held at the published **$878,098**,
-not the $872,631 a live pull returns today. Without that pin, the target
-would silently re-baseline on every build.
+This matters for the marketing frame: FY2025 M1 is held at the published
+**$878,098**, not the $872,631 a live pull returns today. Without that pin,
+every year-over-year growth figure would silently re-baseline on each build.
 
 ## Findings from the 2026-09-05 data pulls
 
@@ -311,3 +334,20 @@ exposed to SuiteQL.
 **Reading frozen values against live ones.** Published figures were rounded
 to the dollar. Drift detection ignores differences of 50 cents or less so a
 cent-level live value is not reported as movement.
+
+## Account vintage from Sage sales history, 2026-09-05
+
+Jules supplied the Sage "Customer Sales History by Period" reports for 2019
+through September 2024 (`data/manual/sage/customer_sales_history_2019_2024.json`,
+7,686 Sage customers, annual net dollars sold). They are not a created-date
+export: the earliest year is 2019, so an account already selling then is
+**"2019 or earlier"** — a floor, never a birth year — and the pre-2018 band
+v1 published cannot be recovered from them.
+
+The join is offline (`src/data/vintage.py`): the Sage customer number is
+expected to survive migration as the first token of the NetSuite `entityid`.
+A `vintage_accounts` pull (`src/ingest/queries/vintage_accounts.sql`) returns
+per-account FY revenue with `entityid`; Sage dates every account it saw, the
+NetSuite creation year dates the rest. The Executive page switches from the
+published figures to the computed table the month that pull lands, and says
+which basis it is on.
