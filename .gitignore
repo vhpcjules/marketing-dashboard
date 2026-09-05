@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Built output. Cloudflare Pages builds dist/ from source on every deploy;
+# committing it would put two copies of every number in the repo.
+dist/
+
+# OS
+.DS_Store
+
+# NOT ignored, on purpose: data/ and reports/ are the historical record.
+# data/snapshots holds the frozen figures leadership has already seen and
+# reports/ holds the restatement log. Both must be in git, or the freeze
+# rule has nothing to hold.
