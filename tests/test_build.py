@@ -97,7 +97,7 @@ class TestBuildWithSiblingsPresent:
         for mid in ("aug26.new_customers", "ytd26.roas_m1", "ytd26.roas_to_date", "fy26.target",
                     "ytd25.spend", "budget_vs_actual.total.actual", "r12.sources.top_channel"):
             assert f'data-metric="{mid}"' in html, mid
-        assert 'data-pending="online"' in html          # social/ads not ingested
+        assert 'data-table="online"' in html            # LinkedIn and Meta are ingested; the table renders
         assert 'data-narrative="are-we-growing"' in html  # the month's story is placed
         assert res.gate_report and res.gate_report.exists()
         gate_text = res.gate_report.read_text()

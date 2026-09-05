@@ -119,6 +119,20 @@ def _align_class(align: str | None) -> str:
 # Environment
 # ---------------------------------------------------------------------------
 
+class _IdView:
+    """`'x.y' in registered_ids` inside a template: is this id registered?
+
+    Lets a template show a change only when the prior month's figure exists
+    (a series that started this month has nothing to change from). Reads the
+    live registry, so it never goes stale within a render."""
+
+    def __init__(self, registry: MetricRegistry) -> None:
+        self._r = registry
+
+    def __contains__(self, metric_id: object) -> bool:
+        return isinstance(metric_id, str) and metric_id in self._r.ids()
+
+
 def make_env(registry: MetricRegistry, templates: Path = TEMPLATES) -> Environment:
     env = Environment(
         loader=FileSystemLoader(str(templates)),
@@ -132,6 +146,7 @@ def make_env(registry: MetricRegistry, templates: Path = TEMPLATES) -> Environme
         # the registry surface - the only route for a figure into a page
         "m": registry.m,
         "c": registry.c,
+        "registered_ids": _IdView(registry),
         "delta_between": registry.delta_between,
         "column_total": registry.total,
         # brand + layout

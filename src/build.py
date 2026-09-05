@@ -175,6 +175,11 @@ class Inputs:
     asks: dict | MissingManualInput | None = None                   # manual: priced budget asks
     revenue_total: dict[str, dict] = field(default_factory=dict)    # month -> total NET revenue body (the target's series)
     vintage_accounts: dict | None = None                            # per-account revenue for the Sage join
+    meta_ads: dict[str, dict] = field(default_factory=dict)         # month -> Supermetrics meta_ads body
+    linkedin: dict[str, dict] = field(default_factory=dict)         # month -> Supermetrics linkedin body
+    instagram: dict[str, dict] = field(default_factory=dict)        # month -> Supermetrics instagram body
+    google_ads: dict[str, dict] = field(default_factory=dict)       # month -> Supermetrics google_ads body
+    ga4: dict[str, dict] = field(default_factory=dict)              # month -> Supermetrics ga4 body (versatile.net)
     notes: list[str] = field(default_factory=list)
 
     @property
@@ -263,7 +268,13 @@ def load_inputs(as_of: date, store: SnapshotStore | None = None, *, log: Log = p
                     manual, lead_quality, routing, month_body("lead_routing_14mo_rollup"), source_mix,
                     month_body("source_mix_12mo"), month_body("geography_12mo"), month_body("retention"),
                     month_body("acquisition_vintage"), manual_json("truad_media_spend"), manual_json("budget_asks"),
-                    revenue_total, month_body("vintage_accounts"), notes)
+                    revenue_total, month_body("vintage_accounts"),
+                    {m: store.read(m, "meta_ads").body for m in store.periods("meta_ads")},
+                    {m: store.read(m, "linkedin").body for m in store.periods("linkedin")},
+                    {m: store.read(m, "instagram").body for m in store.periods("instagram")},
+                    {m: store.read(m, "google_ads").body for m in store.periods("google_ads")},
+                    {m: store.read(m, "ga4").body for m in store.periods("ga4")},
+                    notes)
     for n in notes:
         log(f"inputs: {n}")
     return inputs

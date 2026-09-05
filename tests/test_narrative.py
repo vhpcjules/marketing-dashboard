@@ -231,6 +231,10 @@ class TestValidatorExemptions:
         doc = parse('<div><ol><li>v1 said $33,177 under.</li></ol></div>')
         assert len(vnarr.check_orphaned_numbers(doc, "x.html")) == 2   # "v1" and "$33,177"
 
+    def test_closed_vocabulary_term_is_not_an_orphaned_number(self):
+        doc = parse('<p>Key events are <dfn data-term="ga4">GA4</dfn> events.</p>')
+        assert vnarr.check_orphaned_numbers(doc, "x.html") == []
+
     def test_time_element_is_a_label_not_a_stale_month(self):
         doc = parse('<p>Prepared <time datetime="2026-09-05">September 5, 2026</time></p>')
         assert vnarr.check_stale_months(doc, "x.html", "2026-08") == []

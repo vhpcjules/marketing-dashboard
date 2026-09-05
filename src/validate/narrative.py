@@ -88,6 +88,10 @@ def check_orphaned_numbers(doc: Node, file: str) -> list[Finding]:
         # not-carried-forward list data-retired; nothing else may use it.
         if parent.has_ancestor_attr("data-retired"):
             continue
+        # term() renders <dfn data-term> from a CLOSED vocabulary (src.render.brand.TERMS);
+        # "GA4" and "M1-3" are names, not figures.
+        if parent.has_ancestor_attr("data-term"):
+            continue
         text = " ".join(tn.text.split())
         for m in DIGIT_GROUP.finditer(text):
             if _allowed(text, m.start(), m.end()):

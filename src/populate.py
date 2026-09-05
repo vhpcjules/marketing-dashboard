@@ -20,6 +20,7 @@ legitimate reason to be absent, in `pending` (the page renders a labelled
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from decimal import Decimal, ROUND_HALF_UP
 from typing import TYPE_CHECKING, Any, Callable
@@ -176,6 +177,7 @@ class Core:
     charts: dict[str, dict] = field(default_factory=dict)
     tables: dict[str, dict] = field(default_factory=dict)
     report: dict[str, str] = field(default_factory=dict)
+    chart_spec: Callable[..., dict] = field(default=lambda *a, **k: {}, repr=False)
 
     def base_context(self, page: dict, data_sources: list[str], inp: "Inputs") -> dict:
         return {
@@ -209,7 +211,7 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
     core = Core(rm, pm, y, ids, ytd_months, prior_ytd_months, window,
                 {"ytd": ytd_label, "pytd": pytd_label, "fy": fy_label, "pfy": pfy_label, "r12": r12_label,
                  "month": month_label(rm), "prev_month": month_label(pm)},
-                inp.spend.monthly(Basis.TRUE_OPERATING))
+                inp.spend.monthly(Basis.TRUE_OPERATING), chart_spec=chart_spec)
     core.report = {
         "month_label": month_label(rm), "month_iso": rm, "prev_month_label": month_label(pm), "prev_month_iso": pm,
         "ytd_label": ytd_label, "ytd_iso": f"{ytd_months[0]}/{rm}",
@@ -739,14 +741,258 @@ def _budget_table(r: R, inp: "Inputs", core: Core) -> dict:
     }
 
 
-def _online_pending(inp: "Inputs", core: Core) -> None:
-    absent = [d for d in ("linkedin", "instagram", "meta_ads") if not inp.store.exists(core.rm, d)]
-    if absent:
+ONLINE_WINDOWS = ((1, "month"), (3, "three"), (6, "six"))
+
+
+def _window_months(rm: str, n: int) -> list[str]:
+    return months_between(shift_month(rm, -(n - 1)), rm)
+
+
+def _online_series(inp: "Inputs") -> list[dict]:
+    """The indirect brand-health series the executive page tracks, each a
+    (label, domain, extractor, kind) with the month bodies it reads."""
+    def li(body, key):
+        return _d(body["page_statistics"][key])
+
+    def fa(body, key):
+        return _d(body[key])
+    return [
+        {"key": "li_impressions", "label": "LinkedIn page impressions", "domain": "linkedin", "kind": "count",
+         "get": lambda b: li(b, "page_impressions"), "src": "supermetrics:linkedin"},
+        {"key": "li_engagements", "label": "LinkedIn page engagements", "domain": "linkedin", "kind": "count",
+         "get": lambda b: li(b, "page_engagements"), "src": "supermetrics:linkedin"},
+        {"key": "fa_impressions", "label": "Meta Ads impressions", "domain": "meta_ads", "kind": "count",
+         "get": lambda b: fa(b, "impressions"), "src": "supermetrics:meta_ads"},
+        {"key": "fa_clicks", "label": "Meta Ads clicks", "domain": "meta_ads", "kind": "count",
+         "get": lambda b: fa(b, "clicks"), "src": "supermetrics:meta_ads"},
+        {"key": "fa_spend", "label": "Meta Ads spend (platform-reported)", "domain": "meta_ads", "kind": "currency",
+         "get": lambda b: fa(b, "spend"), "src": "supermetrics:meta_ads", "hib": False},
+        {"key": "aw_impressions", "label": "Google Ads impressions", "domain": "google_ads", "kind": "count",
+         "get": lambda b: fa(b, "impressions"), "src": "supermetrics:google_ads"},
+        {"key": "aw_clicks", "label": "Google Ads clicks", "domain": "google_ads", "kind": "count",
+         "get": lambda b: fa(b, "clicks"), "src": "supermetrics:google_ads"},
+        {"key": "aw_cost", "label": "Google Ads spend (platform-reported)", "domain": "google_ads", "kind": "currency",
+         "get": lambda b: fa(b, "cost"), "src": "supermetrics:google_ads", "hib": False},
+        {"key": "ga_sessions", "label": "Website sessions (versatile.net)", "domain": "ga4", "kind": "count",
+         "get": lambda b: fa(b, "sessions"), "src": "supermetrics:ga4"},
+        {"key": "ga_engaged", "label": "Engaged website sessions", "domain": "ga4", "kind": "count",
+         "get": lambda b: fa(b, "engaged_sessions"), "src": "supermetrics:ga4"},
+        {"key": "ga_new_users", "label": "New website users", "domain": "ga4", "kind": "count",
+         "get": lambda b: fa(b, "new_users"), "src": "supermetrics:ga4"},
+    ]
+
+
+def _online_table(r: R, inp: "Inputs", core: Core) -> None:
+    """Three windows so a single month cannot masquerade as a trend. Every
+    cell is a registered figure; the reading column is a claim computed from
+    the month against its six-month average."""
+    rm = core.rm
+    bodies = {"linkedin": inp.linkedin, "meta_ads": inp.meta_ads, "instagram": inp.instagram,
+              "google_ads": inp.google_ads, "ga4": inp.ga4}
+    six = _window_months(rm, 6)
+    present = {d: [m for m in six if m in bodies[d]] for d in ("linkedin", "meta_ads", "google_ads", "ga4")}
+    absent = [d for d in ("linkedin", "meta_ads", "google_ads", "ga4", "instagram") if rm not in bodies[d]]
+    if any(d in absent for d in ("linkedin", "meta_ads", "google_ads", "ga4")):
         core.pending["online"] = (f"Social and advertising snapshots for {core.labels['month']} have not been ingested "
                                   f"({', '.join(absent)}); see src/ingest/README.md.")
-    else:
-        core.pending["online"] = ("Social snapshots are present but the online table is not yet assembled by the "
-                                  "build; the section returns when that wiring lands.")
+        return
+    rows = []
+    for series in _online_series(inp):
+        d = series["domain"]
+        months_have = present[d]
+        cells = {}
+        for n, key in ONLINE_WINDOWS:
+            window = _window_months(rm, n)
+            if not all(m in bodies[d] for m in window):
+                cells[key] = None
+                continue
+            total = sum((series["get"](bodies[d][m]) for m in window), Decimal(0))
+            label = _range_label(window[0], window[-1])
+            mid = f"online.{series['key']}.{key}"
+            if series["kind"] == "currency":
+                r.cur(mid, total, label, higher_is_better=series.get("hib", True), source=series["src"])
+            else:
+                r.cnt(mid, int(total), label, source=series["src"])
+            cells[key] = mid
+        # reading: this month against the six-month monthly average
+        if cells.get("six") is not None and cells.get("month") is not None:
+            month_v = series["get"](bodies[d][rm])
+            avg6 = sum((series["get"](bodies[d][m]) for m in six), Decimal(0)) / Decimal(6)
+            cid = f"online.{series['key']}.read"
+            hib = series.get("hib", True)
+            if avg6 > 0:
+                r.claim(cid, lambda mv=month_v, av=avg6: delta(mv, av),
+                        render=lambda ch, hib=hib: (
+                            "In line with its six-month average." if abs(ch) < 10 else
+                            f"{'Above' if ch > 0 else 'Below'} its six-month average by {abs(ch.quantize(Decimal('1')))}%"
+                            + ("." if (ch > 0) == hib else "; a move in the wrong direction.")))
+            else:
+                r.claim(cid, lambda: True, render=lambda _: "No six-month baseline: the series was flat at zero.")
+        else:
+            cid = None
+        rows.append({"metric": series["label"], "month": cells.get("month"), "three": cells.get("three"),
+                     "six": cells.get("six"), "read": cid, "status": None})
+    core.tables["online"] = {
+        "columns": [
+            {"key": "metric", "label": "Indicator", "kind": "text"},
+            {"key": "month", "label": core.labels["month"], "kind": "metric", "align": "right"},
+            {"key": "three", "label": "Last three months", "kind": "metric", "align": "right"},
+            {"key": "six", "label": "Last six months", "kind": "metric", "align": "right"},
+            {"key": "read", "label": "Reading", "kind": "claim"},
+        ],
+        "rows": rows,
+    }
+    if "instagram" in absent:
+        core.pending["instagram"] = (f"Instagram Insights for {core.labels['month']} is not ingested: the Supermetrics "
+                                     f"connection has expired and needs to be renewed before it can be pulled.")
+
+
+def _register_meta_ads(r: R, inp: "Inputs", core: Core) -> None:
+    rm, P = core.rm, core.ids["cur"]
+    body = inp.meta_ads.get(rm)
+    if body is None:
+        core.pending["meta_ads"] = (f"Meta Ads campaign figures for {core.labels['month']} have not been ingested; "
+                                    f"see src/ingest/README.md. Nothing is carried from the previous build as if it "
+                                    f"were current.")
+        return
+    S = "supermetrics:meta_ads"
+    r.cur(f"{P}.meta.spend", body["spend"], rm, higher_is_better=False, source=S,
+          note="platform-reported media spend; the ledger figure is in the paid-media reconciliation")
+    r.cnt(f"{P}.meta.impressions", body["impressions"], rm, source=S)
+    r.cnt(f"{P}.meta.clicks", body["clicks"], rm, source=S)
+    r.pct(f"{P}.meta.ctr", body["ctr_pct"], rm, source=S)
+    r.rat(f"{P}.meta.cpm", body["cpm"], rm, source=S, higher_is_better=False)
+    lc = body.get("lead_campaigns") or {}
+    if lc.get("leads") is not None:
+        r.cnt(f"{P}.meta.leads", lc["leads"], rm, source=S, note="OUTCOME_LEADS campaigns only")
+        r.cur(f"{P}.meta.lead_spend", lc["spend"], rm, higher_is_better=False, source=S)
+        if lc.get("cost_per_lead") is not None:
+            r.cur(f"{P}.meta.cost_per_lead", lc["cost_per_lead"], rm, higher_is_better=False, source=S, fmt="usd2")
+    pm = core.pm
+    if pm in inp.meta_ads:
+        prev = inp.meta_ads[pm]
+        Pp = core.ids["prev"]
+        r.cur(f"{Pp}.meta.spend", prev["spend"], pm, higher_is_better=False, source=S)
+        r.cnt(f"{Pp}.meta.clicks", prev["clicks"], pm, source=S)
+        r.rat(f"{Pp}.meta.cpm", prev["cpm"], pm, source=S, higher_is_better=False)
+    rows = []
+    for c in sorted(body["campaigns"], key=lambda c: -_d(c["spend"])):
+        key = re.sub(r"[^A-Za-z0-9]+", "_", c["campaign"]).strip("_").lower()[:60]
+        base = f"{P}.meta.adset.{key}"
+        r.txt(f"{base}.name", c["campaign"], rm, source=S)
+        r.txt(f"{base}.objective", str(c["objective"]).replace("OUTCOME_", "").title(), rm, source=S)
+        r.cur(f"{base}.spend", c["spend"], rm, higher_is_better=False, source=S)
+        r.cnt(f"{base}.impressions", c["impressions"], rm, source=S)
+        r.cnt(f"{base}.clicks", c["clicks"], rm, source=S)
+        row = {"name": f"{base}.name", "objective": f"{base}.objective", "spend": f"{base}.spend",
+               "impressions": f"{base}.impressions", "clicks": f"{base}.clicks", "leads": None, "status": None}
+        if c.get("judged_on_leads") and c.get("leads") is not None:
+            r.cnt(f"{base}.leads", c["leads"], rm, source=S)
+            row["leads"] = f"{base}.leads"
+        rows.append(row)
+    core.tables["meta_adsets"] = {
+        "columns": [
+            {"key": "name", "label": "Ad set", "kind": "metric"},
+            {"key": "objective", "label": "Objective", "kind": "metric"},
+            {"key": "spend", "label": "Spend", "kind": "metric", "align": "right", "total": True},
+            {"key": "impressions", "label": "Impressions", "kind": "metric", "align": "right", "total": True},
+            {"key": "clicks", "label": "Clicks", "kind": "metric", "align": "right", "total": True},
+            {"key": "leads", "label": "Leads (leads objective only)", "kind": "metric", "align": "right"},
+        ],
+        "rows": rows,
+    }
+    six = [m for m in _window_months(rm, 6) if m in inp.meta_ads]
+    if len(six) >= 2:
+        core.charts["meta_spend_6m"] = core_chart(core, "bar", [_short(m) for m in six],
+                                                  [_d(inp.meta_ads[m]["spend"]) for m in six],
+                                                  emphasis_index=len(six) - 1, y_format="usd")
+
+
+def _register_google(r: R, inp: "Inputs", core: Core) -> None:
+    rm, P, Pp = core.rm, core.ids["cur"], core.ids["prev"]
+    aw, ga = inp.google_ads.get(rm), inp.ga4.get(rm)
+    if aw is None or ga is None:
+        missing = [d for d, b in (("google_ads", aw), ("ga4", ga)) if b is None]
+        core.pending["google_web"] = (f"Google Ads and website figures for {core.labels['month']} have not both been "
+                                      f"ingested ({', '.join(missing)}); see src/ingest/README.md.")
+        return
+    SA, SG = "supermetrics:google_ads", "supermetrics:ga4"
+    r.cur(f"{P}.aw.cost", aw["cost"], rm, higher_is_better=False, source=SA,
+          note="platform-reported; reconciled to the ledger in the paid-media table")
+    r.cnt(f"{P}.aw.impressions", aw["impressions"], rm, source=SA)
+    r.cnt(f"{P}.aw.clicks", aw["clicks"], rm, source=SA)
+    r.pct(f"{P}.aw.ctr", aw["ctr_pct"], rm, source=SA)
+    if aw.get("avg_cpc") is not None:
+        r.cur(f"{P}.aw.avg_cpc", aw["avg_cpc"], rm, higher_is_better=False, source=SA, fmt="usd2")
+    r.cur(f"{P}.aw.platform_conversion_value", aw["platform_conversion_value"], rm, source=SA,
+          note="Google Ads' own attribution. NOT NetSuite revenue; shown so the gap is visible")
+    for t, v in sorted(aw.get("cost_by_channel_type", {}).items()):
+        key = re.sub(r"[^A-Za-z0-9]+", "_", t).strip("_").lower()
+        r.txt(f"{P}.aw.type.{key}.label", t, rm, source=SA)
+        r.cur(f"{P}.aw.type.{key}.cost", v, rm, higher_is_better=False, source=SA)
+    core.tables["aw_channel_types"] = {
+        "columns": [{"key": "label", "label": "Campaign type", "kind": "metric"},
+                    {"key": "cost", "label": "Spend, platform-reported", "kind": "metric", "align": "right", "total": True}],
+        "rows": [{"label": f"{P}.aw.type.{re.sub(r'[^A-Za-z0-9]+', '_', t).strip('_').lower()}.label",
+                  "cost": f"{P}.aw.type.{re.sub(r'[^A-Za-z0-9]+', '_', t).strip('_').lower()}.cost", "status": None}
+                 for t in sorted(aw.get("cost_by_channel_type", {}))],
+    }
+    if core.pm in inp.google_ads:
+        prev = inp.google_ads[core.pm]
+        r.cur(f"{Pp}.aw.cost", prev["cost"], core.pm, higher_is_better=False, source=SA)
+        r.cnt(f"{Pp}.aw.clicks", prev["clicks"], core.pm, source=SA)
+    r.cnt(f"{P}.ga.sessions", ga["sessions"], rm, source=SG)
+    r.cnt(f"{P}.ga.engaged_sessions", ga["engaged_sessions"], rm, source=SG)
+    r.pct(f"{P}.ga.engagement_rate", ga["engagement_rate_pct"], rm, source=SG,
+          note="engaged sessions over sessions for the month")
+    r.cnt(f"{P}.ga.new_users", ga["new_users"], rm, source=SG)
+    r.cnt(f"{P}.ga.key_events", ga["key_events"], rm, source=SG,
+          note="GA4 key events (its 'conversions' count), not orders")
+    if core.pm in inp.ga4:
+        prev = inp.ga4[core.pm]
+        r.cnt(f"{Pp}.ga.sessions", prev["sessions"], core.pm, source=SG)
+        r.pct(f"{Pp}.ga.engagement_rate", prev["engagement_rate_pct"], core.pm, source=SG)
+    six = [m for m in _window_months(rm, 6) if m in inp.ga4]
+    if len(six) >= 2:
+        core.charts["ga_sessions_6m"] = core_chart(core, "bar", [_short(m) for m in six],
+                                                   [_d(inp.ga4[m]["sessions"]) for m in six],
+                                                   emphasis_index=len(six) - 1, y_format="count")
+    six = [m for m in _window_months(rm, 6) if m in inp.google_ads]
+    if len(six) >= 2:
+        core.charts["aw_cost_6m"] = core_chart(core, "bar", [_short(m) for m in six],
+                                               [_d(inp.google_ads[m]["cost"]) for m in six],
+                                               emphasis_index=len(six) - 1, y_format="usd")
+
+
+def _register_linkedin(r: R, inp: "Inputs", core: Core) -> None:
+    rm, P, Pp = core.rm, core.ids["cur"], core.ids["prev"]
+    body = inp.linkedin.get(rm)
+    if body is None:
+        core.pending["social"] = (f"LinkedIn page figures for {core.labels['month']} have not been ingested; see "
+                                  f"src/ingest/README.md.")
+        return
+    S = "supermetrics:linkedin"
+    ps = body["page_statistics"]
+    r.cnt(f"{P}.li.impressions", ps["page_impressions"], rm, source=S, note="PageStatistics; breaks down by date")
+    r.cnt(f"{P}.li.engagements", ps["page_engagements"], rm, source=S)
+    r.pct(f"{P}.li.engagement_rate", ps["page_engagement_rate_pct"], rm, source=S,
+          note="engagements over impressions for the month, not a mean of daily rates")
+    if core.pm in inp.linkedin:
+        pps = inp.linkedin[core.pm]["page_statistics"]
+        r.cnt(f"{Pp}.li.impressions", pps["page_impressions"], core.pm, source=S)
+        r.cnt(f"{Pp}.li.engagements", pps["page_engagements"], core.pm, source=S)
+    six = [m for m in _window_months(rm, 6) if m in inp.linkedin]
+    if len(six) >= 2:
+        core.charts["li_impressions_6m"] = core_chart(core, "bar", [_short(m) for m in six],
+                                                      [_d(inp.linkedin[m]["page_statistics"]["page_impressions"]) for m in six],
+                                                      emphasis_index=len(six) - 1, y_format="count")
+    if rm not in inp.instagram:
+        core.pending["instagram"] = (f"Instagram Insights for {core.labels['month']} is not ingested: the Supermetrics "
+                                     f"connection has expired and needs to be renewed before it can be pulled.")
+
+
+def core_chart(core: Core, *args, **kw) -> dict:
+    return core.chart_spec(*args, **kw)
 
 
 # ---------------------------------------------------------------------------
@@ -760,7 +1006,7 @@ def populate_executive(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict],
     r = R(reg)
     core.tables["budget_vs_actual"] = _budget_table(r, inp, core)
     core.tables["online"] = {"columns": [], "rows": []}
-    _online_pending(inp, core)
+    _online_table(r, inp, core)
     context = core.base_context(
         {"title": "Executive dashboard", "slug": "executive",
          "subtitle": "New customers, marketing return on both bases, and pace against the target. All revenue is NET."},
@@ -851,16 +1097,9 @@ def populate_marketing_ops(reg: Any, inp: "Inputs", chart_spec: Callable[..., di
                       note="ledger media minus platform media in the month that disagrees most")
 
     # -- channels not yet ingested ----------------------------------------------
-    for section, domains, note in (
-        ("meta_ads", ("meta_ads",), "Meta Ads campaign figures"),
-        ("social", ("instagram", "linkedin"), "Instagram and LinkedIn organic figures"),
-        ("google_web", ("google_ads", "ga4"), "Google Ads, organic search and website figures"),
-    ):
-        absent = [d for d in domains if not inp.store.exists(rm, d)]
-        if absent:
-            pending[section] = (f"{note} for {core.labels['month']} have not been ingested "
-                                f"({', '.join(absent)}); see src/ingest/README.md. Nothing is carried from the "
-                                f"previous build as if it were current.")
+    _register_meta_ads(r, inp, core)
+    _register_linkedin(r, inp, core)
+    _register_google(r, inp, core)
     pending["initiatives"] = ("Initiative status is a manual input and no data/manual/<year>/initiatives.json has been "
                               "added for this month. The previous deck's table is not repeated here as if current.")
     pending["lapsed"] = ("The lapsed-accounts query has not been run this month (named accounts; confidential). "

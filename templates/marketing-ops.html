@@ -60,12 +60,63 @@
   </div>
   {% endif %}
 
-  {{ b.band_label('Meta Ads') }}
-  {% if 'meta_ads' in pending %}{{ p.pending('meta_ads', pending.meta_ads) }}{% endif %}
-  {{ b.band_label('Instagram and LinkedIn (organic)') }}
-  {% if 'social' in pending %}{{ p.pending('social', pending.social) }}{% endif %}
-  {{ b.band_label('Google Ads, organic search, website') }}
-  {% if 'google_web' in pending %}{{ p.pending('google_web', pending.google_web) }}{% endif %}
+  {{ b.band_label('Meta Ads', 'campaign objective governs the metric') }}
+  {% if 'meta_ads' in pending %}
+  {{ p.pending('meta_ads', pending.meta_ads) }}
+  {% else %}
+  <div class="tile-grid">
+    {{ t.tile('Spend, platform-reported', m(cur ~ '.meta.spend'), delta_between(cur ~ '.meta.spend', prev ~ '.meta.spend') if (prev ~ '.meta.spend') in registered_ids else None, 'Reconciled to the ledger above.') }}
+    {{ t.tile('Impressions', m(cur ~ '.meta.impressions'), None, 'Click-through rate:', m(cur ~ '.meta.ctr')) }}
+    {{ t.tile('Clicks', m(cur ~ '.meta.clicks'), delta_between(cur ~ '.meta.clicks', prev ~ '.meta.clicks') if (prev ~ '.meta.clicks') in registered_ids else None) }}
+    {{ t.tile('Cost per thousand impressions', m(cur ~ '.meta.cpm'), delta_between(cur ~ '.meta.cpm', prev ~ '.meta.cpm') if (prev ~ '.meta.cpm') in registered_ids else None, 'Lower is better.') }}
+    {% if (cur ~ '.meta.leads') in registered_ids %}
+    {{ t.tile('Leads, leads-objective campaigns only', m(cur ~ '.meta.leads'), None, 'Spend on those campaigns:', m(cur ~ '.meta.lead_spend')) }}
+    {{ t.tile('Cost per lead', m(cur ~ '.meta.cost_per_lead'), None, 'Awareness, traffic and sales campaigns are never judged on leads.') }}
+    {% endif %}
+  </div>
+  <div class="two-col">
+    {% if 'meta_spend_6m' in charts %}{{ ch.chart('meta_spend_6m', charts.meta_spend_6m, 'Meta Ads spend by month, platform-reported') }}{% endif %}
+    {{ tb.table('meta_adsets', tables.meta_adsets.columns, tables.meta_adsets.rows, total_label='All ad sets') }}
+  </div>
+  {% endif %}
+
+  {{ b.band_label('LinkedIn (organic)', 'page statistics; share impressions are not a monthly figure') }}
+  {% if 'social' in pending %}
+  {{ p.pending('social', pending.social) }}
+  {% else %}
+  <div class="two-col">
+    <div class="tile-grid tile-grid-narrow">
+      {{ t.tile('Page impressions', m(cur ~ '.li.impressions'), delta_between(cur ~ '.li.impressions', prev ~ '.li.impressions') if (prev ~ '.li.impressions') in registered_ids else None) }}
+      {{ t.tile('Page engagements', m(cur ~ '.li.engagements'), delta_between(cur ~ '.li.engagements', prev ~ '.li.engagements') if (prev ~ '.li.engagements') in registered_ids else None) }}
+      {{ t.tile('Engagement rate', m(cur ~ '.li.engagement_rate'), None, 'Engagements over impressions for the month.') }}
+    </div>
+    {% if 'li_impressions_6m' in charts %}{{ ch.chart('li_impressions_6m', charts.li_impressions_6m, 'LinkedIn page impressions by month') }}{% endif %}
+  </div>
+  {% endif %}
+  {{ b.band_label('Instagram (organic)') }}
+  {% if 'instagram' in pending %}{{ p.pending('instagram', pending.instagram) }}{% endif %}
+  {{ b.band_label('Google Ads and the website', 'conversion value is platform-reported, never revenue') }}
+  {% if 'google_web' in pending %}
+  {{ p.pending('google_web', pending.google_web) }}
+  {% else %}
+  <div class="tile-grid">
+    {{ t.tile('Google Ads spend, platform-reported', m(cur ~ '.aw.cost'), delta_between(cur ~ '.aw.cost', prev ~ '.aw.cost') if (prev ~ '.aw.cost') in registered_ids else None, 'Reconciled to the ledger above.') }}
+    {{ t.tile('Google Ads clicks', m(cur ~ '.aw.clicks'), delta_between(cur ~ '.aw.clicks', prev ~ '.aw.clicks') if (prev ~ '.aw.clicks') in registered_ids else None, 'Impressions:', m(cur ~ '.aw.impressions')) }}
+    {{ t.tile('Click-through rate', m(cur ~ '.aw.ctr'), None, 'Average cost per click:', m(cur ~ '.aw.avg_cpc')) }}
+    {{ t.tile('Google-attributed conversion value', m(cur ~ '.aw.platform_conversion_value'), None, 'The platform\'s own attribution. Not NetSuite revenue; shown so the gap is visible.') }}
+  </div>
+  <div class="two-col">
+    {% if 'aw_cost_6m' in charts %}{{ ch.chart('aw_cost_6m', charts.aw_cost_6m, 'Google Ads spend by month, platform-reported') }}{% endif %}
+    {{ tb.table('aw_channel_types', tables.aw_channel_types.columns, tables.aw_channel_types.rows, total_label='All campaign types') }}
+  </div>
+  <div class="tile-grid">
+    {{ t.tile('Website sessions', m(cur ~ '.ga.sessions'), delta_between(cur ~ '.ga.sessions', prev ~ '.ga.sessions') if (prev ~ '.ga.sessions') in registered_ids else None, 'versatile.net, all channels.') }}
+    {{ t.tile('Engagement rate', m(cur ~ '.ga.engagement_rate'), delta_between(cur ~ '.ga.engagement_rate', prev ~ '.ga.engagement_rate') if (prev ~ '.ga.engagement_rate') in registered_ids else None, 'Engaged sessions:', m(cur ~ '.ga.engaged_sessions')) }}
+    {{ t.tile('New users', m(cur ~ '.ga.new_users')) }}
+    {{ t.tile('Key events', m(cur ~ '.ga.key_events'), None, 'GA4 configured key events, not orders.') }}
+  </div>
+  {% if 'ga_sessions_6m' in charts %}<div class="two-col">{{ ch.chart('ga_sessions_6m', charts.ga_sessions_6m, 'Website sessions by month') }}<div></div></div>{% endif %}
+  {% endif %}
 
   {{ narrative.section('channel-performance') }}
 </section>

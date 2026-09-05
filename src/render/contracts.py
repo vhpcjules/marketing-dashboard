@@ -137,7 +137,7 @@ EXECUTIVE = PageContract(
     ),
     charts=("new_customers_12m", "m1_net_12m", "sources_customers"),
     tables=("budget_vs_actual", "online"),
-    pendable_sections=("m13_quality", "sources", "online", "vintage", "pace"),
+    pendable_sections=("m13_quality", "sources", "online", "instagram", "vintage", "pace"),
 )
 
 MARKETING_OPS = PageContract(
@@ -158,6 +158,16 @@ MARKETING_OPS = PageContract(
               "truad.platform_roas_min": "ratio", "truad.platform_roas_max": "ratio"}, section="paid_media")
         + _m({"truad.media_ytd": "currency", "truad.revenue_overstatement": "ratio",
               "truad.roas_overstatement": "ratio"}, hib=False, section="paid_media")
+        # Meta Ads and LinkedIn (pendable)
+        + _m({"{cur}.meta.impressions": "count", "{cur}.meta.clicks": "count", "{cur}.meta.ctr": "pct"}, section="meta_ads")
+        + _m({"{cur}.meta.spend": "currency", "{cur}.meta.cpm": "ratio"}, hib=False, section="meta_ads")
+        + _m({"{cur}.li.impressions": "count", "{cur}.li.engagements": "count", "{cur}.li.engagement_rate": "pct"},
+             section="social")
+        + _m({"{cur}.aw.impressions": "count", "{cur}.aw.clicks": "count", "{cur}.aw.ctr": "pct",
+              "{cur}.aw.platform_conversion_value": "currency", "{cur}.ga.sessions": "count",
+              "{cur}.ga.engaged_sessions": "count", "{cur}.ga.engagement_rate": "pct", "{cur}.ga.new_users": "count",
+              "{cur}.ga.key_events": "count"}, section="google_web")
+        + _m({"{cur}.aw.cost": "currency", "{cur}.aw.avg_cpc": "currency"}, hib=False, section="google_web")
         # cohorts by age
         + _m({"{pfy}.multiple_to_date": "ratio", "{pfy}.avg_maturity": "text", "{ytd}.avg_maturity": "text"})
         # retention (pendable)
@@ -173,11 +183,11 @@ MARKETING_OPS = PageContract(
               "{fy}.shortfall_after_available_conservative": "currency"}, hib=False, section="pace")
     ),
     claims=("{fy}.on_track", "budget{yy}.vs_plan_story"),
-    charts=("m13_first90_12",),
+    charts=("m13_first90_12", "meta_spend_6m", "li_impressions_6m", "aw_cost_6m", "ga_sessions_6m"),
     tables=("paid_media_recon", "budget_vs_actual", "yoy_channel", "m13_cohorts", "cohorts_by_age",
-            "retention_bands", "asks"),
-    pendable_sections=("paid_media", "meta_ads", "social", "google_web", "initiatives", "yoy_channel", "m13_quality",
-                       "retention", "lapsed", "asks", "pace"),
+            "retention_bands", "asks", "meta_adsets", "aw_channel_types"),
+    pendable_sections=("paid_media", "meta_ads", "social", "instagram", "google_web", "initiatives", "yoy_channel",
+                       "m13_quality", "retention", "lapsed", "asks", "pace"),
 )
 
 SALES = PageContract(

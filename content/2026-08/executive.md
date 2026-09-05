@@ -190,6 +190,24 @@ migration date rather than an acquisition date; they will refresh when a
 Sage export is added to the repository. Until then they are labelled as
 published, not as current.
 
+## Are we connecting with people online?
+
+These are indirect indicators of brand health, not revenue. Meta Ads reached
+{{ m("online.fa_impressions.month") }} impressions in August against
+{{ m("online.fa_impressions.six") }} over the last six months; LinkedIn page
+impressions were {{ m("online.li_impressions.month") }} against
+{{ m("online.li_impressions.six") }}. The reading column compares each month
+with its own six-month average, so a single strong or weak month cannot pass
+for a trend. Website sessions were {{ m("online.ga_sessions.month") }} in
+August against {{ m("online.ga_sessions.six") }} over six months. The
+pattern across the paid rows is the one to watch: Meta and Google spend sit
+in line with their six-month averages while impressions and clicks sit well
+below them, which means each dollar is buying less reach than it did in the
+spring. That is consistent with the cost-per-thousand and cost-per-click
+figures on the Marketing Ops page, and it is inference from two platforms,
+not a measured cause. Instagram is missing because its connection has
+expired.
+
 ## What changed in how we count
 
 - Marketing spend is reported on a true-operating basis: GL as posted, with

@@ -60,22 +60,45 @@ between {{ m("truad.platform_roas_min") }} and
 a real return of {{ m("ytd26.roas_to_date") }} will read as disappointing
 when it is in fact ahead of last year.
 
-### Meta Ads, organic social, Google and the website
+### Meta Ads
 
-These channels have not been ingested for August, and the sections above say
-so rather than repeating July's figures as if they were current. The rules
-they will follow when they land:
+August Meta spend was {{ m("aug26.meta.spend") }} on the platform, which
+matches the agency's Paid Social line to the cent and sits inside the ledger
+reconciliation above. The account ran {{ m("aug26.meta.impressions") }}
+impressions and {{ m("aug26.meta.clicks") }} clicks, a click-through rate of
+{{ m("aug26.meta.ctr") }} at {{ m("aug26.meta.cpm") }} per thousand
+impressions. Campaign objective governs how a campaign is judged: only the
+two leads-objective ad sets carry a lead figure — {{ m("aug26.meta.leads") }}
+leads on {{ m("aug26.meta.lead_spend") }}, {{ m("aug26.meta.cost_per_lead") }}
+each — and the awareness, traffic and sales ad sets are never judged on leads
+they were not asked to produce. The new August contractor list ad set is the
+larger of the two lead campaigns; one month is not a verdict on it.
 
-- Campaign objective governs how a campaign is judged. Only campaigns running
-  the leads objective carry a cost per lead; awareness and traffic campaigns
-  are top of funnel and are never judged on a lead metric.
-- LinkedIn impressions and engagement come from page statistics, which break
-  down by date. Share impressions do not and will not be shown as a monthly
-  series. Any month whose data does not cover the full calendar month is
-  refused rather than shown — a partial pull understated five months of
-  LinkedIn impressions by half in the previous build.
-- Google Ads conversion value is platform-reported and is labelled as such
-  wherever it appears; it is not NetSuite revenue.
+### LinkedIn, Instagram, Google and the website
+
+LinkedIn page impressions were {{ m("aug26.li.impressions") }} in August with
+{{ m("aug26.li.engagements") }} engagements, an engagement rate of
+{{ m("aug26.li.engagement_rate") }} computed as engagements over impressions
+for the month rather than a mean of daily rates. Page statistics break down by
+date and are shown as a monthly series; share impressions do not — the share
+figure the platform returns is a lifetime total that ignores the date range,
+so it is stored and never shown as a monthly number. Any month whose data does
+not cover the full calendar month is refused rather than shown; a partial pull
+understated five months of LinkedIn impressions by half in the previous build.
+
+Google Ads spent {{ m("aug26.aw.cost") }} on the platform in August, which
+matches the agency's Paid Search plus Performance Max lines and the ledger
+reconciliation above, for {{ m("aug26.aw.clicks") }} clicks at
+{{ m("aug26.aw.avg_cpc") }} each. The platform attributes
+{{ m("aug26.aw.platform_conversion_value") }} of conversion value to those
+clicks; that is Google's own attribution, shown so the gap is visible, and it
+is never treated as NetSuite revenue. The website (versatile.net) took
+{{ m("aug26.ga.sessions") }} sessions in August with an engagement rate of
+{{ m("aug26.ga.engagement_rate") }}; key events are {{ term("ga4") }} configured events,
+not orders.
+
+Instagram is not shown this month: the Supermetrics connection to Instagram
+Insights has expired and must be renewed before it can be pulled.
 
 ## Spend detail
 
