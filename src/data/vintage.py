@@ -16,7 +16,7 @@ recoverable from these files and is not claimed here.
 
 The join happens offline:
 
-    NetSuite (vintage_accounts.sql)  ->  entityid '0000004 Artistic Concrete', FY NET revenue
+    NetSuite (vintage_accounts.sql)  ->  entityid '4' (Sage '0000004' without leading zeros), FY NET revenue
     Sage manual file                  ->  '0000004' -> first_sale_year 2019 (floor)
 
     acquisition_year = Sage first-sale year if the Sage number matches,
@@ -69,12 +69,25 @@ class SageHistory:
     meta: Mapping[str, Any]
 
     def sage_id(self, entityid: str) -> str | None:
-        """The Sage customer number if the NetSuite entityid starts with one we know."""
+        """The Sage customer number behind a NetSuite entityid, or None.
+
+        Migration kept the Sage number as the entityid but dropped the
+        leading zeros: Sage '0000022' is NetSuite '22'; 'W127055' and 'MB01'
+        came over unchanged. Accounts created in NetSuite carry a NetSuite
+        sequence number that happens to be all digits too, so a numeric
+        match is only trusted when the zero-padded form is a Sage customer.
+        """
         m = _SAGE_ID.match(str(entityid or "").strip())
         if not m:
             return None
         key = m.group(1)
-        return key if key in self.first_sale_year else None
+        if key in self.first_sale_year:
+            return key
+        if key.isdigit():
+            padded = key.zfill(7)
+            if padded in self.first_sale_year:
+                return padded
+        return None
 
     def __len__(self) -> int:
         return len(self.first_sale_year)

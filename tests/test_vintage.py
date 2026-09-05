@@ -23,11 +23,14 @@ class TestSageJoin:
         assert len(s) > 7000
         assert s.first_sale_year["0000004"] == 2019          # Artistic Concrete, selling in 2019
         assert s.sage_id("0000004 Artistic Concrete") == "0000004"
+        assert s.sage_id("4") == "0000004"                        # migration dropped the leading zeros
         assert s.sage_id("W151660 Dillinger Beck") == "W151660"
         assert s.sage_id("NS-2025-0001 Brand New") is None
+        assert s.sage_id("18188") is None                         # a NetSuite-era sequence number, no Sage match
 
     def test_sage_wins_over_the_migration_date(self, sage):
         assert acquisition_year("0000004 Artistic Concrete", 2024, sage) == (2019, "sage")
+        assert acquisition_year("4", 2023, sage) == (2019, "sage")
         assert acquisition_year("W151660 Dillinger Beck", "2024", sage) == (2023, "sage")
 
     def test_netsuite_year_for_accounts_sage_never_saw(self, sage):

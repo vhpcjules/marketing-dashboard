@@ -393,8 +393,8 @@ def ingest_vintage_accounts(adapter: NetSuiteAdapter, store: SnapshotStore, mont
     ttm_start = date(ttm_end.year - 1, ttm_end.month, 1)
     fy = adapter.pull_vintage_accounts(fy_from, fy_to, f"FY{year - 1}")
     ttm = adapter.pull_vintage_accounts(ttm_start, ttm_end, f"TTM to {month}")
-    body = {"fy_prior": fy.body, "ttm": ttm.body}
-    return _write(store, month, "vintage_accounts", Pull(jsonable(body), fy.row_count + ttm.row_count,
+    body = {"fy_prior": fy.body, "ttm": ttm.body}    # both already JSON-safe; jsonable() would refuse their floats
+    return _write(store, month, "vintage_accounts", Pull(body, fy.row_count + ttm.row_count,
                                                           f"{fy.query_hash}+{ttm.query_hash}"),
                   query_id="vintage_accounts", pulled_at=pulled_at)
 

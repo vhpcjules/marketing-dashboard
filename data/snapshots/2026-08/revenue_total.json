@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "domain": "revenue_total",
+    "frozen": false,
+    "period": "2026-08",
+    "pulled_at": "2026-09-05T22:47:29+00:00",
+    "query_hash": "bab11891814a125e",
+    "query_id": "revenue_total_monthly",
+    "row_count": 1,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "customers_transacting": 577,
+  "definition": "Total NET revenue (product only; shipping/tax excluded; credits and refunds deducted) from subsidiary-2 transactions of customers not in categories 2 (Garage Experts) or 14 (Vendor), trandate in the calendar month. The series the 19% company target is paced on. Query: src/ingest/queries/revenue_total_monthly.sql.",
+  "net_revenue": 1945754.32,
+  "transactions": 1556
+}
