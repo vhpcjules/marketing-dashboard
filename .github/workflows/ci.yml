@@ -1,0 +1,60 @@
+# CI: the test suite is the proof, and the gate is the last line before a
+# number reaches a page. Runs on every pull request and on push to main.
+#
+# Nothing here deploys. Cloudflare Pages is connected to the repo directly and
+# builds from main on its own (see deploy-check.yml). Keeping deploy out of PR
+# runs means a PR from a fork can never publish anything.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30   # test_mutation.py runs the suite ~15 times; slow is expected, hung is not
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install
+        run: python3 -m pip install --upgrade pip && python3 -m pip install -r requirements.txt
+
+      # Includes tests/test_mutation.py on purpose. It is the slow one, and it
+      # is the only thing that proves the guards do anything. Do not --ignore it.
+      - name: Test (including mutation suite)
+        run: python3 -m pytest tests -q -p no:cacheprovider
+
+      # The build and the gate live in sibling modules that may land in a
+      # different PR than this workflow. A missing module is a plain sentence,
+      # not a ModuleNotFoundError traceback, so the failure is readable in
+      # the Actions summary.
+      - name: Build
+        run: |
+          if ! python3 -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('src.build') else 1)"; then
+            echo "::error::src.build is not present in this checkout; nothing to build or gate."
+            exit 1
+          fi
+          python3 -m src.build --as-of "$(date -u +%F)"
+
+      - name: Validation gate
+        run: |
+          if [ ! -d dist ]; then
+            echo "::error::dist/ does not exist after the build step; the gate has nothing to inspect."
+            exit 1
+          fi
+          if ! python3 -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('src.validate.gate') else 1)"; then
+            echo "::error::src.validate.gate is not present in this checkout; the build output is unverified."
+            exit 1
+          fi
+          python3 -m src.validate.gate dist --period auto

@@ -1,0 +1,11 @@
+# Secret scanning before a commit exists. Install once:
+#     pip install pre-commit && pre-commit install
+#
+# Credentials never live in this repo. NetSuite, Supermetrics and HubSpot
+# tokens are env vars locally and live in Cloudflare's secret store for the
+# build. MCP server config with tokens in it stays out of git entirely.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks

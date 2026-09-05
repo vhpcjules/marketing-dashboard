@@ -1,0 +1,16 @@
+# Cloudflare Pages redirects. The build copies public/ into dist/ verbatim,
+# so this file ships at the site root.
+#
+# The six v1 dashboard URLs are bookmarked by leadership and linked from old
+# emails. They keep working, permanently (301), and land on the v2 page that
+# absorbed them. Do not remove a line because "nobody uses it any more" -
+# a dead bookmark is the first thing a VP notices.
+/Leadership_Dashboard.html            /executive       301
+/Budget_Performance.html              /executive       301
+/YoY_Performance.html                 /executive       301
+/Social_Media_Performance.html        /marketing-ops   301
+/Marketing_Activity.html              /marketing-ops   301
+/Marketing_Pipeline_for_Sales.html    /sales           301
+
+# The root serves the executive page in place (200 rewrite, URL unchanged).
+/                                     /executive       200

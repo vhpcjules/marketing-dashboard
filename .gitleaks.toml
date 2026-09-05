@@ -1,0 +1,28 @@
+# gitleaks configuration. Extends the default rule set; the allowlist below
+# exists because this repo is full of long numeric ids that are not secrets
+# and trip entropy heuristics.
+title = "marketing-dashboard"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known non-secret identifiers that look like secrets"
+regexes = [
+  # Supermetrics account ids: Google Ads, Instagram Business, Meta Ads.
+  # They appear in snapshot _meta blocks and query fixtures. Public-ish
+  # identifiers, useless without a token.
+  '''\b6735901\b''',
+  '''\b17841402384139665\b''',
+  '''\bact_1162719948574137\b''',
+  # NetSuite subsidiary id (Versatile High-Performance Coatings, LLC).
+  '''subsidiary(_id)?\W{0,4}2\b''',
+  # GL account numbers: marketing 66212.*/66215.*, NAF 96212.* (excluded).
+  '''\b(66212|66215|96212)(\.\d+)?\b''',
+  # Snapshot query hashes are a digest of the SQL text, not credentials.
+  '''"query_hash":\s*"[0-9a-f]{8,64}"''',
+]
+paths = [
+  '''assets/fonts/.*\.woff2$''',
+  '''assets/vendor/.*\.js$''',
+]

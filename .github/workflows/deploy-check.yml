@@ -1,0 +1,57 @@
+# Pre-deploy signal. Runs on push to main only.
+#
+# This workflow does NOT deploy. Cloudflare Pages is connected to this
+# repository and runs, as its build command with output directory `dist`:
+#
+#     python3 -m src.build && python3 -m src.validate.gate dist
+#
+# A failing gate exits non-zero, so Cloudflare marks the deploy failed and the
+# previous deployment stays live. This job runs the same build and gate in
+# GitHub so the failure is visible next to the commit (with logs) rather than
+# only inside the Cloudflare dashboard. If this is red, the deploy is red.
+#
+# The site sits behind Cloudflare Access; nothing here is publicly reachable.
+name: deploy-check
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install
+        run: python3 -m pip install --upgrade pip && python3 -m pip install -r requirements.txt
+
+      - name: Build
+        run: |
+          if ! python3 -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('src.build') else 1)"; then
+            echo "::error::src.build is not present on main; Cloudflare's build command will fail the same way."
+            exit 1
+          fi
+          python3 -m src.build --as-of "$(date -u +%F)"
+
+      - name: Validation gate
+        run: |
+          if [ ! -d dist ]; then
+            echo "::error::dist/ does not exist after the build step; the gate has nothing to inspect."
+            exit 1
+          fi
+          if ! python3 -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('src.validate.gate') else 1)"; then
+            echo "::error::src.validate.gate is not present on main; the deploy would ship unverified pages."
+            exit 1
+          fi
+          python3 -m src.validate.gate dist --period auto
