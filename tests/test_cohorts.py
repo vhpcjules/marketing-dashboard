@@ -18,7 +18,7 @@ LIVE_2026 = [
     ("2026-07", 79, "49740.92", "87609.71"),
     ("2026-08", 87, "85123.40", "96501.85"),
 ]
-SPEND_JAN_AUG = D("135926.21")   # true operating basis
+SPEND_JAN_AUG = D("127397.34")   # true operating, both 2026 corrections applied
 
 
 @pytest.fixture
@@ -33,10 +33,10 @@ def cs():
 
 class TestDualBasisRoas:
     def test_m1_roas(self, cs):
-        assert cs.roas_m1.per_dollar == "$4.07"
+        assert cs.roas_m1.per_dollar == "$4.34"
 
     def test_to_date_roas_is_much_higher(self, cs):
-        assert cs.roas_to_date.per_dollar == "$7.59"
+        assert cs.roas_to_date.per_dollar == "$8.09"
 
     def test_m1_understates_by_about_half(self, cs):
         assert abs(cs.understatement_of_m1_roas() - D("46.4")) < D("0.1")
@@ -126,18 +126,19 @@ class TestMaturityContrastWith2025:
         )
 
     def test_spend_is_full_year_not_seven_months(self):
-        assert _fy2025_spend() == D("583254.04")
+        assert _fy2025_spend() == D("591782.91")
         assert _fy2025_spend() != D("317700.13"), "Jan-Jul spend crept back in"
 
     def test_full_maturity_multiple(self, cs25):
         assert cs25.cohorts[0].multiple.multiple == "5.09x"
 
     def test_roas_both_bases(self, cs25):
-        assert cs25.roas_m1.per_dollar == "$1.50"
-        assert cs25.roas_to_date.per_dollar == "$7.62"
+        assert cs25.roas_m1.per_dollar == "$1.47"
+        assert cs25.roas_to_date.per_dollar == "$7.51"
 
-    def test_2026_matches_2025_return_at_a_third_of_the_maturity(self, cs, cs25):
-        """The strongest signal available: near-identical revenue-to-date
-        ROAS, reached by the 2026 cohorts in under a third of the time."""
-        assert abs(cs.roas_to_date.value - cs25.roas_to_date.value) < D("0.10")
+    def test_2026_already_beats_2025_at_a_third_of_the_maturity(self, cs, cs25):
+        """The strongest signal available. The 2026 cohorts have already
+        passed FY2025's full-year revenue-to-date ROAS, at 4.3 months of
+        average maturity against 14.3."""
+        assert cs.roas_to_date.value > cs25.roas_to_date.value
         assert cs.avg_maturity_months < cs25.avg_maturity_months / 3

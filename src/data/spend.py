@@ -16,15 +16,20 @@ Three bases, and each has exactly one job:
                   what the freeze rule holds frozen.
 
   TRUE_OPERATING  VHPC's actual marketing activity, by the month the activity
-                  happened. Current-year misbookings are removed from the
-                  months they were posted to; prior-year corrections are
-                  excluded entirely. THIS IS THE BASIS FOR ALL EFFICIENCY
-                  METRICS - return per dollar, cost per customer, spend as a
-                  share of revenue.
+                  happened. Credits are lifted out of the month they merely
+                  landed in and pushed back to the months they belong to.
+                  Corrections whose month cannot be established reduce the
+                  window total and no month. THIS IS THE BASIS FOR ALL
+                  EFFICIENCY METRICS - return per dollar, cost per customer,
+                  spend as a share of revenue.
 
-  ANNUAL_LEDGER   As-posted for the full year, including prior-year
-                  corrections. Used only for the annual budget-performance
-                  review, because the credits do land on this year's books.
+  ANNUAL_LEDGER   As-posted for the full year. Used for the annual
+                  budget-performance review, where what the ledger says is
+                  the point.
+
+Because one 2026 correction has no established month, a TRUE_OPERATING
+monthly series sums to MORE than its window total, by $8,528.87. That is
+deliberate - see unattributed_corrections() - and monthly_sum_gap() names it.
 
 Budget lives in data/manual/, not NetSuite: report -197 returns Budget Amount
 of zero for every account and at the subsidiary grand-total line.
@@ -131,15 +136,43 @@ class SpendData:
                 out[month] = out.get(month, Decimal(0)) + _d(amt)
         return out
 
-    def _excluded_credits(self) -> dict[str, Decimal]:
-        """Credits that must not touch monthly measurement, keyed by month."""
+    def _credits_by_landing_month(self) -> dict[str, Decimal]:
+        """Every correction credit, keyed by the month it was POSTED in.
+
+        No credit belongs to the month it lands in - that is the whole
+        problem. August 2026 carried $17,982.62 of credits for spend made in
+        March, April and elsewhere, netting the raw month to MINUS $9,493.
+        """
         out: dict[str, Decimal] = {}
         for c in self.corrections:
-            if c.get("affects_monthly_measurement"):
-                continue
             m = c["credit_month"]
             out[m] = out.get(m, Decimal(0)) + _d(c["credit_amount"])
         return out
+
+    def unattributed_corrections(self) -> Decimal:
+        """Corrections that reduce the year but cannot be assigned to a month.
+
+        The 2026 agency overcharge is $8,528.87 that the TRUAD reconciliation
+        could not place: at the contracted 0.20 x actual media the agency was
+        UNDER-billed by $1,366.79, so the fee formula does not explain the
+        credit. Guessing a month would be worse than carrying the gap
+        honestly, so these apply to window totals and to no month.
+
+        Consequence: monthly figures sum to MORE than the window total. That
+        is intended, and `monthly_sum_gap()` names the difference so no
+        consumer has to discover it.
+        """
+        total = Decimal(0)
+        for c in self.corrections:
+            if not c.get("affects_monthly_measurement"):
+                continue
+            if c.get("attribution") == "unresolved" or not c.get("restates"):
+                total += _d(c["credit_amount"])
+        return total
+
+    def monthly_sum_gap(self) -> Decimal:
+        """How far a monthly series overstates the true window total."""
+        return -self.unattributed_corrections()
 
     # -- the series -------------------------------------------------------
 
@@ -153,17 +186,12 @@ class SpendData:
             adjusted = raw
         elif basis is Basis.TRUE_OPERATING:
             restate = self._restatements()
-            drop = self._excluded_credits()
+            credits = self._credits_by_landing_month()
             adjusted = {}
             for m, total in raw.items():
-                # Remove the credit itself from the month it landed in, and
-                # push current-year misbookings back to their real months.
-                seo_credit = sum(
-                    _d(c["credit_amount"])
-                    for c in self.corrections
-                    if c.get("affects_monthly_measurement") and c["credit_month"] == m
-                )
-                adjusted[m] = total + restate.get(m, Decimal(0)) - drop.get(m, Decimal(0)) - seo_credit
+                # Lift every credit out of the month it merely landed in, then
+                # push the attributable ones back to the months they belong to.
+                adjusted[m] = total - credits.get(m, Decimal(0)) + restate.get(m, Decimal(0))
         else:  # pragma: no cover - Enum is exhaustive
             raise ValueError(basis)
 
@@ -177,6 +205,11 @@ class SpendData:
             raise ValueError(f"no months in range {start}..{end}")
         series = self.monthly(basis)
         total = sum((series[m].amount for m in months), Decimal(0))
+        if basis is Basis.TRUE_OPERATING:
+            # Corrections the reconciliation could not place by month still
+            # reduce the year. Applying them here rather than smearing them
+            # across months keeps every monthly figure defensible.
+            total += self.unattributed_corrections()
         return Money(total, label or f"{start}..{end}")
 
     def by_account(self, start: str, end: str, reclass: bool = True) -> dict[str, Decimal]:

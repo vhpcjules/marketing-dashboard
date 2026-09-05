@@ -184,9 +184,9 @@
         0
       ],
       "annual": 0.0,
-      "note": "Zero budget, but carries $25,879.27 of Jan-Mar actuals. Evidence indicates this is Google spend posted before the account split: 66212.0016 has zero actual in Jan-Mar, 66212.0020 has zero actual from Apr onward, and March's 0020 posting of $8,466.00 equals the March Google budget of $8,466.00 exactly. Treated as Google for channel reporting via reclass_to. INFERENCE - accounting has not yet confirmed.",
+      "note": "Zero budget, but carries $25,879.27 of Jan-Mar actuals. CONFIRMED as Google spend posted before the account split, by reconciliation against TRUAD media spend 2026-09-05: 66212.0016 is zero in Jan-Mar while TRUAD reports real Google spend all three months ($8,122.88 / $8,250.33 / $8,244.72), and 0020 carries $8,507.27 / $8,906.00 / $8,466.00 in exactly those months and nothing after April.",
       "reclass_to": "66212.0016",
-      "reclass_confidence": "inferred"
+      "reclass_confidence": "confirmed"
     }
   },
   "unbudgeted_actuals": {
@@ -212,7 +212,7 @@
     "caveat": "M1 NET revenue is a FLOOR, not total marketing-attributable revenue: any customer whose sales cycle crossed a month boundary contributes zero M1 by construction, and repeat revenue from prior cohorts is excluded entirely. The 2025 cohort alone contributed roughly $1.66M of repeat revenue in Jan-Jul 2026. If leadership's 19% means total revenue growth rather than new-customer revenue growth, this target is materially harder than intended - confirm before publishing.",
     "secondary_frame": {
       "name": "cohort revenue to date (M1 + repeat)",
-      "why": "M1 is the target frame, but it is not what the spend bought. Jan-Aug 2026 cohorts have produced $1,031,222 against $552,656 of M1 - repeat revenue is 46.4% of the total. ROAS on M1 is $4.07; on revenue to date it is $7.59. Both are reported, always labelled with basis and average maturity.",
+      "why": "M1 is the target frame, but it is not what the spend bought. Jan-Aug 2026 cohorts have produced $1,031,222 against $552,656 of M1 - repeat revenue is 46.4% of the total. ROAS on M1 is $4.34; on revenue to date it is $8.09, which already exceeds FY2025's full-year $7.51 at a third of the maturity. Both are reported, always labelled with basis and average maturity.",
       "not_a_target": true,
       "maturity_caveat": "2026 cohorts average 4.3 months of maturity against 14.3 for 2025 cohorts. To-date multiples are not comparable across cohorts of different ages: 1.13x at one month, 3.34x at eight."
     }

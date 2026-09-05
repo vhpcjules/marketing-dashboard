@@ -1,0 +1,111 @@
+{
+  "_meta": {
+    "source": "TRUAD platform (connect.truad.com/perform), 'Overall Performance' table, screenshots supplied by Jules 2026-09-05",
+    "purpose": "Actual media spend by channel by month, used to reconcile the agency fee. The approved budget bills agency fees as 0.20 x (Google + Meta); the GL shows the agency billed the flat BUDGETED fee instead ($2,393.20/mo Jan-Mar, $1,700/mo May-Jul), so the overcharge is the difference between what was billed and 20% of what was actually spent.",
+    "channel_mapping": {
+      "google": [
+        "Paid Search",
+        "Performance Max"
+      ],
+      "meta": [
+        "Paid Social"
+      ]
+    },
+    "captured": "2026-09-05",
+    "batch": "1 and 2 (complete)",
+    "complete": true,
+    "missing_months": [],
+    "reconciliation_result": "Media spend reconciles to the GL within 0.90% for Jan-Jul (TRUAD $68,228.97 vs GL $67,617.83). The agency fee, however, was UNDER-billed by $1,366.79 against the contracted 0.20 x actual media - so the $8,528.87 credit is NOT explained by the fee formula. See reports/restatement_2026-08.md."
+  },
+  "months": {
+    "2026-01": {
+      "paid_search": 3365.77,
+      "paid_social": 3494.5,
+      "performance_max": 4757.11,
+      "total": 11617.38,
+      "impressions": 615391,
+      "clicks": 15017,
+      "new_accounts": 21,
+      "purchases": 329,
+      "platform_revenue": 657978.55
+    },
+    "2026-02": {
+      "paid_search": 3477.51,
+      "paid_social": 3481.42,
+      "performance_max": 4772.82,
+      "total": 11731.75,
+      "impressions": 794679,
+      "clicks": 18513,
+      "new_accounts": 28,
+      "purchases": 425,
+      "platform_revenue": 734250.76
+    },
+    "2026-04": {
+      "paid_search": 2394.51,
+      "paid_social": 2514.09,
+      "performance_max": 3409.42,
+      "total": 8318.02,
+      "impressions": 425534,
+      "clicks": 15699,
+      "new_accounts": 31,
+      "purchases": 445,
+      "platform_revenue": 1030538.51
+    },
+    "2026-08": {
+      "paid_search": 1151.3,
+      "paid_social": 2515.39,
+      "performance_max": 4461.76,
+      "total": 8128.45,
+      "impressions": 355140,
+      "clicks": 9647,
+      "new_accounts": 19,
+      "purchases": 355,
+      "platform_revenue": 771784.24
+    },
+    "2026-03": {
+      "paid_search": 3393.03,
+      "paid_social": 3500.3,
+      "performance_max": 4851.69,
+      "total": 11745.02,
+      "impressions": 842840,
+      "clicks": 20555,
+      "new_accounts": 42,
+      "purchases": 472,
+      "platform_revenue": 960347.26
+    },
+    "2026-05": {
+      "paid_search": 2304.52,
+      "paid_social": 2503.91,
+      "performance_max": 3358.54,
+      "total": 8166.97,
+      "impressions": 478727,
+      "clicks": 15290,
+      "new_accounts": 24,
+      "purchases": 401,
+      "platform_revenue": 877456.59
+    },
+    "2026-06": {
+      "paid_search": 1760.7,
+      "paid_social": 2506.69,
+      "performance_max": 4073.72,
+      "total": 8341.11,
+      "impressions": 744618,
+      "clicks": 17923,
+      "new_accounts": 12,
+      "purchases": 432,
+      "platform_revenue": 883707.74
+    },
+    "2026-07": {
+      "paid_search": 1182.6,
+      "paid_social": 2462.19,
+      "performance_max": 4663.93,
+      "total": 8308.72,
+      "impressions": 464026,
+      "clicks": 10956,
+      "new_accounts": 19,
+      "purchases": 513,
+      "platform_revenue": 1176902.19
+    }
+  },
+  "platform_revenue_warning": "TRUAD 'Platform Revenue' is ad-platform-reported conversion value and is NOT NetSuite NET revenue. Jan-Aug 2026: TRUAD reports $7,092,965.84 on $76,357.42 of media, an implied ROAS of $92.89 per $1. The 2026 cohorts have actually produced $1,031,222.11 of NET revenue to date against $127,397.34 of total marketing spend - a real ROAS of $8.09. TRUAD overstates revenue 6.9x and ROAS about 11x. Its ROAS chart displays values from $36 to $216 per $1. These figures must never appear on a VHPC dashboard, feed any ROAS calculation, or be quoted to leadership."
+}

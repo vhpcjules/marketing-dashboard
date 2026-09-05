@@ -67,37 +67,52 @@ class TestAugustIsNotNegative:
 
 
 class TestCreditTreatment:
-    """Two credits, two different rules. Per Jules 2026-09-04."""
+    """Two 2026 corrections, two different attribution states.
+
+    Corrected by Jules 2026-09-05: the agency overcharge is a CURRENT-year
+    item, so it reduces 2026 spend and 2025 needs no adjustment.
+    """
 
     def test_seo_misbooking_restates_its_original_months(self, sd):
         t = sd.monthly(Basis.TRUE_OPERATING)
         p = sd.monthly(Basis.AS_POSTED)
-        # March loses $6,500 and April loses $2,953.75 - never VHPC's spend.
         assert abs((p["2026-03"].amount - t["2026-03"].amount) - Decimal("6500")) < Decimal("0.01")
         assert abs((p["2026-04"].amount - t["2026-04"].amount) - Decimal("2953.75")) < Decimal("0.01")
 
-    def test_2025_agency_credit_touches_no_2026_month(self, sd):
-        """A prior-year correction must not move any 2026 monthly figure."""
+    def test_august_holds_only_real_august_spend(self, sd):
+        """Both credits are lifted out of the month they merely landed in."""
         t = sd.monthly(Basis.TRUE_OPERATING)
-        # August true spend excludes it entirely...
         assert abs(t["2026-08"].amount - Decimal("8489.18")) < Decimal("0.01")
-        # ...and it appears nowhere else in the series either.
-        total_true = sd.window("2026-01", "2026-08", Basis.TRUE_OPERATING).amount
-        assert abs(total_true - Decimal("135926.21")) < Decimal("0.05"), total_true
 
-    def test_true_jan_jul_removes_only_the_seo_misbooking(self, sd):
-        true_jj = sd.window("2026-01", "2026-07", Basis.TRUE_OPERATING).amount
-        assert abs(true_jj - Decimal("127437.03")) < Decimal("0.05"), true_jj
+    def test_true_jan_jul_removes_both_corrections(self, sd):
+        jj = sd.window("2026-01", "2026-07", Basis.TRUE_OPERATING).amount
+        assert abs(jj - Decimal("118908.16")) < Decimal("0.05"), jj
 
-    def test_annual_ledger_keeps_the_credits(self, sd):
-        """The credits do land on this year's books - the annual view sees them."""
+    def test_true_jan_aug(self, sd):
+        ytd = sd.window("2026-01", "2026-08", Basis.TRUE_OPERATING).amount
+        assert abs(ytd - Decimal("127397.34")) < Decimal("0.05"), ytd
+
+    def test_unattributed_correction_is_the_agency_overcharge(self, sd):
+        assert abs(sd.unattributed_corrections() - Decimal("-8528.87")) < Decimal("0.01")
+
+    def test_monthly_series_overstates_the_window_by_the_unplaced_amount(self, sd):
+        """Deliberate, and named. Guessing a month would be worse."""
+        series = sd.monthly(Basis.TRUE_OPERATING)
+        msum = sum((v.amount for k, v in series.items() if k <= "2026-08"), Decimal(0))
+        window = sd.window("2026-01", "2026-08", Basis.TRUE_OPERATING).amount
+        assert abs((msum - window) - sd.monthly_sum_gap()) < Decimal("0.01")
+        assert abs(sd.monthly_sum_gap() - Decimal("8528.87")) < Decimal("0.01")
+
+    def test_no_month_carries_the_agency_credit(self, sd):
+        """Every month must be defensible on its own."""
+        for month, m in sd.monthly(Basis.TRUE_OPERATING).items():
+            assert m.amount >= 0, f"{month} went negative: {m.amount}"
+
+    def test_annual_ledger_is_as_posted(self, sd):
         ledger = sd.window("2026-01", "2026-08", Basis.ANNUAL_LEDGER).amount
-        assert abs(ledger - Decimal("127397.34")) < Decimal("0.05"), ledger
-
-    def test_the_gap_between_bases_is_exactly_the_2025_credit(self, sd):
-        true_ = sd.window("2026-01", "2026-08", Basis.TRUE_OPERATING).amount
-        ledger = sd.window("2026-01", "2026-08", Basis.ANNUAL_LEDGER).amount
-        assert abs((true_ - ledger) - Decimal("8528.87")) < Decimal("0.05")
+        posted = sd.window("2026-01", "2026-08", Basis.AS_POSTED).amount
+        assert ledger == posted
+        assert abs(ledger - Decimal("127397.34")) < Decimal("0.05")
 
 
 class TestBudgetReconciliation:
@@ -194,9 +209,9 @@ class TestEfficiencyOnTrueBasis:
             Money(473352, "Jan-Jul 2026"),
             447,
         )
-        assert eff.return_per_dollar.per_dollar == "$3.71"
-        assert eff.cost_per_customer.usd0 == "$285"
-        assert abs(eff.spend_share_of_revenue - Decimal("26.9")) < Decimal("0.1")
+        assert eff.return_per_dollar.per_dollar == "$3.98"
+        assert eff.cost_per_customer.usd0 == "$266"
+        assert abs(eff.spend_share_of_revenue - Decimal("25.1")) < Decimal("0.1")
         assert eff.avg_first_order.usd0 == "$1,059"
 
     def test_2025_comparison_unchanged(self):
@@ -206,8 +221,9 @@ class TestEfficiencyOnTrueBasis:
         assert eff.cost_per_customer.usd0 == "$591"
 
     def test_yoy_spend_change_on_true_basis(self, sd):
+        """2025 is uncorrected now - the overcharge was a 2026 item."""
         true_jj = sd.window("2026-01", "2026-07", Basis.TRUE_OPERATING).amount
-        assert abs(delta(true_jj, 326229) - Decimal("-60.9")) < Decimal("0.1")
+        assert abs(delta(true_jj, 326229) - Decimal("-63.6")) < Decimal("0.1")
 
 
 class TestGLScopePrecedence:

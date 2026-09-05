@@ -127,3 +127,110 @@ like.
 **Decision needed:** accept the restatement (regenerate the snapshots in
 their own commit) or investigate the five months first. Under the freeze rule
 this is Jules's call, not the tool's.
+
+---
+
+# Addendum 2 — the overcharge is 2026, and the reconciliation does not explain it
+
+Corrected by Jules 2026-09-05: the agency overcharge is a **2026** item, not a
+2025 mischarge. Two consequences.
+
+**FY2025 carries no adjustment.** Reverting the correction I applied in
+Addendum 1: Jan–Jul 2025 spend is $326,229 and return per $1 is $1.48; FY2025
+spend is $591,782.91, M1 ROAS $1.47, revenue-to-date ROAS $7.51.
+
+**2026 absorbs both corrections.** Jan–Jul true spend is **$118,908.16**
+(as posted $136,890.78, less the $9,453.75 GarageExperts SEO misbooking and
+the $8,528.87 agency overcharge). Jan–Aug true spend is **$127,397.34**.
+
+| Jan–Jul 2026 | As posted | True |
+|---|---|---|
+| Spend | $136,891 | **$118,908** |
+| Return per $1 (M1) | $3.46 | **$3.98** |
+| Cost per new customer | $306 | **$266** |
+| Spend as share of M1 revenue | 28.9% | **25.1%** |
+| Spend change vs 2025 | −58.0% | **−63.6%** |
+
+## The reconciliation: what the TRUAD data actually shows
+
+Eight months of TRUAD "Overall Performance" media spend, reconciled against
+the GL.
+
+**Media reconciles.** Jan–Jul TRUAD media $68,228.97 against GL $67,617.83 —
+a 0.90% difference. The channel mapping holds (Paid Search + Performance Max
+= Google, Paid Social = Meta).
+
+**The agency fee does not show an overcharge.** At the contracted
+`0.20 × actual media spend`:
+
+| | Billed | 0.20 × TRUAD media | Over / (under) |
+|---|---|---|---|
+| Jan | $2,393.00 | $2,323.48 | +$69.52 |
+| Feb | $2,393.00 | $2,346.35 | +$46.65 |
+| Mar | $2,393.00 | $2,349.00 | +$44.00 |
+| Apr | $0.00 | $1,663.60 | −$1,663.60 |
+| May | $1,700.00 | $1,633.39 | +$66.61 |
+| Jun | $1,700.00 | $1,668.22 | +$31.78 |
+| Jul | $1,700.00 | $1,661.74 | +$38.26 |
+| **Total** | **$12,279.00** | **$13,645.79** | **−$1,366.79** |
+
+The agency was **under-billed by $1,366.79**, not over by $8,528.87. So the
+$8,528.87 credit is **not explained by the fee formula against actual media
+spend**, and the month attribution remains unresolved.
+
+Hypotheses tested and rejected:
+
+- **Media overspend** — Jan–Jul media budget $69,898 against $67,618 actual.
+  Under, not over.
+- **Fee on search + social only** (excluding Performance Max) — $7,668.35 due,
+  over by $4,610.65. Wrong magnitude.
+- **Fee on Meta only** — $4,092.62 due, over by $8,186.38. Closest, but still
+  $342.49 out, and there is no contractual basis for it.
+- **The residual** — $12,279.00 − $8,528.87 = $3,750.13. No formula on any
+  combination of the eight months produces this figure.
+
+**April is the one month worth a second look.** GL media is $2,148.63 *lower*
+than TRUAD, and no agency fee was posted at all. Every other month agrees
+within ~$860. April looks like a month with missing or late postings.
+
+## How it is handled until explained
+
+The credit reduces the **year-to-date total** and is assigned to **no month**.
+Guessing a month would corrupt a monthly series that is otherwise defensible
+to the cent.
+
+A consequence, and it is deliberate: a TRUE_OPERATING monthly series sums to
+**$8,528.87 more** than its window total. `monthly_sum_gap()` names the
+difference so no consumer discovers it by accident, and every month is
+asserted non-negative.
+
+**What would close this:** the agency's invoice detail for the credit, or an
+explanation from accounting of what the $8,528.87 covered.
+
+## A separate and more serious finding: TRUAD's revenue column
+
+TRUAD reports a "Platform Revenue" column and a ROAS chart. For Jan–Aug 2026
+it reports **$7,092,965.84 of revenue on $76,357.42 of media — an implied
+ROAS of $92.89 per $1**, with the chart displaying month values from $36 to
+$216 per dollar.
+
+The 2026 cohorts have actually produced **$1,031,222.11** of NET revenue to
+date against $127,397.34 of total marketing spend — a real ROAS of **$8.09**.
+
+TRUAD overstates revenue by **6.9×** and ROAS by roughly **11×**. This is
+platform-reported conversion value with the attribution window and
+double-counting that implies; it is not comparable to NetSuite NET revenue on
+any basis.
+
+**It must never appear on a VHPC dashboard, feed any ROAS figure, or be
+quoted to leadership.** Recorded in
+`data/manual/2026/truad_media_spend.json` as `platform_revenue_warning`.
+
+## One inference upgraded to confirmed
+
+The `66212.0020` Advertising → Google reclassification is no longer an
+inference. GL account `66212.0016` is **zero** in January, February and March
+while TRUAD reports real Google spend in all three ($8,122.88 / $8,250.33 /
+$8,244.72), and `66212.0020` carries $8,507.27 / $8,906.00 / $8,466.00 in
+exactly those months and nothing afterwards. Same money, two accounts, split
+in April.
