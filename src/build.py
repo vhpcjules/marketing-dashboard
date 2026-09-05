@@ -1,6 +1,6 @@
 """The build: a pure function of the committed repository.
 
-    python -m src.build --as-of 2026-09-05 [--dist dist] [--skip-gate]
+    python -m src.build [--as-of 2026-09-05] [--dist dist] [--skip-gate]
 
 No network. Everything the build reads is in git - snapshots under
 data/snapshots/, manual files under data/manual/, the approved budget - so
@@ -664,7 +664,9 @@ def build(as_of: date, dist: Path = Path("dist"), *, skip_gate: bool = False,
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="python -m src.build", description="Build the dashboards from the committed repo.")
-    ap.add_argument("--as-of", required=True, help="build date, YYYY-MM-DD; the reporting month is the one before it")
+    ap.add_argument("--as-of", default=date.today().isoformat(),
+                    help="build date, YYYY-MM-DD (default: today, so Cloudflare's bare 'python3 -m src.build' works); "
+                         "the reporting month is the one before it")
     ap.add_argument("--dist", default="dist", type=Path)
     ap.add_argument("--skip-gate", action="store_true", help="skip validation (never for a deploy)")
     ns = ap.parse_args(argv)

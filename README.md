@@ -91,12 +91,24 @@ Below, `2026-08` is the reporting month and `2026-09-05` the as-of date.
    suite (including the mutation suite), then the build and the gate.
    Nothing deploys from a PR.
 
-9. **Merge** when Jules approves. Cloudflare Pages builds `main` with
+9. **Merge** when Jules approves. Cloudflare Pages builds the production
+   branch (`main`; set it in the Pages project if the repo does not have one
+   yet) with
    `python3 -m src.build && python3 -m src.validate.gate dist`; a failing
    gate fails the deploy and the previous deployment stays live.
 
 10. **Tag.** `git tag v2026.08 && git push --tags` once the deploy is live.
     The tag is what a later restatement refers back to.
+
+## Cloudflare Pages settings
+
+- Production branch: `main`. Build command: `python3 -m src.build && python3 -m src.validate.gate dist`.
+  Output directory: `dist`. Both commands default to today's date, so no
+  arguments are needed; the reporting month is the month before the build.
+- Environment variable `PYTHON_VERSION` = `3.11`. Pages installs
+  `requirements.txt` (Jinja2, Markdown, PyYAML, pytest) before the build.
+- Cloudflare Access sits in front of the deployment; the `_headers` file
+  adds `noindex` as a second line of defence.
 
 ## Troubleshooting
 

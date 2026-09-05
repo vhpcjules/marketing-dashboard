@@ -170,7 +170,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="python -m src.validate.gate",
                                  description="Validate rendered dashboards. Exit 1 on any failure.")
     ap.add_argument("dist", help="directory of rendered HTML (or a single file)")
-    ap.add_argument("--period", required=True, help="reporting period, YYYY-MM")
+    ap.add_argument("--period", default="auto",
+                    help="reporting period, YYYY-MM; 'auto' (the default) is the month before today, the same "
+                         "rule the build uses, so Cloudflare's bare 'python3 -m src.validate.gate dist' works")
     ap.add_argument("--registry", help="JSON file: {metric_id: [selectors]}")
     ap.add_argument("--markdown", help="write the report as Markdown to this path")
     ap.add_argument("--no-code", action="store_true", help="skip the src/ AST scan")
@@ -178,8 +180,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--quiet", action="store_true")
     ns = ap.parse_args(argv)
 
+    period = ns.period
+    if period == "auto":
+        from datetime import date as _date
+        from ..periods import reporting_month
+        period = reporting_month(_date.today())
     registry = json.loads(Path(ns.registry).read_text()) if ns.registry else None
-    report = run_gate(ns.dist, ns.period, registry,
+    report = run_gate(ns.dist, period, registry,
                       check_code=not ns.no_code, check_queries=not ns.no_queries)
     if ns.markdown:
         Path(ns.markdown).write_text(report.to_markdown())
