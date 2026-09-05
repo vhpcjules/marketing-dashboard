@@ -1,12 +1,15 @@
 {#
   table(table_id, columns, rows, total_label=None, caption=None)
 
-  columns  [{key, label, kind: 'text'|'metric'|'claim'|'time', align, total}]
+  columns  [{key, label, kind: 'text'|'metric'|'claim'|'delta'|'time', align, total}]
   rows     [{<key>: value, ..., status: 'good'|'warn'|'danger'|None}]
            For kind='metric' the value is a METRIC ID and the cell is m(id);
-           for 'claim' a CLAIM ID rendered by c(id); 'time' a date label;
-           'text' a plain label. Rows are pure data - no formatted numbers
-           travel in the context.
+           for 'claim' a CLAIM ID rendered by c(id); for 'delta' a pair
+           [current_id, previous_id] rendered by delta_between() - or None,
+           which prints "n/a" (no prior figure to change from); 'time' a
+           date label; 'text' a plain label. A metric cell may also be None,
+           which prints an em dash. Rows are pure data - no formatted
+           numbers travel in the context.
 
   Total row: rendered only when total_label is given, and COMPUTED here by
   column_total() from the rows of every column marked total: true. It is
@@ -34,8 +37,9 @@
       {% set cell = row[col.key] %}
       {% set kind = col.kind|default('text') %}
       <td class="{{ col.align|default('left')|align_class }}{% if kind == 'metric' %} num{% endif %}">
-        {%- if kind == 'metric' %}{{ m(cell) }}
+        {%- if kind == 'metric' %}{% if cell is none %}<span class="cell-empty" aria-label="not available">—</span>{% else %}{{ m(cell) }}{% endif %}
         {%- elif kind == 'claim' %}{{ c(cell) }}
+        {%- elif kind == 'delta' %}{% if cell %}{{ delta_between(cell[0], cell[1]) }}{% else %}<span class="cell-empty">n/a</span>{% endif %}
         {%- elif kind == 'time' %}<time>{{ cell }}</time>
         {%- else %}{{ cell }}{% endif -%}
       </td>
@@ -49,7 +53,7 @@
       {% for col in columns %}
       <td class="{{ col.align|default('left')|align_class }}{% if col.total|default(false) %} num{% endif %}">
         {%- if loop.first %}{{ total_label }}
-        {%- elif col.total|default(false) %}{{ column_total(table_id ~ '.total.' ~ col.key, rows|map(attribute=col.key)|list) }}
+        {%- elif col.total|default(false) %}{{ column_total(table_id ~ '.total.' ~ col.key, rows|map(attribute=col.key)|reject('none')|list) }}
         {%- endif -%}
       </td>
       {% endfor %}

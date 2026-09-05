@@ -280,3 +280,19 @@ dfn.term { font-style: inherit; }
   a { color: inherit; text-decoration: none; }
   .container { max-width: none; padding: 0; }
 }
+
+/* ---- Narrative prose (content/YYYY-MM/*.md, rendered by the build) --- */
+.narrative { max-width: 74ch; font-size: 14px; line-height: var(--leading-body); color: var(--vhpc-deep); margin: 8px 0 20px; }
+.narrative p { margin: 0 0 12px; }
+.narrative h3 { font-size: 15px; font-weight: 600; color: var(--vhpc-aqua); letter-spacing: var(--tracking-subhead); margin: 22px 0 8px; }
+.narrative ul, .narrative ol { margin: 0 0 12px; padding-left: 22px; }
+.narrative li { margin: 0 0 6px; }
+.narrative strong { color: var(--vhpc-deep); }
+.narrative table { border-collapse: collapse; width: 100%; margin: 8px 0 16px; font-size: 13px; }
+.narrative th, .narrative td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--vhpc-rule); vertical-align: top; }
+.narrative th { color: var(--vhpc-grey); font-weight: 600; font-size: 12px; }
+.narrative [data-metric], .narrative [data-claim] { font-weight: 600; white-space: nowrap; }
+.narrative .delta { font-size: inherit; }
+.narrative-retired { color: var(--vhpc-grey); font-size: 13px; }
+.narrative-retired ol { padding-left: 20px; }
+.cell-empty { color: var(--vhpc-grey); }

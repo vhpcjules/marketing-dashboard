@@ -83,6 +83,11 @@ def check_orphaned_numbers(doc: Node, file: str) -> list[Finding]:
         if (parent.has_ancestor_attr("data-metric") or parent.has_ancestor_attr("data-claim")
                 or parent.has_ancestor_attr("data-period")):
             continue
+        # A quotation of a RETIRED finding ("v1 said $33,177 under") is not a
+        # statement of fact about this month. The narrative layer marks the
+        # not-carried-forward list data-retired; nothing else may use it.
+        if parent.has_ancestor_attr("data-retired"):
+            continue
         text = " ".join(tn.text.split())
         for m in DIGIT_GROUP.finditer(text):
             if _allowed(text, m.start(), m.end()):
@@ -112,8 +117,8 @@ def _prior(period: str) -> str:
 def check_stale_months(doc: Node, file: str, reporting_period: str) -> list[Finding]:
     """Month names in prose that are neither the reporting nor the prior month.
 
-    Text under an element with data-period is a deliberate label and is
-    skipped; everything else is a warning so the human reads it. Table cells
+    Text under an element with data-period, or inside <time>, is a deliberate
+    label and is skipped; everything else is a warning so the human reads it. Table cells
     and headings are included because that is where "May" survived in v1.
     """
     out = []
@@ -125,6 +130,8 @@ def check_stale_months(doc: Node, file: str, reporting_period: str) -> list[Find
         parent = tn.parent
         if parent is None or parent.has_ancestor_attr("data-period"):
             continue
+        if parent.has_ancestor_tag({"time"}):
+            continue        # <time> is a date by construction; the month name is the label, not a comparison
         text = " ".join(tn.text.split())
         for name, num, off in find_month_mentions(text):
             if name in allowed:
