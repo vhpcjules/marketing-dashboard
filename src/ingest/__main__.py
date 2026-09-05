@@ -40,7 +40,8 @@ from . import netsuite as ns
 from . import supermetrics as sm
 from .queries import load_query, month_bounds, months_to_pull
 
-NETSUITE_DOMAINS = ("marketing_spend", "cohorts_m1", "cohorts_m13", "lead_quality", "lead_routing")
+NETSUITE_DOMAINS = ("marketing_spend", "cohorts_m1", "cohorts_m13", "lead_quality", "lead_routing",
+                    "revenue_total", "vintage_accounts")
 SUPERMETRICS_DOMAINS = tuple(sm.SOURCES)
 MANUAL_DOMAINS = tuple(manual_mod.REQUIRED_FIELDS)
 
@@ -105,6 +106,13 @@ def _print_sql(domain: str, month: str, as_of: date) -> None:
               ("cohorts_revenue_to_date", {"cohort_from": a, "cohort_to": b, "through": as_of + timedelta(days=1)}, None)]
     elif domain == "cohorts_m13":
         qs = [("cohorts_m13", {"cohort_from": a, "cohort_to": b}, None)]
+    elif domain == "revenue_total":
+        qs = [("revenue_total_monthly", {"date_from": a, "date_to": b}, None)]
+    elif domain == "vintage_accounts":
+        y = int(month[:4])
+        qs = [("vintage_accounts", {"date_from": date(y - 1, 1, 1), "date_to": date(y, 1, 1)}, None),
+              ("vintage_accounts", {"date_from": date(b.year - 1, b.month, 1), "date_to": b}, None)]
+        print("-- two pulls: the prior full year, then the trailing twelve months; save both row files", file=sys.stderr)
     else:  # lead_quality / lead_routing take a range; month is the END of it
         start = f"{int(month[:4]) - 1}-{month[5:]}"
         qs = [(domain, ns.lead_params(months_between(start, month)), None)]
@@ -175,6 +183,10 @@ def main(argv: list[str] | None = None) -> int:
                 paths = [ns.ingest_cohort_m1(adapter, store, ns_.month, as_of=as_of)]
             elif ns_.domain == "cohorts_m13":
                 paths = [ns.ingest_cohorts_m13(adapter, store, ns_.month, as_of=as_of)]
+            elif ns_.domain == "revenue_total":
+                paths = [ns.ingest_revenue_total(adapter, store, ns_.month)]
+            elif ns_.domain == "vintage_accounts":
+                paths = [ns.ingest_vintage_accounts(adapter, store, ns_.month, as_of=as_of)]
             else:
                 start = f"{int(ns_.month[:4]) - 1}-{ns_.month[5:]}"
                 months = months_between(start, ns_.month)

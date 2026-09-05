@@ -232,3 +232,24 @@ keep converting, and never promote a `_live` sidecar.
 | `parameters […] are not referenced by the SQL` | A misspelt parameter name. | Fix the name; a literal `:name` would otherwise reach SuiteQL. |
 | `… reaches the SuiteQL cap` | Truncated result. | Narrow the range or aggregate further. |
 | `pending: GMB figures … have not been supplied` | Manual file missing. | Add the file, or ship with the pending callout. |
+
+## Total revenue and account vintage (added 2026-09-05)
+
+`revenue_total` is the series the company target is paced on: total NET
+revenue for one month, all customers, same join as the cohort queries. Pull
+one month per call, 2025-01 through the reporting month; promote closed
+months once published.
+
+```
+python -m src.ingest sql   revenue_total 2026-08
+python -m src.ingest write revenue_total 2026-08 --rows rt_2026-08.json
+```
+
+`vintage_accounts` returns per-account NET revenue with `entityid` for two
+windows (the prior full year, then the trailing twelve months). Save both
+row files; the Sage join happens in the build (`src/data/vintage.py`).
+
+```
+python -m src.ingest sql   vintage_accounts 2026-08
+python -m src.ingest write vintage_accounts 2026-08 --rows va_fy.json --rows va_ttm.json --as-of 2026-09-05
+```

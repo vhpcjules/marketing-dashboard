@@ -177,6 +177,42 @@ class NetSuiteAdapter:
         body = {"postings": dict(sorted(postings.items())), "account_names": dict(sorted(names.items()))}
         return Pull(jsonable(body), len(rows), h)
 
+    # -- total revenue (the company target's series) ----------------------
+
+    def pull_revenue_total(self, month: str) -> Pull:
+        """{net_revenue, customers_transacting, transactions} for one month, all customers."""
+        d_from, d_to = month_bounds(month)
+        rows, h = self.run("revenue_total_monthly", {"date_from": d_from, "date_to": d_to})
+        row = _one_row(rows, f"revenue_total {month}")
+        body = {"net_revenue": dec(row["net_revenue"], "net_revenue"),
+                "customers_transacting": _int(row["customers_transacting"], "customers_transacting"),
+                "transactions": _int(row["transactions"], "transactions"),
+                "definition": "Total NET revenue (product only; shipping/tax excluded; credits and refunds deducted) "
+                              "from subsidiary-2 transactions of customers not in categories 2 (Garage Experts) or "
+                              "14 (Vendor), trandate in the calendar month. The series the 19% company target is "
+                              "paced on. Query: src/ingest/queries/revenue_total_monthly.sql."}
+        return Pull(jsonable(body), len(rows), h)
+
+    # -- account vintage --------------------------------------------------
+
+    def pull_vintage_accounts(self, date_from: date, date_to: date, label: str) -> Pull:
+        """One row per account with NET revenue in [date_from, date_to), keyed for the Sage join."""
+        rows, h = self.run("vintage_accounts", {"date_from": date_from, "date_to": date_to})
+        accounts = []
+        for r in rows:
+            accounts.append({"customer_id": _int(r["customer_id"], "customer_id"),
+                             "entityid": str(r.get("entityid") or "").strip(),
+                             "datecreated_year": _int(r["datecreated_year"], "datecreated_year"),
+                             "firstorder_year": _int(r["firstorder_year"], "firstorder_year") if r.get("firstorder_year") else None,
+                             "net_revenue": dec(r["net_revenue"], "net_revenue"),
+                             "transactions": _int(r["transactions"], "transactions")})
+        body = {"window": label, "date_from": date_from.isoformat(), "date_to": date_to.isoformat(),
+                "accounts": accounts,
+                "definition": "Per-account NET revenue in the window with entityid and NetSuite creation year. "
+                              "Acquisition year is assigned offline by src/data/vintage.py from the Sage sales "
+                              "history (data/manual/sage/). Query: src/ingest/queries/vintage_accounts.sql."}
+        return Pull(jsonable(body), len(rows), h)
+
     # -- cohorts ----------------------------------------------------------
 
     def pull_cohort_m1(self, month: str, *, as_of: date) -> Pull:
@@ -331,6 +367,36 @@ def ingest_marketing_spend(adapter: NetSuiteAdapter, store: SnapshotStore, month
         return _write(store, month, live_domain(domain), Pull(body, pull.row_count, pull.query_hash),
                       query_id="marketing_spend_monthly", pulled_at=pulled_at)
     return _write(store, month, domain, pull, query_id="marketing_spend_monthly", pulled_at=pulled_at)
+
+
+def ingest_revenue_total(adapter: NetSuiteAdapter, store: SnapshotStore, month: str, *,
+                         pulled_at: datetime | None = None) -> Path:
+    """Write revenue_total for a month; a frozen month goes to the `_live` sidecar."""
+    pull = adapter.pull_revenue_total(month)
+    domain = "revenue_total"
+    if _is_frozen(store, month, domain):
+        body = jsonable({"live_at_last_pull": {"net_revenue": pull.body["net_revenue"]},
+                         "note": f"live re-pull of a FROZEN month for drift detection; {domain}.json is authoritative"})
+        return _write(store, month, live_domain(domain), Pull(body, pull.row_count, pull.query_hash),
+                      query_id="revenue_total_monthly", pulled_at=pulled_at)
+    return _write(store, month, domain, pull, query_id="revenue_total_monthly", pulled_at=pulled_at)
+
+
+def ingest_vintage_accounts(adapter: NetSuiteAdapter, store: SnapshotStore, month: str, *, as_of: date,
+                            pulled_at: datetime | None = None) -> Path:
+    """Write vintage_accounts for the reporting month: the prior full year and
+    the trailing twelve months ending with the reporting month, as two account
+    lists in one snapshot. Never frozen (it is recomputed from Sage each build)."""
+    year = int(month[:4])
+    fy_from, fy_to = date(year - 1, 1, 1), date(year, 1, 1)
+    ttm_end = month_bounds(month)[1]
+    ttm_start = date(ttm_end.year - 1, ttm_end.month, 1)
+    fy = adapter.pull_vintage_accounts(fy_from, fy_to, f"FY{year - 1}")
+    ttm = adapter.pull_vintage_accounts(ttm_start, ttm_end, f"TTM to {month}")
+    body = {"fy_prior": fy.body, "ttm": ttm.body}
+    return _write(store, month, "vintage_accounts", Pull(jsonable(body), fy.row_count + ttm.row_count,
+                                                          f"{fy.query_hash}+{ttm.query_hash}"),
+                  query_id="vintage_accounts", pulled_at=pulled_at)
 
 
 def ingest_cohort_m1(adapter: NetSuiteAdapter, store: SnapshotStore, month: str, *, as_of: date,
