@@ -78,7 +78,10 @@ Below, `2026-08` is the reporting month and `2026-09-05` the as-of date.
 
 6. **Draft the narrative.** Edit `content/2026-08/*.md` per
    `content/README.md`. Prose never contains a literal number; figures are
-   `{{ m("…") }}` references the build resolves.
+   `{{ m("…") }}` references the build resolves, and each `##` section is
+   placed by a named slot in the page template. Until the month's files
+   exist the pages build with a "Narrative pending" callout, so numbers can
+   go out for review before the story is written.
 
 7. **Build again.** Same command. The gate re-checks the rendered pages,
    including the narrative. Fix anything red; never `--skip-gate` for a
@@ -159,8 +162,12 @@ commit with the reason. If you did not mean to, revert.
   the GMB / Hotjar monthly exports.
 - **`content/<YYYY-MM>/`** — the narrative, one Markdown file per
   dashboard per month, with figures as registry references.
+- **`src/populate.py`** — every figure a page shows, registered once per
+  page from the loaded inputs; `src/render/contracts.py` declares what each
+  template will ask for, with period placeholders resolved per month.
 - **`templates/`** — Jinja2 pages and components. Strict: an unknown
-  variable or metric ID fails the build.
+  variable or metric ID fails the build. Templates address the reporting
+  month through `ids.cur`, never a month name.
 - **`assets/`** — brand CSS, self-hosted Inter, vendored Chart.js. No CDN.
 - **`public/`** — copied into `dist/` verbatim; holds the Cloudflare
   `_redirects` that keep the six v1 bookmarks working.

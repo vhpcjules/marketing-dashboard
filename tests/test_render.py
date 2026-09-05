@@ -26,6 +26,7 @@ from src.render import (
 )
 from src.render.charts import ChartSpecError
 from src.render.env import chart_json
+from src.render.narrative import RenderedNarrative
 from src.units import Count, Money, Pct, PointDifferenceError, Ratio, UndefinedDeltaError
 
 REPO = Path(__file__).resolve().parents[1]
@@ -130,7 +131,14 @@ def executive_context(registry: MetricRegistry, *, pending: dict | None = None) 
     rat("m13.latest.multiple", "1.33", P["m13"], fmt="multiple")
 
     txt("r12.sources.top_channel", "Organic search", P["r12"])
-    pct("r12.sources.top_share", "32.2", P["r12"]); pct("r12.sources.untracked_share", "40.8", P["r12"])
+    pct("r12.sources.top_share", "32.2", P["r12"]); pct("r12.sources.untracked_share", "40.8", P["r12"], higher_is_better=False)
+    cnt("r12.sources.customers", 999, P["r12"]); cnt("r12.sources.untracked_customers", 334, P["r12"], higher_is_better=False)
+
+    vl = "FY2025, published Aug 18, 2026"
+    cnt("vintage.pre2018_accounts", 275, vl); pct("vintage.pre2018_share_of_accounts", "10.3", vl)
+    pct("vintage.pre2018_share_of_revenue", "34.3", vl); cur("vintage.pre2018_avg_annual_net", "25574", vl)
+    cur("vintage.band_2025_avg_annual_net", "2316", vl); cnt("vintage.active_accounts", 2676, vl)
+    R.register_claim("vintage.basis_story", lambda: "published", render=lambda s: "Published Sage-basis figures; refresh pending.")
 
     cur("ytd26.spend", "135926.21", P["ytd26"], higher_is_better=False)
     cur("ytd25.spend", "301004.00", P["ytd25"], higher_is_better=False)
@@ -231,7 +239,11 @@ def executive_context(registry: MetricRegistry, *, pending: dict | None = None) 
         "prepared": {"iso": date(2026, 9, 5).isoformat(), "label": "September 5, 2026"},
         "data_sources": ["NetSuite", "Google Ads", "Google Analytics", "HubSpot"],
         "asset_root": "/",
+        "ids": {"cur": "aug26", "prev": "jul26", "ytd": "ytd26", "pytd": "ytd25", "fy": "fy26", "pfy": "fy25",
+                "yy": "26", "pyy": "25"},
+        "narrative": RenderedNarrative.empty("2026-08", "executive"),
         "report": {"month_label": "August 2026", "month_iso": "2026-08", "prev_month_label": "July 2026",
+                   "prev_month_iso": "2026-07",
                    "ytd_label": "January–August 2026", "ytd_iso": "2026-01/2026-08",
                    "prior_ytd_label": "January–August 2025", "prior_ytd_iso": "2025-01/2025-08",
                    "r12_label": "September 2025–August 2026", "r12_iso": "2025-09/2026-08"},
@@ -548,7 +560,7 @@ class TestExecutivePage:
     def test_contract_is_satisfied_by_fixture(self):
         r = MetricRegistry()
         ctx = executive_context(r)
-        assert EXECUTIVE.check(r.ids(), r.claim_ids(), ctx["pending"]) == []
+        assert EXECUTIVE.for_period("2026-08").check(r.ids(), r.claim_ids(), ctx["pending"]) == []
 
     def test_full_render_has_no_bare_digits(self):
         r = MetricRegistry()
@@ -602,7 +614,7 @@ class TestExecutivePage:
         ctx = executive_context(r)
         render("executive.html", ctx, registry=r)
         # everything the contract lists was displayed; pending-only ids stay used because nothing is pending
-        assert not any(i in r.unused() for i in EXECUTIVE.required_metric_ids())
+        assert not any(i in r.unused() for i in EXECUTIVE.for_period("2026-08").required_metric_ids())
 
     def test_missing_metric_fails_the_render(self):
         r = MetricRegistry()

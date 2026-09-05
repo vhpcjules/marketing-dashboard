@@ -82,30 +82,30 @@ class TestBuildWithSiblingsPresent:
         real = b._load_spend
 
         def fake(year):
-            if year != 2025:
-                return real(year)
+            got = real(year)
+            if got is not None or year != 2025:
+                return got          # the repo now carries 2025 monthly snapshots; the fixture is a fallback only
             postings = {f"2025-{m:02d}": {"66212.0016": D("30000"), "66212.0017": D("10000")} for m in range(1, 13)}
             return SpendData(year=2025, postings=postings, corrections=[], budget={"accounts": {}},
                              _meta={"months": {m: {"frozen": True} for m in postings}, "budget": {}})
         monkeypatch.setattr(b, "_load_spend", fake)
         res = b.build(SEP5, out["dist"], reports_dir=out["reports"], log=quiet)
-        page = out["dist"] / "executive" / "index.html"
-        assert res.rendered == [page] and "executive" not in res.skipped
-        html = page.read_text()
+        assert res.skipped == {}, res.skipped
+        pages = {p.parent.name: p for p in res.rendered}
+        assert set(pages) == {"executive", "marketing-ops", "sales"}
+        html = pages["executive"].read_text()
         for mid in ("aug26.new_customers", "ytd26.roas_m1", "ytd26.roas_to_date", "fy26.target",
-                    "ytd25.spend", "budget_vs_actual.total.actual"):
+                    "ytd25.spend", "budget_vs_actual.total.actual", "r12.sources.top_channel"):
             assert f'data-metric="{mid}"' in html, mid
-        assert 'data-pending="sources"' in html and 'data-pending="online"' in html
+        assert 'data-pending="online"' in html          # social/ads not ingested
+        assert 'data-narrative="are-we-growing"' in html  # the month's story is placed
         assert res.gate_report and res.gate_report.exists()
         gate_text = res.gate_report.read_text()
-        # Untraced digits (GL codes as row labels) were a real finding; keep it fixed.
         assert "orphaned_number" not in gate_text
-        assert "numbers." not in gate_text.split("## Warnings")[0]
-        # Any remaining failure must be the known sibling gap: RenderedDelta emits
-        # no data-higher-is-better, so the validator assumes True for the
-        # lower-is-better spend tile. Not ours; must not hide anything else.
         failures = [l for l in gate_text.split("## Warnings")[0].splitlines() if l.startswith("| `")]
-        assert all("language.delta_direction" in l for l in failures), failures
+        assert failures == [], failures
+        assert res.gate_ok is True and res.ok
+        assert res.unused_metrics == [], "every registered figure is displayed on some page"
 
 
 class TestDrift:
