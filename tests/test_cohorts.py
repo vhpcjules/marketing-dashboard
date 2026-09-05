@@ -18,7 +18,7 @@ LIVE_2026 = [
     ("2026-07", 79, "49740.92", "87609.71"),
     ("2026-08", 87, "85123.40", "96501.85"),
 ]
-SPEND_JAN_AUG = D("127397.34")   # true operating, both 2026 corrections applied
+SPEND_JAN_AUG = D("135926.21")   # true operating: SEO removed, agency credit excluded (prior-year, pending)
 
 
 @pytest.fixture
@@ -33,10 +33,10 @@ def cs():
 
 class TestDualBasisRoas:
     def test_m1_roas(self, cs):
-        assert cs.roas_m1.per_dollar == "$4.34"
+        assert cs.roas_m1.per_dollar == "$4.07"
 
     def test_to_date_roas_is_much_higher(self, cs):
-        assert cs.roas_to_date.per_dollar == "$8.09"
+        assert cs.roas_to_date.per_dollar == "$7.59"
 
     def test_m1_understates_by_about_half(self, cs):
         assert abs(cs.understatement_of_m1_roas() - D("46.4")) < D("0.1")

@@ -234,3 +234,25 @@ while TRUAD reports real Google spend in all three ($8,122.88 / $8,250.33 /
 $8,244.72), and `66212.0020` carries $8,507.27 / $8,906.00 / $8,466.00 in
 exactly those months and nothing afterwards. Same money, two accounts, split
 in April.
+
+---
+
+# Addendum 3 — final treatment of the agency credit (2026-09-05)
+
+Jules, after checking with the agency: the $8,528.87 credit relates to
+**2025**, but the agency **has no detail on what it is for**. Treatment:
+
+- Stays on 2026's ledger for the annual budget-performance review.
+- Excluded from every 2026 monthly spend figure and every efficiency metric.
+- 2025 is **not** adjusted either — there is nothing to adjust it against.
+- Carried as an open item: **we are trying to get detail on what this credit
+  is for.** Recorded in `data/manual/2026/corrections.json` with status
+  `awaiting agency invoice detail`.
+
+Consequently 2026 Jan–Jul true spend is **$127,437.03** (as posted less the
+SEO misbooking only), Jan–Aug **$135,926.21**, August **$8,489.18**. Return
+per $1 (M1) Jan–Jul **$3.71**, cost per customer **$285**. Jan–Aug ROAS
+**$4.07** on M1, **$7.59** on revenue to date, against FY2025's $1.47 / $7.51.
+
+The TRUAD reconciliation in Addendum 2 stands as evidence that this is not a
+2026 fee overcharge, and April's missing postings remain worth a look.

@@ -27,9 +27,11 @@ Three bases, and each has exactly one job:
                   budget-performance review, where what the ledger says is
                   the point.
 
-Because one 2026 correction has no established month, a TRUE_OPERATING
-monthly series sums to MORE than its window total, by $8,528.87. That is
-deliberate - see unattributed_corrections() - and monthly_sum_gap() names it.
+Corrections are analyst decisions and live in data/manual/<year>/corrections.json.
+Each says which basis it touches. The August 2026 agency credit ($8,528.87)
+is a prior-year item the agency cannot yet explain: it stays on the annual
+ledger, touches no 2026 monthly figure or efficiency metric, and 2025 is not
+adjusted either until the detail arrives.
 
 Budget lives in data/manual/, not NetSuite: report -197 returns Budget Amount
 of zero for every account and at the subsidiary grand-total line.
@@ -99,30 +101,47 @@ class SpendData:
     _meta: dict = field(default_factory=dict)
 
     @classmethod
-    def load(cls, year: int = 2026, actuals_period: str = "2026-08") -> "SpendData":
-        act_path = REPO_ROOT / "data" / "snapshots" / actuals_period / "netsuite_marketing_spend.json"
+    def load(cls, year: int = 2026, through: str | None = None) -> "SpendData":
+        """Assemble the year from one snapshot file per month.
+
+        Frozen months are read as-is. Open months are whatever the last live
+        pull wrote. Corrections come from data/manual/<year>/corrections.json
+        because they are analyst decisions spanning months, not ledger facts.
+        """
+        from ..freeze import SnapshotStore
+        store = SnapshotStore()
         bud_path = REPO_ROOT / "data" / "manual" / str(year) / "approved_marketing_budget.json"
-        actuals = json.loads(act_path.read_text())
+        corr_path = REPO_ROOT / "data" / "manual" / str(year) / "corrections.json"
         budget = json.loads(bud_path.read_text())
+        corrections = json.loads(corr_path.read_text())["corrections"] if corr_path.exists() else []
 
         postings: dict[str, dict[str, Decimal]] = {}
-        for month, accts in actuals["postings"].items():
-            for acct in accts:
+        meta: dict[str, dict] = {}
+        for month in store.periods("marketing_spend"):
+            if not month.startswith(str(year)):
+                continue
+            if through and month > through:
+                continue
+            snap = store.read(month, "marketing_spend")
+            for acct in snap.body["postings"]:
                 if not in_scope(acct):
                     raise ValueError(
-                        f"snapshot {act_path.name} contains out-of-scope account {acct!r} "
-                        f"for month {month}; marketing spend is {GL_INCLUDE_PREFIXES} "
-                        f"excluding {GL_EXCLUDE_PREFIXES}"
+                        f"snapshot {month}/marketing_spend.json contains out-of-scope account "
+                        f"{acct!r}; marketing spend is {GL_INCLUDE_PREFIXES} excluding {GL_EXCLUDE_PREFIXES}"
                     )
-            postings[month] = {a: _d(v) for a, v in accts.items()}
+            postings[month] = {a: _d(v) for a, v in snap.body["postings"].items()}
+            meta[month] = snap.meta
 
-        return cls(
-            year=year,
-            postings=postings,
-            corrections=actuals.get("corrections", []),
-            budget=budget,
-            _meta={"actuals": actuals["_meta"], "budget": budget["_meta"]},
-        )
+        if not postings:
+            raise FileNotFoundError(f"no marketing_spend snapshots found for {year}")
+        return cls(year=year, postings=postings, corrections=corrections, budget=budget,
+                   _meta={"months": meta, "budget": budget["_meta"]})
+
+    def frozen_months(self) -> list[str]:
+        return [m for m, meta in self._meta["months"].items() if meta.get("frozen")]
+
+    def open_months(self) -> list[str]:
+        return [m for m, meta in self._meta["months"].items() if not meta.get("frozen")]
 
     # -- adjustments ------------------------------------------------------
 
@@ -150,17 +169,13 @@ class SpendData:
         return out
 
     def unattributed_corrections(self) -> Decimal:
-        """Corrections that reduce the year but cannot be assigned to a month.
+        """Current-year corrections that reduce the year but have no month.
 
-        The 2026 agency overcharge is $8,528.87 that the TRUAD reconciliation
-        could not place: at the contracted 0.20 x actual media the agency was
-        UNDER-billed by $1,366.79, so the fee formula does not explain the
-        credit. Guessing a month would be worse than carrying the gap
-        honestly, so these apply to window totals and to no month.
-
-        Consequence: monthly figures sum to MORE than the window total. That
-        is intended, and `monthly_sum_gap()` names the difference so no
-        consumer has to discover it.
+        Applied to window totals and to no month, because guessing a month
+        would corrupt a series that is otherwise right to the cent. When one
+        exists, monthly figures sum to MORE than the window total, and
+        `monthly_sum_gap()` names the difference. Currently none: the agency
+        credit is classified prior-year and excluded from 2026 measurement.
         """
         total = Decimal(0)
         for c in self.corrections:

@@ -1,0 +1,34 @@
+{
+  "_meta": {
+    "purpose": "Analyst-decided treatment of GL corrections that cannot be read off the ledger. Each entry says what the credit was, which basis it affects, and why. Edits here are decisions and get their own commits.",
+    "updated": "2026-09-05"
+  },
+  "corrections": [
+    {
+      "id": "seo_garageexperts_misbooking",
+      "account": "66212.0013",
+      "credit_month": "2026-08",
+      "credit_amount": -9453.75,
+      "kind": "not_ours_current_year",
+      "restates": {
+        "2026-03": -6500.0,
+        "2026-04": -2953.75
+      },
+      "affects_monthly_measurement": true,
+      "narrative": "A missed Scorpion posting was booked to VHPC in March and April 2026 but belongs to GarageExperts. Accounting reversed it in full in August. Never VHPC spend, so March and April restate down."
+    },
+    {
+      "id": "agency_credit_pending_detail",
+      "account": "66212.0002",
+      "credit_month": "2026-08",
+      "credit_amount": -8528.87,
+      "kind": "prior_year_pending_detail",
+      "restates": {},
+      "affects_monthly_measurement": false,
+      "attribution": "unresolved",
+      "narrative": "An agency credit posted in August 2026. Per Jules 2026-09-05 it relates to 2025, but the agency has no detail on what it is for. WE ARE TRYING TO GET DETAIL. Until then: it stays on 2026's ledger for the annual budget-performance review, it is excluded from every 2026 monthly spend figure and every efficiency metric, and 2025 is NOT adjusted either.",
+      "reconciliation_note": "Eight months of TRUAD media spend reconcile to the GL within 0.90%, and at the contracted 0.20 x actual media the agency was UNDER-billed by $1,366.79 in Jan-Jul 2026 - so this credit is not a 2026 fee overcharge. See reports/restatement_2026-08.md.",
+      "status": "awaiting agency invoice detail"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "domain": "cohorts_m1",
+    "frozen": true,
+    "period": "2026-03",
+    "promoted_at": "2026-09-05",
+    "promotion_note": "FROZEN at the value published in the Aug 18 2026 build. Per Jules 2026-09-04: keep the frozen revenue we are tracking.",
+    "pulled_at": "2026-09-04",
+    "query_id": "net_revenue_m1_by_cohort",
+    "row_count": 1,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "customers": 73,
+  "live_at_last_pull": {
+    "customers": 73,
+    "m1_net_revenue": 63240.08,
+    "revenue_to_date": 164811.0
+  },
+  "m1_net_revenue": 63240.0,
+  "repeat_revenue_live": 101570.92,
+  "repeat_revenue_note": "Revenue beyond month one, pulled live each build. This component is never frozen because it grows; revenue-to-date on the frozen basis = frozen M1 + live repeat."
+}

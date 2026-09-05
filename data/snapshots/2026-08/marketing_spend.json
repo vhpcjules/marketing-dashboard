@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "domain": "marketing_spend",
+    "frozen": false,
+    "period": "2026-08",
+    "promoted_at": null,
+    "promotion_note": "OPEN. August postings may still land; do not promote until the period is closed.",
+    "pulled_at": "2026-09-04",
+    "query_id": "marketing_spend_monthly",
+    "row_count": 5,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "postings": {
+    "66212.0002": -8528.87,
+    "66212.0013": -9453.75,
+    "66212.0016": 5866.79,
+    "66212.0017": 2596.42,
+    "66212.0019": 25.97
+  }
+}

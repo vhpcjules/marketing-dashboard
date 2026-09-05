@@ -1,0 +1,21 @@
+{
+  "_meta": {
+    "domain": "marketing_spend",
+    "frozen": true,
+    "period": "2026-03",
+    "promoted_at": "2026-09-05",
+    "promotion_note": "Published in the Aug 18 2026 build and reproduced to the dollar from live GL on 2026-09-04.",
+    "pulled_at": "2026-09-04",
+    "query_id": "marketing_spend_monthly",
+    "row_count": 6,
+    "source": "NetSuite SuiteQL via MCP, subsidiary 2"
+  },
+  "postings": {
+    "66212.0002": 2393.0,
+    "66212.0008": 194.98,
+    "66212.0013": 6500.0,
+    "66212.0017": 3365.8,
+    "66212.0020": 8466.0,
+    "66215.001": 15000.0
+  }
+}
