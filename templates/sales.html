@@ -1,0 +1,138 @@
+{#
+  Marketing pipeline for sales.
+
+  Audience: the sales reps and sales leadership. Nothing here should need
+  marketing context to read. Reps are named (Cloudflare Access).
+
+  IDs come from src/populate.py (populate_sales) and are listed in the SALES
+  contract. Period prefixes are the `ids` context mapping.
+
+  Two "customer" counts appear on this page and they are different things:
+    <cur>.leads_converted   records created in the month that became
+                            customers at any time since (the sales view)
+    <cur>.new_customers     customers who bought within their first month
+                            (the executive, month-one view)
+  Both are labelled where they appear.
+
+  Context beyond base.html:
+    charts     {phone_capture_12m, lead_records_12m, geo_customers}
+    tables     {reps, geography}
+    pending    keys: pipeline | context | geography
+    narrative  RenderedNarrative (content/YYYY-MM/sales.md)
+#}
+{% extends 'base.html' %}
+{% import 'components/tile.html' as t %}
+{% import 'components/flag_row.html' as f %}
+{% import 'components/band_label.html' as b %}
+{% import 'components/table.html' as tb %}
+{% import 'components/chart.html' as ch %}
+{% import 'components/pending.html' as p %}
+
+{% block content %}
+{% set cur = ids.cur %}{% set prev = ids.prev %}
+
+{{ narrative.status() }}
+
+{# ---- What landed last month --------------------------------------------- #}
+<section class="section" aria-labelledby="landed-h">
+  <h2 id="landed-h">What landed in your pipeline in <time datetime="{{ report.month_iso }}">{{ report.month_label }}</time></h2>
+  <p class="section-explain">Records created in NetSuite during the month, how many reached a rep, and how many have become customers so far. Change is against <time datetime="{{ report.prev_month_iso }}">{{ report.prev_month_label }}</time>.</p>
+  {% if 'pipeline' in pending %}
+  {{ p.pending('pipeline', pending.pipeline) }}
+  {% else %}
+  <div class="tile-grid">
+    {{ t.tile('Records created', m(cur ~ '.lead_records'), delta_between(cur ~ '.lead_records', prev ~ '.lead_records'), 'Every new customer-table record, before any purchase.') }}
+    {{ t.tile('Routed to a rep', m(cur ~ '.leads_assigned'), None, 'Records with a sales rep on them.') }}
+    {{ t.tile('Became customers so far', m(cur ~ '.leads_converted'), delta_between(cur ~ '.leads_converted', prev ~ '.leads_converted'), 'Bought at any time since the record was created. Of these, bought within their first month:', m(cur ~ '.new_customers')) }}
+    {{ t.tile('Conversion to date', m(cur ~ '.lead_conversion'), delta_between(cur ~ '.lead_conversion', prev ~ '.lead_conversion'), 'Became customers divided by records created. Will keep rising as the month ages.') }}
+  </div>
+
+  {{ b.band_label('What each rep received', 'small counts; read the noise note') }}
+  {{ tb.table('reps', tables.reps.columns, tables.reps.rows, total_label='All reps') }}
+  <div class="callout">{{ c(cur ~ '.rep_spread_story') }} Assigned records overall converted at {{ m(cur ~ '.assigned_conversion') }}.</div>
+
+  {{ b.band_label('The unassigned gap', 'no media money involved') }}
+  <div class="tile-grid">
+    {{ t.tile('Records that reached no rep', m(cur ~ '.unassigned_records'), None, 'Share of the month\'s records:', m(cur ~ '.unassigned_share')) }}
+    {{ t.tile('Of those, became customers', m(cur ~ '.unassigned_converted')) }}
+    {{ t.tile('Unassigned conversion, fourteen months', m('r14.unassigned_rate'), None, 'Conversions:', m('r14.unassigned_conversions')) }}
+    {{ t.tile('Assigned conversion, fourteen months', m('r14.assigned_rate'), None, 'Became customers:', m('r14.assigned_converted')) }}
+  </div>
+  {% endif %}
+  {{ narrative.section('what-landed-in-your-pipeline-last-month') }}
+</section>
+
+{# ---- Lead quality -------------------------------------------------------- #}
+<section class="section" aria-labelledby="quality-h">
+  <h2 id="quality-h">Lead quality</h2>
+  <p class="section-explain">Whether a record arrives with a way to reach the person. Two phone-capture figures are shown because they measure different populations; each carries its denominator.</p>
+  {% if 'pipeline' in pending %}
+  {{ p.pending('pipeline', pending.pipeline) }}
+  {% else %}
+  <div class="tile-grid">
+    {{ t.tile('Phone capture, all records', m(cur ~ '.phone_capture'), delta_between(cur ~ '.phone_capture', prev ~ '.phone_capture'), 'Records with a phone number:', m(cur ~ '.with_phone')) }}
+    {{ t.tile('Phone capture, records routed to a rep', m(cur ~ '.phone_capture_assigned'), None, 'Routed records with a phone number:', m(cur ~ '.assigned_with_phone')) }}
+    {{ t.tile('Email capture, all records', m(cur ~ '.email_capture')) }}
+    {% if 'context' not in pending %}
+    {{ t.tile('Phone capture, twelve-month average', m('r12.phone_capture'), None, 'All records created in the window.') }}
+    {% endif %}
+  </div>
+  {% endif %}
+  {% if 'context' not in pending %}
+  <div class="two-col">
+    {{ ch.chart('phone_capture_12m', charts.phone_capture_12m, 'Phone capture, all records, by month') }}
+    {{ ch.chart('lead_records_12m', charts.lead_records_12m, 'Records created, by month') }}
+  </div>
+  {% endif %}
+  {{ narrative.section('lead-quality') }}
+</section>
+
+{# ---- Geography ------------------------------------------------------------ #}
+<section class="section" aria-labelledby="geo-h">
+  <h2 id="geo-h">Where new business is being created</h2>
+  <p class="section-explain">Customers by default ship-to state over the twelve months <time datetime="{{ report.r12_iso }}">{{ report.r12_label }}</time>. First-ninety-days revenue is shown only for cohorts whose window has closed.</p>
+  {% if 'geography' in pending %}
+  {{ p.pending('geography', pending.geography) }}
+  {% else %}
+  <div class="two-col">
+    {{ ch.chart('geo_customers', charts.geo_customers, 'Customers by ship-to state, top ten', tall=True) }}
+    {{ tb.table('geography', tables.geography.columns, tables.geography.rows) }}
+  </div>
+  <p class="section-explain">Customers in the window: {{ m('geo.total_customers') }}. Without a ship-to state on file: {{ m('geo.no_state_customers') }}.</p>
+  {% endif %}
+  {{ narrative.section('where-new-business-is-being-created') }}
+</section>
+
+{# ---- Context --------------------------------------------------------------- #}
+<section class="section" aria-labelledby="context-h">
+  <h2 id="context-h">Twelve-month context</h2>
+  <p class="section-explain">The same pipeline figures over the last three months and the last twelve, so one month cannot pass for a trend.</p>
+  {% if 'context' in pending %}
+  {{ p.pending('context', pending.context) }}
+  {% else %}
+  <div class="tile-grid">
+    {{ t.tile('Records created, last three months', m('r3.lead_records'), None, 'Became customers so far:', m('r3.leads_converted')) }}
+    {{ t.tile('Conversion to date, last three months', m('r3.lead_conversion')) }}
+    {{ t.tile('Records created, twelve months', m('r12.lead_records'), None, 'Became customers so far:', m('r12.leads_converted')) }}
+    {{ t.tile('Conversion to date, twelve months', m('r12.lead_conversion'), None, 'Bought within their first month:', m('r12.new_customers')) }}
+  </div>
+  {% endif %}
+  {{ narrative.section('twelve-month-context') }}
+</section>
+
+{# ---- Where marketing and sales can grow business together ------------------ #}
+<section class="section" aria-labelledby="together-h">
+  <h2 id="together-h">Where marketing and sales can grow business together</h2>
+  <div class="flag-list">
+    {% for flag in flags %}
+    {{ f.flag_row(flag.severity, flag.title, flag.body) }}
+    {% endfor %}
+  </div>
+  {{ narrative.section('where-marketing-and-sales-can-grow-business-together') }}
+  {% if narrative.not_carried %}
+  {{ b.band_label('Not carried forward from the previous build', 'retired findings, with the reason') }}
+  {{ narrative.not_carried_forward() }}
+  {% endif %}
+</section>
+
+{% endblock %}

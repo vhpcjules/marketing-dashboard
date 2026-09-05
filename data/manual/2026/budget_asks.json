@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "purpose": "Budget asks priced for the current reporting month. Every ask carries a price, a basis and a success measure (CLAUDE_CODE_BUILD_PROMPT.md: 'every recommendation carries a price and a success measure'). Paid-media asks are priced all-in: media plus the 20% agency surcharge the approved budget derives on Google + Meta spend (src.data.spend.price_ask).",
+    "updated": "2026-09-05",
+    "source": "Carried from the v1 Marketing Activity page (Aug 2026 deck): '$1K retargeting ask ... $3,000 for the 90-day retargeting run' and '$1,750 for a second focus group'. Re-priced here for September-December and with the agency surcharge v1 omitted.",
+    "period": "2026-09..2026-12"
+  },
+  "asks": [
+    {
+      "id": "retargeting",
+      "label": "Google new-customer retargeting, September to December",
+      "type": "paid_media",
+      "monthly_media": 1000.0,
+      "months": 4,
+      "basis": "Follow each new customer for ninety days from the first purchase, aimed at the second order. Most eventual second orders happen inside that window.",
+      "success_measure": "Median days to a second order falls below the current figure, and the reorder rate on small first orders (under four hundred dollars) rises above its current level, measured in NetSuite on September-onward cohorts against the pre-campaign baseline."
+    },
+    {
+      "id": "focus_group",
+      "label": "Second customer focus group",
+      "type": "one_time",
+      "amount": 1750.0,
+      "basis": "The only instrument that answers why two-thirds of a cohort never reorders. Retargeting treats the symptom; research finds the cause.",
+      "success_measure": "A written set of reorder blockers ranked by frequency, delivered before the fourth-quarter planning cycle."
+    }
+  ]
+}

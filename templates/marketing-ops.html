@@ -1,0 +1,188 @@
+{#
+  Marketing operations dashboard.
+
+  Audience: the marketing team and technical reviewers. Named accounts and
+  reps may appear (the site is behind Cloudflare Access); they never appear
+  on the Executive page.
+
+  IDs come from src/populate.py (populate_marketing_ops) and are listed in the
+  MARKETING_OPS contract. Period prefixes are the `ids` context mapping; see
+  executive.html for the convention.
+
+  Context beyond base.html:
+    charts     {m13_first90_12}
+    tables     {paid_media_recon, budget_vs_actual, yoy_channel, m13_cohorts,
+                cohorts_by_age, retention_bands, asks}
+    pending    keys: paid_media | meta_ads | social | google_web | initiatives |
+               yoy_channel | m13_quality | retention | lapsed | asks
+    narrative  RenderedNarrative (content/YYYY-MM/marketing-ops.md); slots are
+               its ## headings, slugified.
+#}
+{% extends 'base.html' %}
+{% import 'components/tile.html' as t %}
+{% import 'components/flag_row.html' as f %}
+{% import 'components/band_label.html' as b %}
+{% import 'components/table.html' as tb %}
+{% import 'components/chart.html' as ch %}
+{% import 'components/pending.html' as p %}
+
+{% block content %}
+{% set cur = ids.cur %}{% set prev = ids.prev %}{% set ytd = ids.ytd %}{% set pytd = ids.pytd %}{% set fy = ids.fy %}{% set pfy = ids.pfy %}{% set yy = ids.yy %}
+
+{{ narrative.status() }}
+
+{# ---- Channel performance ---------------------------------------------- #}
+<section class="section" aria-labelledby="channels-h">
+  <h2 id="channels-h">Channel performance</h2>
+  <p class="section-explain">What each channel spent and produced in <time datetime="{{ report.month_iso }}">{{ report.month_label }}</time>, reconciled to the general ledger wherever a platform figure exists. Platform-reported revenue is never used as revenue.</p>
+
+  {{ b.band_label('Paid media reconciled to the ledger', 'media only; agency revenue columns excluded') }}
+  {% if 'paid_media' in pending %}
+  {{ p.pending('paid_media', pending.paid_media) }}
+  {% else %}
+  <div class="tile-grid">
+    {{ t.tile('Platform media, closed months', m('truad.media_closed'), None, 'Google paid search, Performance Max and Meta, as the agency platform reports them.') }}
+    {{ t.tile('Ledger media, closed months', m('spend.media_gl_closed'), None, 'The same channels in the general ledger, correction credits removed.') }}
+    {{ t.tile('Agency fee billed, closed months', m('spend.agency_billed_closed'), None, 'Against the fee due at the approved rate:', m('truad.agency_due_closed')) }}
+    {{ t.tile('Fee due minus fee billed', m('recon.fee_under_billed_closed'), None, 'Positive means the agency billed less than the approved rate on actual media would have produced.') }}
+  </div>
+  {{ tb.table('paid_media_recon', tables.paid_media_recon.columns, tables.paid_media_recon.rows) }}
+  <p class="section-explain">Largest monthly disagreement: {{ m('recon.worst_gap_month') }}, ledger minus platform {{ m('recon.worst_gap') }}. The highlighted row is the open month; its ledger is still moving.</p>
+
+  {{ b.band_label('What the agency platform says about revenue', 'shown only to size the gap') }}
+  <div class="tile-grid">
+    {{ t.tile('Platform-reported revenue', m('truad.platform_revenue_ytd'), None, 'Ad-platform conversion value. Not NetSuite revenue.') }}
+    {{ t.tile('NetSuite revenue from this year\'s cohorts', m(ytd ~ '.revenue_to_date'), None, 'Everything the customers acquired this year have actually bought.') }}
+    {{ t.tile('Platform return per media dollar', m('truad.platform_roas'), None, 'Monthly values ranged from', m('truad.platform_roas_min')) }}
+    {{ t.tile('NetSuite return per marketing dollar', m(ytd ~ '.roas_to_date'), None, m(ytd ~ '.roas_maturity')) }}
+    {{ t.tile('Revenue overstatement', m('truad.revenue_overstatement'), None, 'Platform revenue as a multiple of what the same cohorts actually produced.') }}
+    {{ t.tile('Return overstatement', m('truad.roas_overstatement'), None, 'Platform return as a multiple of the NetSuite return on all marketing spend.') }}
+  </div>
+  {% endif %}
+
+  {{ b.band_label('Meta Ads') }}
+  {% if 'meta_ads' in pending %}{{ p.pending('meta_ads', pending.meta_ads) }}{% endif %}
+  {{ b.band_label('Instagram and LinkedIn (organic)') }}
+  {% if 'social' in pending %}{{ p.pending('social', pending.social) }}{% endif %}
+  {{ b.band_label('Google Ads, organic search, website') }}
+  {% if 'google_web' in pending %}{{ p.pending('google_web', pending.google_web) }}{% endif %}
+
+  {{ narrative.section('channel-performance') }}
+</section>
+
+{# ---- Active initiatives ------------------------------------------------ #}
+<section class="section" aria-labelledby="initiatives-h">
+  <h2 id="initiatives-h">Active initiatives</h2>
+  {% if 'initiatives' in pending %}{{ p.pending('initiatives', pending.initiatives) }}{% endif %}
+  {{ narrative.section('active-initiatives') }}
+</section>
+
+{# ---- Spend detail ------------------------------------------------------ #}
+<section class="section" aria-labelledby="spend-h">
+  <h2 id="spend-h">Spend detail</h2>
+  <p class="section-explain"><time datetime="{{ report.ytd_iso }}">{{ report.ytd_label }}</time>. Every dollar of actual spend appears in the first table; accounts with postings but no approved line are explicit rows, never dropped.</p>
+
+  <div class="tile-grid">
+    {{ t.tile('This month, true operating basis', m(cur ~ '.spend_true'), None, 'Drives every efficiency figure. As posted in the ledger:', m(cur ~ '.spend_as_posted')) }}
+    {{ t.tile('Year to date, true operating basis', m(ytd ~ '.spend'), None, 'Effective plan to date minus spend (positive is under plan):', m('budget' ~ yy ~ '.ytd_variance_true')) }}
+    {{ t.tile('Return per dollar, month one', m(ytd ~ '.roas_m1'), None, m(ytd ~ '.roas_maturity')) }}
+    {{ t.tile('Return per dollar, revenue to date', m(ytd ~ '.roas_to_date'), None, m(ytd ~ '.roas_maturity')) }}
+  </div>
+  <div class="callout">Year to date the marketing budget is running {{ c('budget' ~ yy ~ '.vs_plan_story') }}. {{ c(fy ~ '.on_track') }}</div>
+
+  {{ b.band_label('Budget versus actual, by ledger account', 'total computed from the rows') }}
+  {{ tb.table('budget_vs_actual', tables.budget_vs_actual.columns, tables.budget_vs_actual.rows, total_label='Total marketing') }}
+
+  {{ b.band_label('Year on year, by ledger account', 'same months, both years') }}
+  {% if 'yoy_channel' in pending %}
+  {{ p.pending('yoy_channel', pending.yoy_channel) }}
+  {% else %}
+  {{ tb.table('yoy_channel', tables.yoy_channel.columns, tables.yoy_channel.rows, total_label='Total marketing') }}
+  {% endif %}
+
+  {{ narrative.section('spend-detail') }}
+</section>
+
+{# ---- Cohort and retention detail --------------------------------------- #}
+<section class="section" aria-labelledby="cohorts-h">
+  <h2 id="cohorts-h">Cohort and retention detail</h2>
+
+  {{ b.band_label('First-ninety-days quality', 'closed cohorts only') }}
+  {% if 'm13_quality' in pending %}
+  {{ p.pending('m13_quality', pending.m13_quality) }}
+  {% else %}
+  <p class="section-explain">The {{ term('first90') }} window is reported only once every customer in the cohort has had ninety days. It is ninety calendar days from the day each record was created, not three calendar months.</p>
+  <div class="two-col">
+    {{ ch.chart('m13_first90_12', charts.m13_first90_12, 'First-ninety-days NET per closed cohort') }}
+    {{ tb.table('m13_cohorts', tables.m13_cohorts.columns, tables.m13_cohorts.rows) }}
+  </div>
+  {% endif %}
+
+  {{ b.band_label('Last year\'s class, for scale', 'the cohorts the target is measured against') }}
+  <div class="tile-grid">
+    {{ t.tile('New customers', m(pfy ~ '.new_customers'), None, 'Bought within their first month.') }}
+    {{ t.tile('Month-one NET', m(pfy ~ '.m1_net'), None, 'Frozen (published) basis; the target is a growth rate on this figure.') }}
+    {{ t.tile('Revenue to date', m(pfy ~ '.revenue_to_date'), None, 'Multiple of month one so far:', m(pfy ~ '.multiple_to_date')) }}
+    {{ t.tile('Return per dollar, month one and to date', m(pfy ~ '.roas_m1'), None, 'To date, on the same spend:', m(pfy ~ '.roas_to_date')) }}
+    {{ t.tile('Marketing spend', m(pfy ~ '.spend'), None, 'True operating basis, full year.') }}
+  </div>
+
+  {{ b.band_label('This year\'s cohorts, by age', 'multiples are not comparable across ages') }}
+  <p class="section-explain">Revenue to date as a multiple of month one climbs with age. The prior-year class stands at {{ m(pfy ~ '.multiple_to_date') }} after {{ m(pfy ~ '.avg_maturity') }}; this year's cohorts average {{ m(ytd ~ '.avg_maturity') }} of age.</p>
+  {{ tb.table('cohorts_by_age', tables.cohorts_by_age.columns, tables.cohorts_by_age.rows) }}
+
+  {{ b.band_label('Reorder behaviour', 'customers with a first order') }}
+  {% if 'retention' in pending %}
+  {{ p.pending('retention', pending.retention) }}
+  {% else %}
+  <div class="tile-grid">
+    {{ t.tile('Median days to a second order', m('retention.median_days_to_second_order'), None, 'Among customers who reordered:', m('retention.reorderers')) }}
+    {{ t.tile('Second orders placed within thirty days', m('retention.reordered_by_day_30'), None, 'Share of eventual second orders.') }}
+    {{ t.tile('Second orders placed within ninety days', m('retention.reordered_by_day_90'), None, 'Within six months:', m('retention.reordered_by_day_180')) }}
+    {{ t.tile('Reorder rate, small first orders', m('retention.under_400.rate'), delta_between('retention.under_400.rate', 'retention.400_2499.rate'), 'Relative to mid-sized first orders:', m('retention.400_2499.rate')) }}
+  </div>
+  {{ tb.table('retention_bands', tables.retention_bands.columns, tables.retention_bands.rows, total_label='All customers') }}
+  {% endif %}
+
+  {{ b.band_label('Lapsed accounts', 'named; confidential') }}
+  {% if 'lapsed' in pending %}{{ p.pending('lapsed', pending.lapsed) }}{% endif %}
+
+  {{ narrative.section('cohort-and-retention-detail') }}
+</section>
+
+{# ---- Budget asks -------------------------------------------------------- #}
+<section class="section" aria-labelledby="asks-h">
+  <h2 id="asks-h">Budget asks</h2>
+  <p class="section-explain">Every ask carries a price and a success measure. Paid-media asks are priced all-in: media plus the {{ m('ask' ~ yy ~ '.agency_rate') }} agency surcharge the approved budget derives on Google and Meta spend.</p>
+  {% if 'asks' in pending %}
+  {{ p.pending('asks', pending.asks) }}
+  {% else %}
+  {{ tb.table('asks', tables.asks.columns, tables.asks.rows, total_label='Both asks') }}
+  <div class="tile-grid tile-grid-pair">
+    {{ t.tile('Both asks, all-in', m('ask' ~ yy ~ '.total')) }}
+    {{ t.tile('Released by the trade-show cancellation', m('budget' ~ yy ~ '.released_by_cancellation'), None, 'Approved budget that will not be executed; available for reallocation within the plan.') }}
+    {{ t.tile('Available within the approved plan', m(fy ~ '.available_within_plan'), None, 'Released budget plus the year-to-date variance to the effective plan.') }}
+    {{ t.tile('Spend to close the gap, cautious return', m(fy ~ '.spend_to_close_conservative'), None, 'At the year-to-date month-one return instead:', m(fy ~ '.spend_to_close_at_m1_roas')) }}
+    {{ t.tile('Still needed to close the target gap', m(fy ~ '.shortfall_after_available'), None, 'At the year-to-date month-one return per dollar, after the money already available within the plan. Negative means it fits.') }}
+    {{ t.tile('Still needed, cautious return', m(fy ~ '.shortfall_after_available_conservative'), None, 'At an assumed marginal return well below the average.') }}
+  </div>
+  {% endif %}
+  {{ narrative.section('budget-asks') }}
+</section>
+
+{# ---- Data-quality notes ------------------------------------------------- #}
+<section class="section" aria-labelledby="dq-h">
+  <h2 id="dq-h">Data-quality notes</h2>
+  <div class="flag-list">
+    {% for flag in flags %}
+    {{ f.flag_row(flag.severity, flag.title, flag.body) }}
+    {% endfor %}
+  </div>
+  {{ narrative.section('data-quality-notes') }}
+  {% if narrative.not_carried %}
+  {{ b.band_label('Not carried forward from the previous build', 'retired findings, with the reason') }}
+  {{ narrative.not_carried_forward() }}
+  {% endif %}
+</section>
+
+{% endblock %}

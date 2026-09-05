@@ -49,24 +49,27 @@ from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any, Callable, Mapping, Protocol
 
-from .data.cohorts import Cohort, CohortSet
+import json
+
+from .data.cohorts import Cohort
 from .data.spend import Basis, SpendData
-from .data.targets import Pace, load_target
+from .data.targets import load_target
 from .freeze import (DEFAULT_DRIFT_THRESHOLD_PCT, REPORTS, DriftFinding, DriftReport,
                      SnapshotStore, detect_drift)
 from .ingest.common import MissingManualInput, month_label
 from .ingest.manual import REQUIRED_FIELDS as MANUAL_DOMAINS, load_manual
 from .ingest.netsuite import live_domain
-from .periods import m13_closed, month_end, months_between, reporting_month, rolling_window, shift_month
-from .units import Count, Money, Pct, Ratio, UndefinedDeltaError, arrow, delta, direction_class
+from .periods import m13_closed, months_between, reporting_month, shift_month
+from .populate import PAGES, populate_executive  # noqa: F401  (populate_executive re-exported for callers)
+from .units import Count, Money, Pct, UndefinedDeltaError, arrow, delta, direction_class
 
 __all__ = ["build", "BuildResult", "Inputs", "load_inputs", "detect_frozen_drift",
-           "write_change_log", "change_log_rows", "variance_threshold", "main"]
+           "write_change_log", "change_log_rows", "variance_threshold", "main", "populate_executive"]
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ASSETS = REPO_ROOT / "assets"
 PUBLIC = REPO_ROOT / "public"     # copied into dist/ verbatim: _redirects (the six v1 bookmarks), _headers
-RUN_RATE_MONTHS = 4          # forecast run rate = mean M1 of the last four months (May-Aug for an August report)
+MANUAL_ROOT = REPO_ROOT / "data" / "manual"
 HISTORY_MONTHS = 12          # variance threshold looks back this far
 MIN_HISTORY = 6              # fewer month-over-month changes than this -> no threshold, say so
 SD_MULTIPLIER = Decimal(2)
@@ -131,7 +134,7 @@ def _import_siblings(log: Log) -> Siblings:
         for name in ("EXECUTIVE", "MARKETING_OPS", "SALES"):
             contract = getattr(_contracts, name, None)
             if contract is not None:
-                s.contracts[contract.template.rsplit(".", 1)[0]] = contract
+                s.contracts[contract.slug] = contract
     except ImportError as e:
         s.notes.append(f"render layer not importable ({e}); no page will be rendered this build")
     try:
@@ -161,6 +164,15 @@ class Inputs:
     target: dict
     manual: dict[str, Any]                        # domain -> ManualInput | MissingManualInput
     lead_quality: dict[str, dict]                 # month -> body
+    routing: dict[str, dict] = field(default_factory=dict)          # month -> lead_routing body
+    routing_rollup: dict | None = None                              # lead_routing_14mo_rollup for the reporting month
+    source_mix: dict[str, dict] = field(default_factory=dict)       # month -> body
+    source_mix_12mo: dict | None = None
+    geography: dict | None = None
+    retention: dict | None = None
+    vintage: dict | None = None
+    truad: dict | MissingManualInput | None = None                  # manual: agency platform media by month
+    asks: dict | MissingManualInput | None = None                   # manual: priced budget asks
     notes: list[str] = field(default_factory=list)
 
     @property
@@ -224,10 +236,31 @@ def load_inputs(as_of: date, store: SnapshotStore | None = None, *, log: Log = p
         if isinstance(manual[domain], MissingManualInput):
             notes.append(f"{domain}: {manual[domain].reason}")
     lead_quality = {m: store.read(m, "lead_quality").body for m in store.periods("lead_quality")}
+    routing = {m: store.read(m, "lead_routing").body for m in store.periods("lead_routing")}
+    source_mix = {m: store.read(m, "source_mix").body for m in store.periods("source_mix")}
+
+    def month_body(domain: str) -> dict | None:
+        if store.exists(rm, domain):
+            return store.read(rm, domain).body
+        notes.append(f"no {domain} snapshot for {rm}; its section will show as pending")
+        return None
+
+    def manual_json(name: str) -> dict | MissingManualInput:
+        p = (manual_root or MANUAL_ROOT) / str(year) / f"{name}.json"
+        if not p.exists():
+            notes.append(f"no {p.relative_to(REPO_ROOT) if p.is_relative_to(REPO_ROOT) else p}; "
+                         f"sections that need it will show as pending")
+            return MissingManualInput(name, rm, f"{p} does not exist")
+        return json.loads(p.read_text())
+
+    inputs = Inputs(as_of, rm, store, spend, prior, cohorts, repeat_source, m13, load_target(year),
+                    manual, lead_quality, routing, month_body("lead_routing_14mo_rollup"), source_mix,
+                    month_body("source_mix_12mo"), month_body("geography_12mo"), month_body("retention"),
+                    month_body("acquisition_vintage"), manual_json("truad_media_spend"), manual_json("budget_asks"),
+                    notes)
     for n in notes:
         log(f"inputs: {n}")
-    return Inputs(as_of, rm, store, spend, prior, cohorts, repeat_source, m13, load_target(year),
-                  manual, lead_quality, notes)
+    return inputs
 
 
 # ---------------------------------------------------------------------------
@@ -269,315 +302,12 @@ def detect_frozen_drift(store: SnapshotStore, as_of: date, *,
     return report, new
 
 
-# ---------------------------------------------------------------------------
-# Registry population (executive page)
-# ---------------------------------------------------------------------------
-
-def _pid(month: str) -> str:
-    """'2026-08' -> 'aug26' - the <period> half of a metric ID."""
-    return f"{_MON[int(month[5:]) - 1].lower()}{month[2:4]}"
-
-
 def _short(month: str) -> str:
     return f"{_MON[int(month[5:]) - 1]} {month[2:4]}"
 
 
-def _range_label(start: str, end: str) -> str:
-    a, b = month_label(start), month_label(end)
-    return f"{a}–{b}" if start[:4] != end[:4] else f"{a.split()[0]}–{b}"
-
-
 def _mean(values: list[Decimal]) -> Decimal:
     return sum(values, Decimal(0)) / Decimal(len(values))
-
-
-def _account_names(inp: Inputs) -> dict[str, str]:
-    """GL account display names recorded by ingest (BUILTIN.DF), newest wins.
-
-    Snapshots written before account_names was recorded contribute nothing;
-    the caller falls back to the bare GL code, never to a guessed name.
-    """
-    names: dict[str, str] = {}
-    for month in inp.store.periods("marketing_spend"):
-        body = inp.store.read(month, "marketing_spend").body
-        for acct, name in (body.get("account_names") or {}).items():
-            if name:
-                names[acct] = str(name)
-    return names
-
-
-def populate_executive(reg: RegistryLike, inp: Inputs, chart_spec: Callable[..., dict], *,
-                       drift: DriftReport | None) -> tuple[dict, list[str]]:
-    """Register every figure the executive page asks for; return (context, problems).
-
-    `problems` lists what could not be registered and why. The caller checks
-    the page contract afterwards; a non-empty list means the page is skipped.
-    """
-    problems: list[str] = []
-    rm, pm, y = inp.reporting_month, inp.prev_month, inp.year
-    P, Pp = _pid(rm), _pid(pm)
-    ytd_months = months_between(f"{y}-01", rm)
-    prior_ytd_months = months_between(f"{y - 1}-01", f"{y - 1}-{rm[5:]}")
-    YTD, PYTD, FY = f"ytd{str(y)[2:]}", f"ytd{str(y - 1)[2:]}", f"fy{str(y)[2:]}"
-    ytd_label, pytd_label = _range_label(ytd_months[0], rm), _range_label(prior_ytd_months[0], prior_ytd_months[-1])
-    fy_label = f"FY{y}"
-    NS = "netsuite:cohorts_m1"
-
-    def cur(mid, amount, period, **kw):
-        reg.register(mid, Money(amount, period), kind="currency", source=kw.pop("source", NS), **kw)
-
-    def cnt(mid, n, period, **kw):
-        reg.register(mid, Count(n, period), kind="count", source=kw.pop("source", NS), **kw)
-
-    def pct(mid, v, period, **kw):
-        reg.register(mid, Pct(v), kind="pct", period=period, source=kw.pop("source", "computed"), **kw)
-
-    def rat(mid, v, period, fmt="per_dollar", **kw):
-        reg.register(mid, Ratio(v), kind="ratio", period=period, fmt=fmt, source=kw.pop("source", "computed"), **kw)
-
-    def txt(mid, s, period, **kw):
-        reg.register(mid, s, kind="text", period=period, source=kw.pop("source", "computed"), **kw)
-
-    true_monthly = inp.spend.monthly(Basis.TRUE_OPERATING)
-    pending: dict[str, str] = {}
-
-    # -- this month vs last ------------------------------------------------
-    for month, pid in ((rm, P), (pm, Pp)):
-        c = inp.cohorts.get(month)
-        if c is None:
-            problems.append(f"no cohorts_m1 snapshot for {month}")
-            continue
-        cnt(f"{pid}.new_customers", c.customers, month)
-        cur(f"{pid}.m1_net", c.m1_net, month)
-        cur(f"{pid}.avg_first_order", c.m1_net / Decimal(c.customers), month)
-    if rm in inp.cohorts:
-        spend_rm = true_monthly.get(rm)
-        if spend_rm is None or spend_rm.amount <= 0:
-            problems.append(f"no positive true-operating spend for {rm}; return per dollar undefined")
-        else:
-            rat(f"{P}.m1_return_per_dollar", inp.cohorts[rm].m1_net / spend_rm.amount, rm,
-                source="computed:cohorts_m1/marketing_spend")
-
-    # -- first-90-days, latest closed cohort (pendable) --------------------
-    if inp.m13:
-        latest = max(inp.m13)
-        b = inp.m13[latest]
-        label = f"{month_label(latest)} cohort"
-        m1_live = _d(b["m1_net_revenue_live"])
-        first90 = _d(b["m13_net_revenue"])
-        txt("m13.latest.cohort", month_label(latest), label, source="netsuite:cohorts_m13")
-        cnt("m13.latest.customers", int(b["customers_m13"]), label, source="netsuite:cohorts_m13")
-        cur("m13.latest.m1_net", m1_live, label, source="netsuite:cohorts_m13",
-            note="M1 from the same live pull as the 90-day figure, so the multiple is formed from one basis")
-        cur("m13.latest.first90_net", first90, label, source="netsuite:cohorts_m13")
-        if m1_live > 0:
-            rat("m13.latest.multiple", first90 / m1_live, label, fmt="multiple")
-        else:
-            pending["m13_quality"] = f"The {month_label(latest)} cohort has no month-one revenue to form a multiple against."
-    else:
-        pending["m13_quality"] = ("No first-ninety-days cohort has both closed its window and been pulled; "
-                                  "the section returns when the next cohorts_m13 snapshot lands.")
-
-    # -- sources (pendable): no first-source snapshot domain exists yet ------
-    pending["sources"] = ("First-source attribution has not been ingested: there is no sources snapshot "
-                          "in data/snapshots/ for the twelve-month window.")
-
-    # -- spending wisely -----------------------------------------------------
-    ytd_cohorts = [inp.cohorts[m] for m in ytd_months if m in inp.cohorts]
-    missing_ytd = [m for m in ytd_months if m not in inp.cohorts]
-    if missing_ytd:
-        problems.append(f"cohorts_m1 missing for {missing_ytd}; year-to-date figures cannot be formed")
-    ytd_spend = inp.spend.window(ytd_months[0], rm, Basis.TRUE_OPERATING, label=ytd_label)
-    cs = None
-    if ytd_cohorts and not missing_ytd and ytd_spend.amount > 0:
-        cs = CohortSet(ytd_label, ytd_cohorts, ytd_spend, inp.as_of)
-        cur(f"{YTD}.spend", ytd_spend.amount, ytd_label, higher_is_better=False, source="netsuite:marketing_spend",
-            note="true operating basis")
-        rat(f"{YTD}.roas_m1", cs.roas_m1.value, ytd_label)
-        rat(f"{YTD}.roas_to_date", cs.roas_to_date.value, ytd_label)
-        mat = cs.avg_maturity_months.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
-        txt(f"{YTD}.roas_maturity", f"{mat} months average customer-weighted maturity", ytd_label)
-        pct(f"{YTD}.repeat_share", cs.repeat_share, ytd_label)
-        pct(f"{YTD}.spend_share_of_revenue", ytd_spend.amount / cs.m1_net.amount * Decimal(100), ytd_label,
-            higher_is_better=False)
-        cur(f"{YTD}.m1_net", cs.m1_net.amount, ytd_label)
-        cnt(f"{YTD}.new_customers", cs.customers, ytd_label)
-        rat(f"{YTD}.return_per_dollar", cs.roas_m1.value, ytd_label)
-    elif ytd_spend.amount <= 0:
-        problems.append(f"true-operating spend {ytd_label} is not positive")
-
-    # -- pace against the target -------------------------------------------
-    pace = None
-    if cs is not None:
-        target_amount = _d(inp.target["target_amount"])
-        elapsed = int(rm[5:])
-        remaining = 12 - elapsed
-        rem_months = [f"{y - 1}-{m:02d}" for m in range(elapsed + 1, 13)]
-        run_months = months_between(shift_month(rm, -(RUN_RATE_MONTHS - 1)), rm)
-        if any(m not in inp.cohorts for m in rem_months):
-            problems.append(f"prior-year cohorts {rem_months} incomplete; pace against target undefined")
-        elif any(m not in inp.cohorts for m in run_months):
-            problems.append(f"run-rate months {run_months} incomplete")
-        else:
-            prior_rem = sum((inp.cohorts[m].m1_net for m in rem_months), Decimal(0))
-            run_rate = _mean([inp.cohorts[m].m1_net for m in run_months])
-            pace = Pace(Money(target_amount, fy_label), Money(cs.m1_net.amount, fy_label), elapsed, remaining,
-                        Money(prior_rem, fy_label), Money(run_rate, fy_label))
-            cur(f"{FY}.target", target_amount, fy_label, source="manual:approved_marketing_budget.targets")
-            if remaining:
-                cur(f"{FY}.required_monthly", pace.required_monthly.amount, fy_label)
-            else:
-                cur(f"{FY}.required_monthly", pace.still_needed.amount, fy_label,
-                    note="year complete: this is the full-year shortfall, not a monthly figure")
-            cur(f"{FY}.forecast_at_run_rate", pace.forecast_at_run_rate.amount, fy_label,
-                note=f"run rate = mean M1 of {_short(run_months[0])}–{_short(run_months[-1])}")
-
-    # -- year over year ------------------------------------------------------
-    prior_cohorts = [inp.cohorts[m] for m in prior_ytd_months if m in inp.cohorts]
-    if len(prior_cohorts) == len(prior_ytd_months):
-        p_m1 = sum((c.m1_net for c in prior_cohorts), Decimal(0))
-        cur(f"{PYTD}.m1_net", p_m1, pytd_label)
-        cnt(f"{PYTD}.new_customers", sum(c.customers for c in prior_cohorts), pytd_label)
-        if inp.prior_spend is not None:
-            try:
-                p_spend = inp.prior_spend.window(prior_ytd_months[0], prior_ytd_months[-1],
-                                                 Basis.TRUE_OPERATING, label=pytd_label)
-            except ValueError:
-                p_spend = None
-            if p_spend is None or p_spend.amount <= 0:
-                problems.append(f"prior-year spend for {pytd_label} is absent or not positive")
-            else:
-                cur(f"{PYTD}.spend", p_spend.amount, pytd_label, higher_is_better=False,
-                    source="netsuite:marketing_spend")
-                rat(f"{PYTD}.return_per_dollar", p_m1 / p_spend.amount, pytd_label)
-        else:
-            problems.append(f"no marketing_spend snapshots for {y - 1}: {PYTD}.spend and "
-                            f"{PYTD}.return_per_dollar cannot be registered")
-    else:
-        problems.append(f"prior-year cohorts for {pytd_label} incomplete")
-
-    # -- budget vs actual table ------------------------------------------------
-    # Row labels go through the registry too. An account with no budget line
-    # has no display name in the budget file, so its label is the GL code -
-    # digits that must be traceable like any other figure on the page.
-    names = _account_names(inp)
-    rows = []
-    for r in inp.spend.budget_vs_actual(ytd_months[0], rm):
-        key = r["account"].replace(".", "_")
-        if r["display"] != r["account"]:
-            label = r["display"]
-        elif r["account"] in names:
-            label = f"{names[r['account']]} (GL {r['account']}, no budget line)"
-        else:
-            label = f"GL {r['account']} (no budget line)"
-        txt(f"{YTD}.line.{key}", label, ytd_label, source="manual:approved_marketing_budget|netsuite:marketing_spend")
-        cur(f"{YTD}.budget.{key}", r["budget"].amount, ytd_label, source="manual:approved_marketing_budget")
-        cur(f"{YTD}.actual.{key}", r["actual"].amount, ytd_label, higher_is_better=False,
-            source="netsuite:marketing_spend", note="as posted")
-        cur(f"{YTD}.variance.{key}", r["variance"].amount, ytd_label, higher_is_better=False)
-        status = "warn" if r["unbudgeted"] else ("danger" if r["variance"].amount > 0 else None)
-        rows.append({"line": f"{YTD}.line.{key}", "budget": f"{YTD}.budget.{key}", "actual": f"{YTD}.actual.{key}",
-                     "variance": f"{YTD}.variance.{key}", "status": status})
-    budget_table = {
-        "columns": [
-            {"key": "line", "label": "Budget line", "kind": "metric"},
-            {"key": "budget", "label": "Approved budget", "kind": "metric", "align": "right", "total": True},
-            {"key": "actual", "label": "Actual (as posted)", "kind": "metric", "align": "right", "total": True},
-            {"key": "variance", "label": "Variance", "kind": "metric", "align": "right", "total": True},
-        ],
-        "rows": rows,
-    }
-
-    # -- online (pendable) -----------------------------------------------------
-    absent = [d for d in ("linkedin", "instagram", "meta_ads") if not inp.store.exists(rm, d)]
-    if absent:
-        pending["online"] = (f"Social and advertising snapshots for {month_label(rm)} have not been ingested "
-                             f"({', '.join(absent)}); see src/ingest/README.md.")
-    else:
-        pending["online"] = ("Social snapshots are present but the online table is not yet assembled by the "
-                             "build; the section returns when that wiring lands.")
-
-    # -- charts ---------------------------------------------------------------
-    window = rolling_window(inp.as_of, 12)
-    charts: dict[str, dict] = {}
-    if all(m in inp.cohorts for m in window):
-        labels = [_short(m) for m in window]
-        charts["new_customers_12m"] = chart_spec("bar", labels, [Decimal(inp.cohorts[m].customers) for m in window],
-                                                 emphasis_index=len(window) - 1, y_format="count")
-        charts["m1_net_12m"] = chart_spec("bar", labels, [inp.cohorts[m].m1_net for m in window],
-                                          emphasis_index=len(window) - 1, y_format="usd")
-    else:
-        problems.append(f"cohorts_m1 missing for part of the twelve-month window {window[0]}..{window[-1]}")
-
-    # -- claims: prose whose truth is checked when it renders ------------------
-    if rm in inp.cohorts and pm in inp.cohorts:
-        def _volume_change():
-            return delta(inp.cohorts[rm].customers, inp.cohorts[pm].customers)
-        reg.register_claim(f"{P}.volume_story", _volume_change,
-                           render=lambda ch: ("New-customer volume rose against the month before." if ch > 0 else
-                                              "New-customer volume fell against the month before." if ch < 0 else
-                                              "New-customer volume matched the month before.")
-                           + " Month-one revenue is a floor, not an estimate.")
-    if cs is not None:
-        reg.register_claim(f"{YTD}.roas_story", lambda: Pct(cs.repeat_share),
-                           assert_fn=lambda p: Decimal(0) <= p.value < Decimal(100),
-                           render=lambda p: f"Repeat revenue is {p} of what these cohorts have produced so far; "
-                                            f"judging on month one alone leaves that out.")
-    if pace is not None:
-        behind = lambda: not pace.on_track  # noqa: E731
-        reg.register_claim(f"{FY}.pace_story", behind,
-                           render=lambda b: ("Behind at the current run rate: the remaining months must beat "
-                                             "the same months last year." if b else
-                                             "On track at the current run rate."))
-        reg.register_claim(f"{FY}.on_track", behind,
-                           render=lambda b: ("Not on track at the current run rate. The gap and what closing it "
-                                             "would cost are priced on the Marketing Ops page." if b else
-                                             "On track at the current run rate; hold the plan."))
-    reg.register_claim("r12.sources_story",
-                       lambda: pending.get("sources", ""),
-                       render=lambda s: s or "First-source attribution is shown above.")
-
-    # -- flags -----------------------------------------------------------------
-    flags: list[dict] = []
-    if pace is not None and not pace.on_track:
-        flags.append({"severity": "red", "title": "Not on pace for the full-year target",
-                      "body": reg.c(f"{FY}.on_track")})
-    if drift is not None and drift.findings:
-        reg.register_claim("build.drift_story", lambda: len({f.period for f in drift.findings}),
-                           render=lambda n: f"{n} published cohort month(s) read differently in the latest live "
-                                            f"pull. The published figures are held; the restatement report "
-                                            f"lists every difference.")
-        flags.append({"severity": "amber", "title": "Frozen figures have moved in the ledger",
-                      "body": reg.c("build.drift_story")})
-    missing_manual = [d.upper() for d, v in inp.manual.items() if isinstance(v, MissingManualInput)]
-    if missing_manual:
-        flags.append({"severity": "amber", "title": "Manual inputs pending",
-                      "body": f"{' and '.join(missing_manual)} exports for the month have not been added under "
-                              f"data/manual; their sections show as pending until they are."})
-
-    context = {
-        "page": {"title": "Executive dashboard", "slug": "executive",
-                 "subtitle": "New customers, marketing return on both bases, and pace against the target. "
-                             "All revenue is NET."},
-        "months": [{"id": rm, "label": _short(rm)}],
-        "active_month": rm,
-        "prepared": {"iso": inp.as_of.isoformat(),
-                     "label": f"{month_label(inp.as_of.isoformat()[:7]).split()[0]} {inp.as_of.day}, {inp.as_of.year}"},
-        "data_sources": ["NetSuite (SuiteQL via MCP)", "Approved marketing budget (manual transcription)"],
-        "asset_root": "/",
-        "report": {
-            "month_label": month_label(rm), "month_iso": rm, "prev_month_label": month_label(pm),
-            "ytd_label": ytd_label, "ytd_iso": f"{ytd_months[0]}/{rm}",
-            "prior_ytd_label": pytd_label, "prior_ytd_iso": f"{prior_ytd_months[0]}/{prior_ytd_months[-1]}",
-            "r12_label": _range_label(window[0], window[-1]), "r12_iso": f"{window[0]}/{window[-1]}",
-        },
-        "charts": charts,
-        "tables": {"budget_vs_actual": budget_table,
-                   "online": {"columns": [], "rows": []}},
-        "flags": flags,
-        "pending": pending,
-    }
-    return context, problems
 
 
 # ---------------------------------------------------------------------------
@@ -801,6 +531,33 @@ class BuildResult:
         return "\n".join(lines)
 
 
+def _narrative_for(slug: str, period: str, reg: Any, problems: list[str], log: Log) -> Any:
+    """The month's story for one page: claims registered, prose resolved.
+
+    A missing content file is a pending callout, not a failure (numbers are
+    refreshed before the story is written). A malformed one, or one whose
+    metric references the registry cannot satisfy, is a problem: the page
+    must not ship with a half-resolved story.
+    """
+    from .render.narrative import NarrativeError, RenderedNarrative, load_narrative
+    try:
+        nar = load_narrative(period, slug)
+    except NarrativeError as e:
+        problems.append(f"narrative: {e}")
+        return RenderedNarrative.pending(period, slug, str(e))
+    if nar is None:
+        reason = (f"No narrative has been written for {month_label(period)}: content/{period}/{slug}.md does not "
+                  f"exist. The figures on this page are current; the story is not yet.")
+        log(f"build: {slug}: {reason}")
+        return RenderedNarrative.pending(period, slug, reason)
+    try:
+        nar.register_claims(reg)
+        return nar.render(reg)
+    except Exception as e:  # RegistryError, ClaimError, ClaimExprError, UndefinedError, NarrativeError
+        problems.append(f"narrative {nar.path.name}: {type(e).__name__}: {e}")
+        return RenderedNarrative.pending(period, slug, str(e))
+
+
 def build(as_of: date, dist: Path = Path("dist"), *, skip_gate: bool = False,
           store: SnapshotStore | None = None, reports_dir: Path = REPORTS,
           variance_thresholds: Mapping[str, Decimal] | None = None,
@@ -827,25 +584,42 @@ def build(as_of: date, dist: Path = Path("dist"), *, skip_gate: bool = False,
             f"the build will not publish over them. Investigate, then hold (amend the frozen file's "
             f"live_at_last_pull with a reason) or accept (amend the figure).")
 
-    # 3-4. registry + render
+    # 3-4. registry + render, one fresh registry per page
     pages: dict[str, str] = {}
+    registered_all: set[str] = set()
+    used_anywhere: set[str] = set()
     if sib.can_render:
-        for slug, contract in sib.contracts.items():
-            if slug != "executive":
-                result.skipped[slug] = "the build has no registry population for this page yet"
+        for slug, contract_tpl in sib.contracts.items():
+            populate = PAGES.get(slug)
+            if populate is None:
+                result.skipped[slug] = "the build has no registry population for this page"
                 continue
+            contract = contract_tpl.for_period(inp.reporting_month)
             reg = sib.registry_cls()
-            context, problems = populate_executive(reg, inp, sib.chart_spec, drift=report)
-            result.pending.update(context["pending"])
+            context, problems = populate(reg, inp, sib.chart_spec, drift=report)
+            result.pending.update({f"{slug}:{k}": v for k, v in context["pending"].items()})
+            narrative = _narrative_for(slug, inp.reporting_month, reg, problems, log)
+            context["narrative"] = narrative
             missing = contract.check(reg.ids(), reg.claim_ids(), context["pending"])
             if problems or missing:
                 why = "; ".join(problems + ([f"contract IDs not registered: {missing}"] if missing else []))
                 result.skipped[slug] = why
                 log(f"build: SKIPPING {slug}: {why}")
                 continue
-            pages[slug] = sib.render(contract.template, context, registry=reg)
-            result.unused_metrics = [i for i in reg.unused() if not i.startswith("build.")]
-            log(f"build: rendered {slug} ({len(reg.ids())} metrics, {len(context['pending'])} pending section(s))")
+            html = sib.render(contract.template, context, registry=reg)
+            unplaced = narrative.unplaced()
+            if unplaced:
+                why = (f"narrative sections written for this month but placed by no template slot: {unplaced}. "
+                       f"Prose is shown or deliberately removed, never lost.")
+                result.skipped[slug] = why
+                log(f"build: SKIPPING {slug}: {why}")
+                continue
+            pages[slug] = html
+            registered_all |= set(reg.ids())
+            used_anywhere |= set(reg.accessed())
+            log(f"build: rendered {slug} ({len(reg.ids())} metrics, {len(context['pending'])} pending section(s)"
+                f"{'' if not narrative.is_pending else '; narrative pending'})")
+        result.unused_metrics = sorted(i for i in registered_all - used_anywhere if not i.startswith("build."))
     else:
         result.skipped["executive"] = "render layer absent (see notes)"
         log("build: render layer absent; skipping every page. dist/ gets assets and routing only.")

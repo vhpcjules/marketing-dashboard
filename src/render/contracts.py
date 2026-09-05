@@ -7,21 +7,24 @@ a registry that satisfies the page without reading the template. So each
 page declares its contract: the metric IDs (with kind), the claim IDs, the
 chart keys and the table keys it will ask for.
 
+Contracts are written with period placeholders - `{cur}.new_customers`,
+`{ytd}.spend` - and resolved for one reporting month by `for_period()`.
+Templates address the same prefixes through the `ids` context mapping
+(`m(ids.cur ~ '.new_customers')`), so neither carries a month name and the
+September build needs no edit to either.
+
 `MetricRegistry` does not know about contracts. `check()` is a pure
 comparison, so a page can be checked before a single template is loaded.
-
-The executive contract is the reference for the ID convention described in
-registry.py. Periods: aug26 is the reporting month, jul26 the month before,
-ytd26 Jan–Aug 2026, ytd25 the same months of 2025, fy25/fy26 full years,
-r12 the rolling twelve closed months, m13 the latest closed 90-day cohort.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, replace
 from typing import Iterable, Mapping
 
-__all__ = ["MetricSpec", "PageContract", "EXECUTIVE"]
+from ..populate import period_ids
+
+__all__ = ["MetricSpec", "PageContract", "EXECUTIVE", "MARKETING_OPS", "SALES", "ALL"]
 
 
 @dataclass(frozen=True)
@@ -41,6 +44,19 @@ class PageContract:
     tables: tuple[str, ...] = ()
     pendable_sections: tuple[str, ...] = ()
 
+    @property
+    def slug(self) -> str:
+        return self.template.rsplit(".", 1)[0]
+
+    def for_period(self, reporting_month: str) -> "PageContract":
+        """Resolve `{cur}`, `{prev}`, `{ytd}`, `{pytd}`, `{fy}`, `{pfy}`, `{yy}`, `{pyy}`."""
+        ids = period_ids(reporting_month)
+        return replace(
+            self,
+            metrics=tuple(replace(s, metric_id=s.metric_id.format(**ids)) for s in self.metrics),
+            claims=tuple(c.format(**ids) for c in self.claims),
+        )
+
     def required_metric_ids(self, pending: Iterable[str] = ()) -> list[str]:
         p = set(pending)
         return [s.metric_id for s in self.metrics
@@ -59,16 +75,20 @@ def _m(ids: Mapping[str, str], *, hib: bool = True, section: str | None = None) 
     return [MetricSpec(i, k, hib, section) for i, k in ids.items()]
 
 
+# Figures every page's template asks for through the core registration.
+_CORE = (
+    _m({
+        "{cur}.new_customers": "count", "{prev}.new_customers": "count",
+        "{cur}.m1_net": "currency", "{prev}.m1_net": "currency",
+        "{cur}.avg_first_order": "currency", "{prev}.avg_first_order": "currency",
+    })
+)
+
 EXECUTIVE = PageContract(
     template="executive.html",
     metrics=tuple(
-        # exec summary + growth
-        _m({
-            "aug26.new_customers": "count", "jul26.new_customers": "count",
-            "aug26.m1_net": "currency", "jul26.m1_net": "currency",
-            "aug26.avg_first_order": "currency", "jul26.avg_first_order": "currency",
-            "aug26.m1_return_per_dollar": "ratio",
-        })
+        _CORE
+        + _m({"{cur}.m1_return_per_dollar": "ratio"})
         # first 90 days, latest closed cohort (pendable)
         + _m({
             "m13.latest.cohort": "text", "m13.latest.customers": "count",
@@ -78,30 +98,110 @@ EXECUTIVE = PageContract(
         # sources (pendable)
         + _m({
             "r12.sources.top_channel": "text", "r12.sources.top_share": "pct",
-            "r12.sources.untracked_share": "pct",
+            "r12.sources.customers": "count",
         }, section="sources")
+        + _m({"r12.sources.untracked_share": "pct"}, hib=False, section="sources")
         # spending wisely
         + _m({
-            "ytd26.spend": "currency",
-            "ytd26.roas_m1": "ratio", "ytd26.roas_to_date": "ratio",
-            "ytd26.roas_maturity": "text", "ytd26.repeat_share": "pct",
-            "fy26.target": "currency", "ytd26.m1_net": "currency",
-            "fy26.required_monthly": "currency", "fy26.forecast_at_run_rate": "currency",
+            "{ytd}.spend": "currency",
+            "{ytd}.roas_m1": "ratio", "{ytd}.roas_to_date": "ratio",
+            "{ytd}.roas_maturity": "text", "{ytd}.repeat_share": "pct",
+            "{fy}.target": "currency", "{ytd}.m1_net": "currency",
+            "{fy}.required_monthly": "currency", "{fy}.forecast_at_run_rate": "currency",
         })
-        + _m({"ytd26.spend_share_of_revenue": "pct"}, hib=False)
+        + _m({"{ytd}.spend_share_of_revenue": "pct"}, hib=False)
         # year over year
         + _m({
-            "ytd25.m1_net": "currency", "ytd25.new_customers": "count",
-            "ytd26.new_customers": "count",
-            "ytd26.return_per_dollar": "ratio", "ytd25.return_per_dollar": "ratio",
+            "{pytd}.m1_net": "currency", "{pytd}.new_customers": "count",
+            "{ytd}.new_customers": "count",
+            "{ytd}.return_per_dollar": "ratio", "{pytd}.return_per_dollar": "ratio",
         })
-        + _m({"ytd25.spend": "currency"}, hib=False)
+        + _m({"{pytd}.spend": "currency"}, hib=False)
+        # legacy accounts, published basis (pendable)
+        + _m({
+            "vintage.pre2018_accounts": "count", "vintage.pre2018_share_of_accounts": "pct",
+            "vintage.pre2018_share_of_revenue": "pct", "vintage.pre2018_avg_annual_net": "currency",
+            "vintage.band_2025_avg_annual_net": "currency",
+        }, section="vintage")
     ),
     claims=(
-        "aug26.volume_story", "ytd26.roas_story", "fy26.pace_story",
-        "r12.sources_story", "fy26.on_track",
+        "{cur}.volume_story", "{ytd}.roas_story", "{fy}.pace_story",
+        "r12.sources_story", "{fy}.on_track",
     ),
     charts=("new_customers_12m", "m1_net_12m", "sources_customers"),
     tables=("budget_vs_actual", "online"),
-    pendable_sections=("m13_quality", "sources", "online"),
+    pendable_sections=("m13_quality", "sources", "online", "vintage"),
 )
+
+MARKETING_OPS = PageContract(
+    template="marketing-ops.html",
+    metrics=tuple(
+        _CORE
+        + _m({"{cur}.spend_true": "currency", "{cur}.spend_as_posted": "currency", "{ytd}.spend": "currency"}, hib=False)
+        + _m({
+            "{ytd}.roas_m1": "ratio", "{ytd}.roas_to_date": "ratio", "{ytd}.revenue_to_date": "currency",
+            "{ytd}.roas_maturity": "text",
+        })
+        # paid media reconciled to the ledger (pendable)
+        + _m({"truad.media_closed": "currency", "spend.media_gl_closed": "currency",
+              "spend.agency_billed_closed": "currency"}, hib=False, section="paid_media")
+        + _m({"truad.agency_due_closed": "currency", "recon.fee_under_billed_closed": "currency",
+              "recon.worst_gap_month": "text", "recon.worst_gap": "currency",
+              "truad.platform_revenue_ytd": "currency", "truad.platform_roas": "ratio",
+              "truad.platform_roas_min": "ratio", "truad.platform_roas_max": "ratio"}, section="paid_media")
+        + _m({"truad.media_ytd": "currency", "truad.revenue_overstatement": "ratio",
+              "truad.roas_overstatement": "ratio"}, hib=False, section="paid_media")
+        # cohorts by age
+        + _m({"{pfy}.multiple_to_date": "ratio", "{pfy}.avg_maturity": "text", "{ytd}.avg_maturity": "text"})
+        # retention (pendable)
+        + _m({"retention.median_days_to_second_order": "count"}, hib=False, section="retention")
+        + _m({"retention.reordered_by_day_30": "pct", "retention.reordered_by_day_90": "pct",
+              "retention.reorderers": "count", "retention.customers": "count",
+              "retention.under_400.rate": "pct", "retention.400_2499.rate": "pct"}, section="retention")
+        # asks (pendable)
+        + _m({"ask{yy}.total": "currency", "budget{yy}.released_by_cancellation": "currency",
+              "ask{yy}.agency_rate": "pct"}, section="asks")
+        + _m({"{fy}.shortfall_after_available": "currency",
+              "{fy}.shortfall_after_available_conservative": "currency"}, hib=False)
+    ),
+    claims=("{fy}.on_track", "budget{yy}.vs_plan_story"),
+    charts=("m13_first90_12",),
+    tables=("paid_media_recon", "budget_vs_actual", "yoy_channel", "m13_cohorts", "cohorts_by_age",
+            "retention_bands", "asks"),
+    pendable_sections=("paid_media", "meta_ads", "social", "google_web", "initiatives", "yoy_channel", "m13_quality",
+                       "retention", "lapsed", "asks"),
+)
+
+SALES = PageContract(
+    template="sales.html",
+    metrics=tuple(
+        _CORE
+        # this month's pipeline (pendable)
+        + _m({"{cur}.lead_records": "count", "{prev}.lead_records": "count",
+              "{cur}.leads_converted": "count", "{prev}.leads_converted": "count",
+              "{cur}.lead_conversion": "pct", "{prev}.lead_conversion": "pct",
+              "{cur}.leads_assigned": "count", "{cur}.assigned_conversion": "pct",
+              "{cur}.unassigned_converted": "count",
+              "{cur}.phone_capture": "pct", "{prev}.phone_capture": "pct",
+              "{cur}.phone_capture_assigned": "pct", "{cur}.email_capture": "pct",
+              "{cur}.with_phone": "count", "{cur}.assigned_with_phone": "count"}, section="pipeline")
+        + _m({"{cur}.unassigned_records": "count", "{cur}.unassigned_share": "pct"}, hib=False, section="pipeline")
+        # fourteen-month routing
+        + _m({"r14.unassigned_conversions": "count", "r14.unassigned_rate": "pct",
+              "r14.assigned_converted": "count", "r14.assigned_rate": "pct"})
+        + _m({"r14.unassigned_records": "count"}, hib=False)
+        # context (pendable)
+        + _m({"r12.lead_records": "count", "r12.leads_converted": "count", "r12.lead_conversion": "pct",
+              "r12.phone_capture": "pct", "r3.lead_records": "count", "r3.leads_converted": "count",
+              "r3.lead_conversion": "pct", "r12.new_customers": "count", "r12.m1_net": "currency"}, section="context")
+        # geography (pendable)
+        + _m({"geo.total_customers": "count"}, section="geography")
+        + _m({"geo.no_state_customers": "count"}, hib=False, section="geography")
+    ),
+    claims=("{cur}.rep_spread_story", "{cur}.phone_capture_story", "{cur}.unassigned_story"),
+    charts=("phone_capture_12m", "lead_records_12m", "geo_customers"),
+    tables=("reps", "geography"),
+    pendable_sections=("pipeline", "context", "geography"),
+)
+
+ALL = (EXECUTIVE, MARKETING_OPS, SALES)
