@@ -126,10 +126,10 @@ em, .band-sub, .section-explain { font-style: italic; letter-spacing: var(--trac
 
 /* ---- Header band ---------------------------------------------------- */
 .site-header { background: var(--vhpc-deep); color: var(--vhpc-white); }
-.header-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 72px; }
+.header-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; min-height: 72px; flex-wrap: wrap; }
 .logo { display: inline-flex; align-items: center; padding: 12px 0; }
 .logo img { height: 40px; width: auto; display: block; }
-.site-nav { display: flex; gap: 4px; }
+.site-nav { display: flex; gap: 4px; flex-wrap: wrap; }
 .site-nav a {
   color: var(--vhpc-white); text-decoration: none;
   font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: var(--tracking-headline);
