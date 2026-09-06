@@ -38,7 +38,13 @@
 <header class="site-header">
   <div class="container header-inner">
     <a class="logo" href="/executive" aria-label="Versatile High-Performance Coatings home">
+      {% if logo_available|default(true) %}
       <img src="{{ asset_root }}assets/logo/vhpc-white.png" alt="Versatile High-Performance Coatings">
+      {% else %}
+      {# The PNG has not been copied in yet (assets/logo/README.md). A typeset
+         lockup in the brand face stands in; a broken image would not. #}
+      <span class="wordmark"><span class="wordmark-main">Versatile</span><span class="wordmark-sub">High-Performance Coatings<sup>®</sup></span></span>
+      {% endif %}
     </a>
     <nav class="site-nav" aria-label="Dashboards">
       {% for item in nav %}
@@ -54,9 +60,11 @@
     <p class="page-subtitle">{{ page.subtitle }}</p>
   </div>
 
+  {% block picker %}
   {% if months %}
   {{ mp.month_picker(months, active_month) }}
   {% endif %}
+  {% endblock %}
 
   {% block content %}{% endblock %}
 </main>

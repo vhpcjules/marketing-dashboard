@@ -157,6 +157,61 @@ def executive_context(registry: MetricRegistry, *, pending: dict | None = None) 
     cur("ytd25.m1_net", "612040.00", P["ytd25"])
     cnt("ytd26.new_customers", 517, P["ytd26"]); cnt("ytd25.new_customers", 640, P["ytd25"])
     rat("ytd26.return_per_dollar", "4.07", P["ytd26"]); rat("ytd25.return_per_dollar", "2.03", P["ytd25"])
+    cur("ytd26.cost_per_customer", "262.91", P["ytd26"], higher_is_better=False)
+    cur("ytd25.cost_per_customer", "470.32", P["ytd25"], higher_is_better=False)
+
+    # the plan, the asks, and what closing the gap would take
+    cur("budget26.ytd_effective", "141046.00", P["ytd26"]); cur("budget26.annual_approved", "206346.00", P["fy26"])
+    cur("budget26.annual_effective", "181846.00", P["fy26"]); cur("budget26.released_by_cancellation", "24500.00", P["fy26"])
+    R.register_claim("budget26.vs_plan_story", lambda: Decimal("5119.79"),
+                     render=lambda v: f"{Money(v, 'Jan–Aug 2026').usd0} under the effective plan")
+    cur("fy26.available_within_plan", "29619.79", P["fy26"])
+    cur("fy26.spend_to_close_at_marketing_return", "290000.00", P["fy26"], higher_is_better=False)
+    cur("fy26.spend_to_close_conservative", "881292.40", P["fy26"], higher_is_better=False)
+    cur("ask26.total", "6550.00", "Sep–Dec 2026"); txt("ask26.period", "September–December 2026", "Sep–Dec 2026")
+    pct("ask26.agency_rate", "20", P["fy26"])
+    txt("ask26.retarget.label", "Google new-customer retargeting", "Sep–Dec 2026"); cur("ask26.retarget.all_in", "4800.00", "Sep–Dec 2026")
+    txt("ask26.focus.label", "Second customer focus group", "Sep–Dec 2026"); cur("ask26.focus.all_in", "1750.00", "Sep–Dec 2026")
+    asks_table = {
+        "columns": [
+            {"key": "ask", "label": "Ask", "kind": "metric"},
+            {"key": "price", "label": "Price, all-in", "kind": "metric", "align": "right", "total": True},
+        ],
+        "rows": [{"ask": "ask26.retarget.label", "price": "ask26.retarget.all_in", "status": None},
+                 {"ask": "ask26.focus.label", "price": "ask26.focus.all_in", "status": None}],
+    }
+
+    # the month-by-month scorecard and the record: two months in the fixture
+    cur("aug26.spend_true", "8489.00", P["aug"], higher_is_better=False)
+    cur("jul26.spend_true", "10004.00", P["jul"], higher_is_better=False)
+    rat("jul26.m1_return_per_dollar", "13.00", P["jul"])
+    cur("aug26.total_net", "1945754.00", P["aug"]); cur("jul26.total_net", "1991119.00", P["jul"])
+    scorecard = [
+        {"id": "2026-07", "pid": "jul26", "index": 0, "label": "July 2026", "prev": None, "prev_id": "2026-06",
+         "prev_label": "June 2026", "has_spend": True, "has_total": True},
+        {"id": "2026-08", "pid": "aug26", "index": 1, "label": "August 2026", "prev": "jul26", "prev_id": "2026-07",
+         "prev_label": "July 2026", "has_spend": True, "has_total": True},
+    ]
+    sparks = {"new_customers": [Decimal(67), Decimal(72)], "m1_net": [Decimal(130063), Decimal(51088)],
+              "avg_first_order": [Decimal("1941.24"), Decimal("709.56")], "m1_return_per_dollar": [Decimal(13), Decimal("6.02")],
+              "spend_true": [Decimal(10004), Decimal(8489)], "total_net": [Decimal(1991119), Decimal(1945754)]}
+    record_table = {
+        "columns": [
+            {"key": "month", "label": "Month", "kind": "time"},
+            {"key": "customers", "label": "New customers", "kind": "metric", "align": "right"},
+            {"key": "m1", "label": "First-month revenue", "kind": "metric", "align": "right"},
+            {"key": "avg", "label": "Average first order", "kind": "metric", "align": "right"},
+            {"key": "spend", "label": "Marketing spend", "kind": "metric", "align": "right"},
+            {"key": "ret", "label": "Return per dollar, first month", "kind": "metric", "align": "right"},
+            {"key": "total", "label": "Total NET revenue", "kind": "metric", "align": "right"},
+        ],
+        "rows": [
+            {"month": "Jul 26", "customers": "jul26.new_customers", "m1": "jul26.m1_net", "avg": "jul26.avg_first_order",
+             "spend": "jul26.spend_true", "ret": "jul26.m1_return_per_dollar", "total": "jul26.total_net", "status": None},
+            {"month": "Aug 26", "customers": "aug26.new_customers", "m1": "aug26.m1_net", "avg": "aug26.avg_first_order",
+             "spend": "aug26.spend_true", "ret": "aug26.m1_return_per_dollar", "total": "aug26.total_net", "status": "warn"},
+        ],
+    }
 
     # budget table rows
     lines = [("Google Ads", "48000", "51088.10"), ("Meta", "24000", "19800.55"),
@@ -226,9 +281,15 @@ def executive_context(registry: MetricRegistry, *, pending: dict | None = None) 
         {"severity": "blue", "title": "Google Ads now bids higher on new customers", "body": "Changed late in the month; the next month is the first clean read."},
     ]
 
-    months = [{"id": "2026-06", "label": "Jun 26"}, {"id": "2026-07", "label": "Jul 26"}, {"id": "2026-08", "label": "Aug 26"}]
+    months = [{"id": "2026-07", "label": "Jul 26"}, {"id": "2026-08", "label": "Aug 26"}]
     d = Decimal
     charts = {
+        "total_net_yoy": chart_spec("bar", ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"],
+                                    [{"label": "FY2026", "values": [d("1322829"), d("1464449"), d("1960826"), d("2088624"),
+                                                                    d("2098449"), d("2174634"), d("1991119"), d("1945754")]},
+                                     {"label": "FY2025", "values": [d("1200000"), d("1300000"), d("1700000"), d("1900000"),
+                                                                    d("1850000"), d("1950000"), d("1800000"), d("1757901")]}],
+                                    y_format="usd"),
         "new_customers_12m": chart_spec("bar", ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"],
                                         [110, 115, 68, 65, 44, 59, 73, 63, 69, 67, 67, 72], emphasis_index=11, y_format="count"),
         "m1_net_12m": chart_spec("bar", ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"],
@@ -248,14 +309,16 @@ def executive_context(registry: MetricRegistry, *, pending: dict | None = None) 
                 "yy": "26", "pyy": "25"},
         "narrative": RenderedNarrative.empty("2026-08", "executive"),
         "report": {"month_label": "August 2026", "month_iso": "2026-08", "prev_month_label": "July 2026",
-                   "prev_month_iso": "2026-07", "vintage_basis": "published",
+                   "prev_month_iso": "2026-07", "vintage_basis": "published", "pace_status": "behind",
                    "ytd_label": "January–August 2026", "ytd_iso": "2026-01/2026-08",
                    "prior_ytd_label": "January–August 2025", "prior_ytd_iso": "2025-01/2025-08",
                    "r12_label": "September 2025–August 2026", "r12_iso": "2025-09/2026-08"},
         "charts": charts,
-        "tables": {"budget_vs_actual": budget_table, "online": online_table},
+        "tables": {"budget_vs_actual": budget_table, "online": online_table, "record_12m": record_table, "asks": asks_table},
         "flags": flags,
         "pending": pending or {},
+        "scorecard": scorecard, "sparks": sparks,
+        "pace_bar": {"ytd": 61, "forecast": 91, "last_year": 84, "elapsed": 67},
     }
 
 
@@ -571,7 +634,8 @@ class TestExecutivePage:
         r = MetricRegistry()
         ctx = executive_context(r)
         html = render("executive.html", ctx, registry=r)
-        assert html.count('class="headline"') == 3, "exec summary must have exactly three cards"
+        assert html.count('class="verdict"') == 1 and 'data-pace-status="behind"' in html
+        assert 'class="pill pill-red"' in html                       # the verdict pill follows the pace status
         assert "Internal use only" in html
         assert 'assets/logo/vhpc-white.png"' in html
         assert 'alt="Versatile High-Performance Coatings"' in html
@@ -588,11 +652,35 @@ class TestExecutivePage:
     def test_section_order(self):
         r = MetricRegistry()
         html = render("executive.html", executive_context(r), registry=r)
-        order = ["exec-summary", "Are we growing?", "Where are customers coming from?",
-                 "Are we spending wisely?", "Year-over-year headline",
-                 "Are we connecting with people online?", "What needs attention"]
+        order = ['class="verdict"', "Month by month", "Year to date against the same months last year", ">Trend<",
+                 "Where new customers come from", "Marketing spend against the approved plan", "What needs a decision",
+                 "Watch list", "Twelve-month record", "Behind the numbers"]
         positions = [html.index(s) for s in order]
         assert positions == sorted(positions)
+
+    def test_month_picker_steps_the_scorecard_only(self):
+        r = MetricRegistry()
+        html = render("executive.html", executive_context(r), registry=r)
+        assert html.count("month-picker-row") == 1
+        # the picker sits inside the month-by-month section, after its heading
+        assert html.index("Month by month") < html.index("month-picker-row") < html.index("Year to date")
+        # every month in the window has a scorecard block; only the reporting month is shown by default
+        assert 'data-month="2026-08">' in html
+        assert 'data-month="2026-07" hidden>' in html
+        assert html.count('class="kpi-grid" data-month=') == 2
+        # each block carries a trend line and the change against the month before, wrapped as a date
+        assert html.count('class="spark"') >= 10
+        assert '<time datetime="2026-07">July 2026</time>' in html
+
+    def test_record_table_and_appendix_are_present(self):
+        r = MetricRegistry()
+        html = render("executive.html", executive_context(r), registry=r)
+        assert 'data-table="record_12m"' in html and 'data-metric="jul26.total_net"' in html
+        assert 'data-table="asks"' in html and 'data-metric="asks.total.price"' in html
+        # the detail is one click away, never gone: the appendix is closed <details>
+        assert html.count('<details class="appendix">') >= 4
+        assert 'data-table="online"' in html and 'data-table="budget_vs_actual"' in html
+        assert "<details open" not in html
 
     def test_pending_sections_render_a_callout_not_a_blank(self):
         r = MetricRegistry()
@@ -633,3 +721,33 @@ class TestExecutivePage:
         assert bare_digits('<p><span data-metric="x">72</span> customers</p>') == []
         assert bare_digits("<p><time>Aug 26</time></p>") == []
         assert bare_digits("<script>var x = 12;</script>") == []
+
+
+# ---------------------------------------------------------------------------
+# sparklines
+# ---------------------------------------------------------------------------
+
+class TestSparkline:
+    def test_draws_a_polyline_with_no_text(self):
+        from src.render.sparkline import sparkline
+        svg = str(sparkline([Decimal(1), Decimal(3), Decimal(2)], 2))
+        assert svg.startswith('<svg class="spark"') and "<polyline" in svg and "spark-dot" in svg
+        assert "aria-hidden" in svg
+        assert not re.search(r">[^<]*\d[^<]*<", svg), "a sparkline carries no readable digits"
+
+    def test_gap_breaks_the_line_rather_than_dropping_to_zero(self):
+        from src.render.sparkline import sparkline
+        svg = str(sparkline([Decimal(1), None, Decimal(2), Decimal(3)]))
+        assert svg.count("<polyline") == 1          # the lone first point draws no segment; 2-3 do
+        assert "0," not in svg.split("points=")[1][:3]
+
+    def test_too_few_points_is_empty(self):
+        from src.render.sparkline import sparkline
+        assert str(sparkline([Decimal(1)])) == ""
+        assert str(sparkline([None, None])) == ""
+
+    def test_flat_series_sits_mid_height(self):
+        from src.render.sparkline import sparkline
+        svg = str(sparkline([Decimal(5), Decimal(5), Decimal(5)]))
+        ys = {pt.split(",")[1] for pt in re.search(r'points="([^"]+)"', svg).group(1).split()}
+        assert len(ys) == 1

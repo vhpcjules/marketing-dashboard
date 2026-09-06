@@ -1,5 +1,5 @@
 {#
-  month_picker(months, active_month)
+  month_picker(months, active_month, label='Showing data for')
 
   THE month picker. base.html includes it once; pages never carry their own.
   v1 had a copy per page, each with its own onclick handler and its own
@@ -13,9 +13,9 @@
   carrying data-month; the pills themselves are excluded from the toggle.
   Labels sit in <time> so the bare-digit scan knows they are dates.
 #}
-{% macro month_picker(months, active_month) %}
+{% macro month_picker(months, active_month, label='Showing data for') %}
 <nav class="month-picker" aria-label="Reporting month">
-  <div class="month-picker-label">Showing data for</div>
+  <div class="month-picker-label">{{ label }}</div>
   <div class="month-picker-row" role="tablist">
     {% for mo in months %}
     <button type="button" class="month-pill{% if mo.id == active_month %} active{% endif %}" data-month="{{ mo.id }}" role="tab" aria-selected="{{ 'true' if mo.id == active_month else 'false' }}"><time datetime="{{ mo.id }}">{{ mo.label }}</time></button>

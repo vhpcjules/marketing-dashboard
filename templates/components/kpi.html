@@ -1,0 +1,32 @@
+{#
+  kpi(label, metric, delta=None, compare=None, compare_time=None, spark=None, featured=False)
+
+  The executive tile: label, one big figure, one line of comparison, one
+  trend line. Nothing else - no italic explanation. If a figure needs a
+  sentence to be understood on the executive page it belongs in the
+  appendix, not in the tile.
+
+  `metric`   a RenderedMetric from m(), or None (renders an em dash: the
+             figure does not exist for this month, e.g. no spend posted).
+  `delta`    a RenderedDelta from delta_between(), coloured by direction.
+  `compare`  short prose for the comparison basis ("vs"). Any figure in it
+             must already be an m() span. It is rendered |safe because a
+             template builds it from its own literals and m()/c() spans
+             ('last year ' ~ m(id)); Jinja's ~ yields a plain str that
+             autoescape would otherwise escape. Never pass data into it.
+             `compare_time` is an optional
+             {iso, label} for a month name, wrapped in <time> so the
+             stale-month scan knows it is a label, not a left-over.
+  `spark`    Markup from spark(values, emphasis) - an inline SVG trend line.
+#}
+{% macro kpi(label, metric, delta=None, compare=None, compare_time=None, spark=None, featured=False) %}
+<div class="kpi{% if featured %} kpi-featured{% endif %}">
+  <div class="kpi-label">{{ label }}</div>
+  <div class="kpi-value">{% if metric is none %}<span class="cell-empty" aria-label="not available">—</span>{% else %}{{ metric }}{% endif %}</div>
+  <div class="kpi-foot">
+    {%- if delta %}{{ delta }} {% endif -%}
+    {%- if compare or compare_time %}<span class="kpi-compare">{{ compare|safe }}{% if compare_time %} <time datetime="{{ compare_time.iso }}">{{ compare_time.label }}</time>{% endif %}</span>{% endif -%}
+  </div>
+  {% if spark %}<div class="kpi-spark">{{ spark }}</div>{% endif %}
+</div>
+{% endmacro %}

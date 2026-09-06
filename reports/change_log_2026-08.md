@@ -1,6 +1,6 @@
 # Change log — August 2026
 
-Built 2026-09-05. Each row compares August 2026 with July 2026. Change is the relative percent change via `src.units.delta` — never a point difference, even for rates. The threshold is 2 standard deviations of the trailing 12 month-over-month changes where at least 6 exist, or a configured per-metric value; a move beyond it is flagged for a human to read before publishing.
+Built 2026-09-06. Each row compares August 2026 with July 2026. Change is the relative percent change via `src.units.delta` — never a point difference, even for rates. The threshold is 2 standard deviations of the trailing 12 month-over-month changes where at least 6 exist, or a configured per-metric value; a move beyond it is flagged for a human to read before publishing.
 
 Build notes:
 

@@ -33,6 +33,7 @@ from markupsafe import Markup, escape
 
 from .brand import BRAND, TERMS
 from .registry import MetricRegistry
+from .sparkline import sparkline
 
 __all__ = ["TEMPLATES", "make_env", "render", "chart_json", "term"]
 
@@ -153,6 +154,7 @@ def make_env(registry: MetricRegistry, templates: Path = TEMPLATES) -> Environme
         "brand": BRAND,
         "term": term,
         "chart_json": chart_json,
+        "spark": sparkline,
         "nav": NAV,
         "flag_icon": _flag_icon,
     })

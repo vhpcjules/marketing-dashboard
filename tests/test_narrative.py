@@ -242,6 +242,29 @@ class TestValidatorExemptions:
         assert len(vnarr.check_stale_months(doc, "x.html", "2026-08")) == 1
 
 
+class TestBrief:
+    def test_h3_headlines_become_closed_details(self):
+        r = MetricRegistry()
+        r.register("aug26.new_customers", Count(82, "2026-08"), kind="count", source="t")
+        text = (FRONT.replace("claims:", "claims: {}\nx:").split("not_carried_forward")[0]
+                + "not_carried_forward: []\n---\n"
+                + "\n## The three things\n\nLead sentence.\n\n### Volume rose\n\nWe added {{ m('aug26.new_customers') }} customers.\n\n"
+                  "### Deal size held\n\nSecond paragraph.\n")
+        n = Narrative.parse(text, Path("t.md"), period="2026-08", dashboard="executive")
+        rn = n.render(r)
+        html = str(rn.brief("the-three-things"))
+        assert html.count('<details class="brief">') == 2
+        assert "<summary>Volume rose</summary>" in html and "<summary>Deal size held</summary>" in html
+        assert "<p>Lead sentence.</p>" in html                       # prose before the first ### stays visible
+        assert 'data-metric="aug26.new_customers"' in html          # figures stay traceable inside the body
+        assert "<h3" not in html
+        assert rn.unplaced() == []                                  # brief() places the section
+
+    def test_brief_of_a_missing_section_is_empty(self):
+        rn = RenderedNarrative.empty("2026-08", "executive")
+        assert str(rn.brief("nothing")) == ""
+
+
 class TestEndToEnd:
     def test_executive_template_places_the_story(self, reg):
         """A narrative section is placed by the executive template."""

@@ -116,7 +116,17 @@ EXECUTIVE = PageContract(
             "{pfy}.total_remaining_months": "currency",
         }, section="pace")
         + _m({"{fy}.gap_at_run_rate": "currency"}, hib=False, section="pace")
-        + _m({"{ytd}.spend_share_of_revenue": "pct"}, hib=False)
+        # what closing the gap would take (pace) and what is available inside the plan (budget)
+        + _m({"{fy}.spend_to_close_at_marketing_return": "currency", "{fy}.spend_to_close_conservative": "currency"},
+             hib=False, section="pace")
+        + _m({"{fy}.available_within_plan": "currency"}, section="budget")
+        # the plan
+        + _m({"budget{yy}.ytd_effective": "currency", "budget{yy}.annual_approved": "currency",
+              "budget{yy}.annual_effective": "currency", "budget{yy}.released_by_cancellation": "currency"},
+             section="budget")
+        + _m({"{ytd}.cost_per_customer": "currency", "{pytd}.cost_per_customer": "currency"}, hib=False, section="budget")
+        # the asks
+        + _m({"ask{yy}.total": "currency", "ask{yy}.period": "text", "ask{yy}.agency_rate": "pct"}, section="asks")
         # year over year
         + _m({
             "{pytd}.m1_net": "currency", "{pytd}.new_customers": "count",
@@ -126,14 +136,16 @@ EXECUTIVE = PageContract(
         + _m({"{pytd}.spend": "currency"}, hib=False)
         # legacy accounts: the template picks the published or the Sage-joined id set by
         # report.vintage_basis and fails loudly on a missing id, so the contract lists neither.
+        # The month-by-month scorecard and the twelve-month record are driven by the
+        # `scorecard` context list, whose ids the template derives; a missing one fails the render.
     ),
     claims=(
         "{cur}.volume_story", "{ytd}.roas_story", "{fy}.pace_story",
         "r12.sources_story", "{fy}.on_track",
     ),
-    charts=("new_customers_12m", "m1_net_12m", "sources_customers"),
-    tables=("budget_vs_actual", "online"),
-    pendable_sections=("m13_quality", "sources", "online", "instagram", "vintage", "pace"),
+    charts=("new_customers_12m", "m1_net_12m", "sources_customers", "total_net_yoy"),
+    tables=("budget_vs_actual", "online", "record_12m", "asks"),
+    pendable_sections=("m13_quality", "sources", "online", "instagram", "vintage", "pace", "budget", "asks"),
 )
 
 MARKETING_OPS = PageContract(
@@ -183,7 +195,7 @@ MARKETING_OPS = PageContract(
     claims=("{fy}.on_track", "budget{yy}.vs_plan_story"),
     charts=("m13_first90_12", "meta_spend_6m", "li_impressions_6m", "ig_reach_6m", "aw_cost_6m", "ga_sessions_6m"),
     tables=("paid_media_recon", "budget_vs_actual", "yoy_channel", "m13_cohorts", "cohorts_by_age",
-            "retention_bands", "asks", "meta_adsets", "aw_channel_types"),
+            "retention_bands", "asks", "meta_adsets", "aw_channel_types", "record_12m"),
     pendable_sections=("paid_media", "meta_ads", "social", "instagram", "google_web", "initiatives", "yoy_channel",
                        "m13_quality", "retention", "lapsed", "asks", "pace"),
 )

@@ -1,248 +1,382 @@
 {#
-  Executive dashboard.
+  Executive brief.
 
-  Every figure on this page comes through m() or c(). Metric IDs follow
-  <period>.<measure>; the period prefixes come from the `ids` context so the
-  template never carries a month name (see src/populate.py and the EXECUTIVE
-  contract in src/render/contracts.py, which lists every ID this template asks
-  for):
+  Built for a reader who will not read: one verdict, three headlines, a
+  row of figures, then the detail one click away. Every figure on this
+  page comes through m() or c(). Metric IDs follow <period>.<measure>; the
+  period prefixes come from the `ids` context so the template never carries
+  a month name (see src/populate.py and the EXECUTIVE contract in
+  src/render/contracts.py, which lists every ID this template asks for):
 
     ids.cur   reporting month        ids.prev   the month before
     ids.ytd   Jan..reporting month   ids.pytd   the same months last year
     ids.fy    full-year target frame ids.pfy    prior full year
     r12.*     rolling twelve closed months
     m13.*     latest CLOSED first-90-days cohort
-    vintage.* legacy-account figures on the published (Sage) basis
+    vintage.* legacy-account figures (Sage-joined or the published basis)
+
+  Order on the page, and why:
+    1. Verdict band      Are we on target? One sentence, four numbers, a bar.
+    2. Three things      The month's headlines; each expands to its evidence.
+    3. This month        Four tiles with trend lines; the month picker steps
+                         this row back through the trailing twelve months.
+    4. Year to date      The same-months-last-year comparison, five tiles.
+    5. Trend             Total revenue this year vs last; new customers; M1.
+    6. Growth sources    Where new customers come from; who carries revenue.
+    7. Spend vs plan     Four tiles; the line-by-line table is one click away.
+    8. Decisions         What leadership is asked to approve, and to know.
+    9. Watch list        Flags, one line each.
+   10. Twelve-month record   Every month as published, for cross-checking.
+   11. Behind the numbers    Collapsed: full story, cohort quality, online
+                             indicators, legacy detail, how we count.
 
   Context beyond base.html:
-    report     {month_label, month_iso, prev_month_label, ytd_label, ytd_iso,
-                prior_ytd_label, prior_ytd_iso, r12_label, r12_iso, ...}
-    charts     {new_customers_12m, m1_net_12m, sources_customers}  chart_spec dicts
-    tables     {budget_vs_actual: {columns, rows}, online: {columns, rows}}
+    report     {month_label, month_iso, ..., pace_status, vintage_basis}
+    scorecard  [{id, pid, index, label, prev, prev_id, prev_label, has_spend, has_total}]
+    sparks     {new_customers, m1_net, avg_first_order, m1_return_per_dollar, ...}: 12 values each
+    pace_bar   {ytd, forecast, last_year, elapsed} whole-percent shares of the target (layout only)
+    vintage_bar [{key, legacy, width}]
+    charts     {new_customers_12m, m1_net_12m, sources_customers, total_net_yoy?}
+    tables     {budget_vs_actual, online, record_12m, asks?, vintage_bands?}
     flags      [{severity, title, body}]
-    pending    {section_key: reason}   keys: m13_quality | sources | online | vintage
+    pending    {section_key: reason}
     narrative  RenderedNarrative (content/YYYY-MM/executive.md). Slots below
                are its ## headings, slugified. A section the file has that
                no slot names fails the build.
-
-  Period labels are wrapped in <time> and methodology terms in term(), so
-  the bare-digit scan can tell a date and "M1" from an untraced number.
 #}
 {% extends 'base.html' %}
+{% import 'components/kpi.html' as k %}
 {% import 'components/tile.html' as t %}
 {% import 'components/flag_row.html' as f %}
 {% import 'components/band_label.html' as b %}
 {% import 'components/table.html' as tb %}
 {% import 'components/chart.html' as ch %}
 {% import 'components/pending.html' as p %}
+{% import 'components/month_picker.html' as mp %}
+
+{# The picker belongs to the month-by-month row, not the page top: the
+   verdict, the year to date and the charts are for the reporting month. #}
+{% block picker %}{% endblock %}
 
 {% block content %}
-{% set cur = ids.cur %}{% set prev = ids.prev %}{% set ytd = ids.ytd %}{% set pytd = ids.pytd %}{% set fy = ids.fy %}
+{% set cur = ids.cur %}{% set prev = ids.prev %}{% set ytd = ids.ytd %}{% set pytd = ids.pytd %}{% set fy = ids.fy %}{% set pfy = ids.pfy %}
+{% set B = 'budget' ~ ids.yy %}{% set A = 'ask' ~ ids.yy %}
 
 {{ narrative.status() }}
 
-{# ---- Exec summary band: exactly three headline cards ------------------- #}
-<section class="exec-summary" aria-labelledby="exec-summary-h">
-  <h2 id="exec-summary-h">The three things to take from this dashboard</h2>
-  <p class="lede"><time datetime="{{ report.month_iso }}">{{ report.month_label }}</time>: new-customer volume, marketing return on both bases, and where we stand against the year's target.</p>
-  <div class="headline-row">
-    <div class="headline">
-      <div class="num">{{ m(cur ~ '.new_customers') }} new customers · {{ m(cur ~ '.m1_net') }} NET {{ term('m1') }}</div>
-      <div class="desc">{{ c(cur ~ '.volume_story') }}</div>
-    </div>
-    <div class="headline">
-      <div class="num">{{ m(ytd ~ '.roas_to_date') }} back per dollar to date · {{ m(ytd ~ '.roas_m1') }} in {{ term('m1') }}</div>
-      <div class="desc">{{ c(ytd ~ '.roas_story') }}</div>
-    </div>
-    <div class="headline">
-      {% if 'pace' in pending %}
-      <div class="num">{{ m(ytd ~ '.m1_net') }} new-customer NET {{ term('m1') }} · {{ delta_between(ytd ~ '.m1_net', pytd ~ '.m1_net') }} on last year</div>
-      {% else %}
-      <div class="num">{{ m(ytd ~ '.total_net') }} of a {{ m(fy ~ '.target') }} total-revenue target</div>
-      {% endif %}
-      <div class="desc">{{ c(fy ~ '.pace_story') }}</div>
-    </div>
+{# ---- 1. Verdict: are we on target? ------------------------------------- #}
+<section class="verdict" aria-labelledby="verdict-h" data-pace-status="{{ report.pace_status }}">
+  <div class="verdict-head">
+    {% if report.pace_status == 'behind' %}<span class="pill pill-red">Behind pace</span>
+    {% elif report.pace_status == 'on_track' %}<span class="pill pill-green">On pace</span>
+    {% else %}<span class="pill pill-grey">Pace pending</span>{% endif %}
+    <h2 id="verdict-h">{{ c(fy ~ '.pace_story') }}</h2>
   </div>
-</section>
-{% if narrative.has('the-three-things-to-take-from-this-month') %}
-<section class="section" aria-labelledby="story-h">
-  <h2 id="story-h">This month's story</h2>
-  {{ narrative.section('the-three-things-to-take-from-this-month') }}
-</section>
-{% endif %}
-
-{# ---- Are we growing? -------------------------------------------------- #}
-<section class="section" aria-labelledby="growing-h">
-  <h2 id="growing-h">Are we growing?</h2>
-  <p class="section-explain">New customers and the NET revenue they produce in their first month ({{ term('m1') }}), over the twelve closed months to <time datetime="{{ report.month_iso }}">{{ report.month_label }}</time>. Change is against <time datetime="{{ report.prev_month_iso }}">{{ report.prev_month_label }}</time>.</p>
-
-  <div class="tile-grid">
-    {{ t.tile('New customers', m(cur ~ '.new_customers'), delta_between(cur ~ '.new_customers', prev ~ '.new_customers'),
-              'People or businesses who bought from us for the first time this month.') }}
-    {{ t.tile('New-customer NET revenue, month one', m(cur ~ '.m1_net'), delta_between(cur ~ '.m1_net', prev ~ '.m1_net'),
-              'What those customers spent in the month their record was created. A floor, not an estimate: a sale that crosses a month boundary leaves this window by construction.') }}
-    {{ t.tile('Average first order', m(cur ~ '.avg_first_order'), delta_between(cur ~ '.avg_first_order', prev ~ '.avg_first_order'),
-              'Month-one NET revenue per new customer. Deal-size variance is normal in specialty coatings; read the trend, not the month.') }}
-    {{ t.tile('Return per dollar, month one', m(cur ~ '.m1_return_per_dollar'), None,
-              'Month-one NET revenue divided by true operating marketing spend for the month.') }}
-  </div>
-
-  <div class="two-col">
-    {{ ch.chart('new_customers_12m', charts.new_customers_12m, 'New customers per cohort month') }}
-    {{ ch.chart('m1_net_12m', charts.m1_net_12m, 'Month-one NET revenue per cohort') }}
-  </div>
-
-  {{ narrative.section('are-we-growing') }}
-
-  {{ b.band_label('First-ninety-days quality', 'closed cohorts only') }}
-  {% if 'm13_quality' in pending %}
-  {{ p.pending('m13_quality', pending.m13_quality) }}
-  {% else %}
-  <p class="section-explain">The {{ term('first90') }} window is reported only once every customer in the cohort has had ninety days. Latest closed cohort: {{ m('m13.latest.cohort') }}.</p>
-  <div class="tile-grid">
-    {{ t.tile('Customers in cohort', m('m13.latest.customers')) }}
-    {{ t.tile('Month-one NET', m('m13.latest.m1_net')) }}
-    {{ t.tile('First-ninety-days NET', m('m13.latest.first90_net')) }}
-    {{ t.tile('Multiple of month one', m('m13.latest.multiple'), None, 'How much the cohort grew beyond its first month. Above one means customers came back.') }}
-  </div>
-  {% endif %}
-</section>
-
-{# ---- Where are customers coming from? --------------------------------- #}
-<section class="section" aria-labelledby="sources-h">
-  <h2 id="sources-h">Where are customers coming from?</h2>
-  <p class="section-explain">The channel that first brought each new customer, over the twelve months <time datetime="{{ report.r12_iso }}">{{ report.r12_label }}</time>. Sorted bars, largest first; the untracked bucket is highlighted because it is the finding.</p>
-  {% if 'sources' in pending %}
-  {{ p.pending('sources', pending.sources) }}
-  {% else %}
-  <div class="two-col">
-    {{ ch.chart('sources_customers', charts.sources_customers, 'New customers by first source', tall=True) }}
-    <div>
-      <div class="tile-grid tile-grid-narrow">
-        {{ t.tile('Customers in the window', m('r12.sources.customers'), None, 'Created in the window and bought at any time since. Wider than the month-one count above.') }}
-        {{ t.tile('Largest tracked source', m('r12.sources.top_channel')) }}
-        {{ t.tile('Its share of new customers', m('r12.sources.top_share')) }}
-        {{ t.tile('Untracked share', m('r12.sources.untracked_share'), None, 'Customers whose source was never recorded:', m('r12.sources.untracked_customers')) }}
-      </div>
-      <div class="callout">{{ c('r12.sources_story') }}</div>
-    </div>
-  </div>
-  {% endif %}
-  {{ narrative.section('where-are-customers-coming-from') }}
-</section>
-
-{# ---- Are we spending wisely? ------------------------------------------ #}
-<section class="section" aria-labelledby="spend-h">
-  <h2 id="spend-h">Are we spending wisely?</h2>
-  <p class="section-explain">Approved budget against actual spend, <time datetime="{{ report.ytd_iso }}">{{ report.ytd_label }}</time>. Efficiency figures use the true-operating basis: credits are pushed back to the months they belong to, and prior-year items are excluded.</p>
-
-  {{ b.band_label('Budget versus actual', 'total computed from the rows') }}
-  {{ tb.table('budget_vs_actual', tables.budget_vs_actual.columns, tables.budget_vs_actual.rows,
-              total_label='Total marketing', caption=None) }}
-
-  {{ b.band_label('Return on marketing spend', 'two bases, always together') }}
-  <p class="section-explain">Month one is the target frame but not what the spend bought: repeat orders arrive after the window closes. Both figures are shown, each with the average customer-weighted maturity of the cohorts behind it.</p>
-  <div class="tile-grid tile-grid-pair">
-    {{ t.tile('Return per dollar, month-one basis', m(ytd ~ '.roas_m1'), None, m(ytd ~ '.roas_maturity')) }}
-    {{ t.tile('Return per dollar, revenue-to-date basis', m(ytd ~ '.roas_to_date'), None, m(ytd ~ '.roas_maturity')) }}
-    {{ t.tile('Repeat share of cohort revenue', m(ytd ~ '.repeat_share'), None, 'What month-one reporting does not see.') }}
-    {{ t.tile('Spend as a share of month-one revenue', m(ytd ~ '.spend_share_of_revenue'), None, 'Lower is better.') }}
-  </div>
-
-  {{ b.band_label('Pace against the company target', 'total NET revenue, all customers') }}
-  <p class="section-explain">Leadership's target is {{ m(fy ~ '.target_growth') }} growth in total NET revenue over last year. New-customer revenue is marketing's contribution to it, shown above; it is not the target and is not graded as if it were.</p>
   {% if 'pace' in pending %}
-  <div class="tile-grid tile-grid-pair">
-    {{ t.tile('Full-year target, total NET revenue', m(fy ~ '.target')) }}
-    {{ t.tile('New-customer NET revenue to date, month one', m(ytd ~ '.m1_net'), delta_between(ytd ~ '.m1_net', pytd ~ '.m1_net'), 'Same months last year:', m(pytd ~ '.m1_net')) }}
+  <div class="verdict-grid">
+    <div class="verdict-num"><span class="verdict-label">Full-year target, total NET revenue</span>{{ m(fy ~ '.target') }}
+      <span class="verdict-sub">{{ m(fy ~ '.target_growth') }} growth over last year</span></div>
+    <div class="verdict-num"><span class="verdict-label">New-customer revenue, <time datetime="{{ report.ytd_iso }}">{{ report.ytd_label }}</time></span>{{ m(ytd ~ '.m1_net') }}
+      <span class="verdict-sub">{{ delta_between(ytd ~ '.m1_net', pytd ~ '.m1_net') }} vs the same months last year</span></div>
   </div>
   {{ p.pending('pace', pending.pace) }}
   {% else %}
-  <div class="tile-grid">
-    {{ t.tile('Full-year target', m(fy ~ '.target'), None, 'Last year, total NET revenue:', m(ids.pfy ~ '.total_net')) }}
-    {{ t.tile('Total NET revenue to date', m(ytd ~ '.total_net'), delta_between(ytd ~ '.total_net', pytd ~ '.total_net'), 'Same months last year:', m(pytd ~ '.total_net')) }}
-    {{ t.tile('Still needed this year', m(fy ~ '.still_needed'), None, 'Per remaining month:', m(fy ~ '.required_monthly')) }}
-    {{ t.tile('Forecast at current run rate', m(fy ~ '.forecast_at_run_rate'), delta_between(fy ~ '.forecast_at_run_rate', ids.pfy ~ '.total_net'), 'Monthly run rate, last four months:', m(ytd ~ '.total_run_rate')) }}
-    {{ t.tile('Gap to target at run rate', m(fy ~ '.gap_at_run_rate'), None, 'The same remaining months last year produced:', m(ids.pfy ~ '.total_remaining_months')) }}
+  <div class="verdict-grid">
+    <div class="verdict-num"><span class="verdict-label">Full-year target</span>{{ m(fy ~ '.target') }}
+      <span class="verdict-sub">{{ m(fy ~ '.target_growth') }} over last year’s {{ m(pfy ~ '.total_net') }}</span></div>
+    <div class="verdict-num"><span class="verdict-label">Booked, <time datetime="{{ report.ytd_iso }}">{{ report.ytd_label }}</time></span>{{ m(ytd ~ '.total_net') }}
+      <span class="verdict-sub">{{ delta_between(ytd ~ '.total_net', pytd ~ '.total_net') }} vs the same months last year ({{ m(pytd ~ '.total_net') }})</span></div>
+    <div class="verdict-num"><span class="verdict-label">Full-year forecast at today’s run rate</span>{{ m(fy ~ '.forecast_at_run_rate') }}
+      <span class="verdict-sub">{% if report.pace_status == 'behind' %}{{ m(fy ~ '.gap_at_run_rate') }} short of the target{% else %}clears the target by {{ m(fy ~ '.gap_at_run_rate') }}{% endif %}; run rate {{ m(ytd ~ '.total_run_rate') }} a month</span></div>
+    <div class="verdict-num"><span class="verdict-label">Still needed this year</span>{{ m(fy ~ '.still_needed') }}
+      <span class="verdict-sub">{{ m(fy ~ '.required_monthly') }} per remaining month; the same months last year produced {{ m(pfy ~ '.total_remaining_months') }} in total</span></div>
+  </div>
+  <div class="pace" role="img" aria-label="Pace bar: revenue booked to date, forecast and last year as shares of the target">
+    <div class="pace-track">
+      <div class="pace-fill" style="width: {{ pace_bar.ytd }}%"></div>
+      <div class="pace-marker pace-lastyear" style="left: {{ pace_bar.last_year }}%"><span>Last year’s total</span></div>
+      <div class="pace-marker pace-forecast" style="left: {{ pace_bar.forecast }}%"><span>Forecast</span></div>
+    </div>
+    <div class="pace-legend"><span>Booked to date ({{ m(ytd ~ '.total_net') }})</span><span class="pace-target">Target {{ m(fy ~ '.target') }}</span></div>
   </div>
   {% endif %}
-  <div class="callout">{{ c(fy ~ '.on_track') }}</div>
-
-  {{ narrative.section('are-we-spending-wisely') }}
+  <p class="verdict-note">The target is growth in total company NET revenue, all customers. Marketing’s own contribution, the revenue from customers acquired this year, is shown below and is not the target.</p>
 </section>
 
-{# ---- Year-over-year headline ------------------------------------------ #}
-<section class="section" aria-labelledby="yoy-h">
-  <h2 id="yoy-h">Year-over-year headline</h2>
-  <p class="section-explain"><time datetime="{{ report.ytd_iso }}">{{ report.ytd_label }}</time> against <time datetime="{{ report.prior_ytd_iso }}">{{ report.prior_ytd_label }}</time>, both on today's data basis. Every change is relative.</p>
-  <div class="tile-grid">
-    {{ t.tile('Month-one NET revenue', m(ytd ~ '.m1_net'), delta_between(ytd ~ '.m1_net', pytd ~ '.m1_net'), 'Same months last year:', m(pytd ~ '.m1_net')) }}
-    {{ t.tile('New customers', m(ytd ~ '.new_customers'), delta_between(ytd ~ '.new_customers', pytd ~ '.new_customers'), 'Same months last year:', m(pytd ~ '.new_customers')) }}
-    {{ t.tile('Marketing spend', m(ytd ~ '.spend'), delta_between(ytd ~ '.spend', pytd ~ '.spend'), 'Same months last year:', m(pytd ~ '.spend')) }}
-    {{ t.tile('Return per dollar, month one', m(ytd ~ '.return_per_dollar'), delta_between(ytd ~ '.return_per_dollar', pytd ~ '.return_per_dollar'), 'Same months last year:', m(pytd ~ '.return_per_dollar')) }}
+{# ---- 2. Three things ---------------------------------------------------- #}
+{% if narrative.has('the-three-things-to-take-from-this-month') %}
+<section class="section" aria-labelledby="story-h">
+  <div class="section-head">
+    <h2 id="story-h">Three things to know</h2>
+    <span class="section-when"><time datetime="{{ report.month_iso }}">{{ report.month_label }}</time> · open a line for the evidence</span>
   </div>
+  {{ narrative.brief('the-three-things-to-take-from-this-month') }}
+</section>
+{% endif %}
 
-  {% if report.vintage_basis == 'computed' %}
-  {{ b.band_label('Legacy accounts', 'Sage sales history joined to NetSuite') }}
-  <div class="tile-grid">
-    {{ t.tile('Legacy accounts', m('vintage.legacy_accounts'), None, 'Already buying when the Sage reports begin; the band is a floor, not a birth year.') }}
-    {{ t.tile('Their share of active accounts', m('vintage.legacy_share_of_accounts'), None, 'Active accounts in the year:', m('vintage.active_accounts')) }}
-    {{ t.tile('Their share of revenue', m('vintage.legacy_share_of_revenue')) }}
-    {{ t.tile('Average annual NET per legacy account', m('vintage.legacy_avg_annual_net'), None, 'Against an account acquired last year:', m('vintage.newest_avg_annual_net')) }}
+{# ---- 3. This month, with the month picker stepping the row back -------- #}
+<section class="section" aria-labelledby="month-h">
+  <div class="section-head">
+    <h2 id="month-h">Month by month: new customers and what they bought</h2>
+    <span class="section-when">Change is against the month before</span>
   </div>
-  {{ tb.table('vintage_bands', tables.vintage_bands.columns, tables.vintage_bands.rows, total_label='All active accounts') }}
-  <div class="callout">{{ c('vintage.basis_story') }} Accounts dated from Sage: {{ m('vintage.sage_dated_accounts') }}.</div>
-  {% elif 'vintage' in pending %}
-  {{ b.band_label('Legacy accounts', 'refresh pending') }}
-  {{ p.pending('vintage', pending.vintage) }}
+  {{ mp.month_picker(months, active_month, label='Month shown in this row') }}
+  <p class="section-lede" data-month="{{ active_month }}">{{ c(cur ~ '.volume_story') }}</p>
+  {% for sc in scorecard %}
+  <div class="kpi-grid" data-month="{{ sc.id }}"{% if sc.id != active_month %} hidden{% endif %}>
+    {% set prev_t = {'iso': sc.prev_id, 'label': sc.prev_label} %}
+    {{ k.kpi('New customers', m(sc.pid ~ '.new_customers'),
+             delta_between(sc.pid ~ '.new_customers', sc.prev ~ '.new_customers') if sc.prev else None,
+             'vs', prev_t, spark(sparks.new_customers, sc.index)) }}
+    {{ k.kpi('First-month revenue from them', m(sc.pid ~ '.m1_net'),
+             delta_between(sc.pid ~ '.m1_net', sc.prev ~ '.m1_net') if sc.prev else None,
+             'vs', prev_t, spark(sparks.m1_net, sc.index)) }}
+    {{ k.kpi('Average first order', m(sc.pid ~ '.avg_first_order'),
+             delta_between(sc.pid ~ '.avg_first_order', sc.prev ~ '.avg_first_order') if sc.prev else None,
+             'vs', prev_t, spark(sparks.avg_first_order, sc.index)) }}
+    {{ k.kpi('Marketing spend in the month', m(sc.pid ~ '.spend_true') if sc.has_spend else None, None,
+             'true operating basis', None, spark(sparks.spend_true, sc.index)) }}
+    {{ k.kpi('First-month revenue per dollar of spend', m(sc.pid ~ '.m1_return_per_dollar') if sc.has_spend else None, None,
+             'repeat orders arrive later and are not in this figure', None, spark(sparks.m1_return_per_dollar, sc.index)) }}
+  </div>
+  {% endfor %}
+  <p class="picker-note">Pick a month to step this row back through the last twelve; every other figure on the page is for <time datetime="{{ report.month_iso }}">{{ report.month_label }}</time>. First-month revenue is what new customers spent in the month they were created: a floor, not an estimate.</p>
+</section>
+
+{# ---- 4. Year to date ---------------------------------------------------- #}
+<section class="section" aria-labelledby="ytd-h">
+  <div class="section-head">
+    <h2 id="ytd-h">Year to date against the same months last year</h2>
+    <span class="section-when"><time datetime="{{ report.ytd_iso }}">{{ report.ytd_label }}</time> vs <time datetime="{{ report.prior_ytd_iso }}">{{ report.prior_ytd_label }}</time></span>
+  </div>
+  <div class="kpi-grid kpi-grid-5">
+    {% if 'pace' not in pending %}
+    {{ k.kpi('Total NET revenue, all customers', m(ytd ~ '.total_net'), delta_between(ytd ~ '.total_net', pytd ~ '.total_net'), 'last year ' ~ m(pytd ~ '.total_net'), featured=True) }}
+    {% endif %}
+    {{ k.kpi('New customers', m(ytd ~ '.new_customers'), delta_between(ytd ~ '.new_customers', pytd ~ '.new_customers'), 'last year ' ~ m(pytd ~ '.new_customers')) }}
+    {{ k.kpi('First-month revenue from them', m(ytd ~ '.m1_net'), delta_between(ytd ~ '.m1_net', pytd ~ '.m1_net'), 'last year ' ~ m(pytd ~ '.m1_net')) }}
+    {{ k.kpi('Marketing spend', m(ytd ~ '.spend'), delta_between(ytd ~ '.spend', pytd ~ '.spend'), 'last year ' ~ m(pytd ~ '.spend')) }}
+    {{ k.kpi('First-month revenue per dollar of spend', m(ytd ~ '.return_per_dollar'), delta_between(ytd ~ '.return_per_dollar', pytd ~ '.return_per_dollar'), 'last year ' ~ m(pytd ~ '.return_per_dollar')) }}
+  </div>
+  <p class="section-note">Counting the repeat orders these customers have placed since, the year’s cohorts have returned {{ m(ytd ~ '.roas_to_date') }} per dollar of spend so far ({{ m(ytd ~ '.roas_maturity') }}), against {{ m(ytd ~ '.roas_m1') }} on first-month revenue alone. Repeat orders are {{ m(ytd ~ '.repeat_share') }} of what these customers have produced.</p>
+</section>
+
+{# ---- 5. Trend ----------------------------------------------------------- #}
+<section class="section" aria-labelledby="trend-h">
+  <div class="section-head">
+    <h2 id="trend-h">Trend</h2>
+    <span class="section-when">Yellow marks <time datetime="{{ report.month_iso }}">{{ report.month_label }}</time></span>
+  </div>
+  <div class="three-col">
+    {% if 'pace' not in pending %}
+    {{ ch.chart('total_net_yoy', charts.total_net_yoy, 'Total NET revenue by month, this year vs last') }}
+    {% endif %}
+    {{ ch.chart('new_customers_12m', charts.new_customers_12m, 'New customers per month, last twelve') }}
+    {{ ch.chart('m1_net_12m', charts.m1_net_12m, 'First-month revenue per cohort month, last twelve') }}
+  </div>
+</section>
+
+{# ---- 6. Where growth comes from --------------------------------------- #}
+<section class="section" aria-labelledby="sources-h">
+  <div class="section-head">
+    <h2 id="sources-h">Where new customers come from, and who carries the revenue</h2>
+    <span class="section-when">Sources: <time datetime="{{ report.r12_iso }}">{{ report.r12_label }}</time> · Accounts: last full year</span>
+  </div>
+  <div class="two-col">
+    <div>
+      {% if 'sources' in pending %}
+      {{ p.pending('sources', pending.sources) }}
+      {% else %}
+      {{ ch.chart('sources_customers', charts.sources_customers, 'New customers by first recorded source', tall=True) }}
+      <div class="kpi-grid">
+        {{ k.kpi('No source recorded', m('r12.sources.untracked_share'), None, m('r12.sources.untracked_customers') ~ ' of ' ~ m('r12.sources.customers') ~ ' new customers', featured=True) }}
+        {{ k.kpi('Largest tracked source', m('r12.sources.top_channel'), None, m('r12.sources.top_share') ~ ' of new customers') }}
+      </div>
+      <p class="section-note">{{ c('r12.sources_story') }}</p>
+      {% endif %}
+    </div>
+    <div>
+      {% if report.vintage_basis == 'computed' %}
+      <div class="chart-title">Share of last year’s NET revenue by when the account was acquired</div>
+      <div class="stack">
+        <div class="stack-bar" role="img" aria-label="Share of revenue by acquisition year">
+          {% for seg in vintage_bar %}
+          <div class="stack-seg{% if seg.legacy %} legacy{% endif %}" style="width: {{ seg.width }}%">{% if seg.width >= 9 %}{{ m('vintage.band.' ~ seg.key ~ '.label') }}{% endif %}</div>
+          {% endfor %}
+        </div>
+        <ul class="stack-legend">
+          {% for seg in vintage_bar %}
+          <li{% if seg.legacy %} class="legacy"{% endif %}>{{ m('vintage.band.' ~ seg.key ~ '.label') }} {{ m('vintage.band.' ~ seg.key ~ '.share_of_revenue') }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="kpi-grid">
+        {{ k.kpi('Legacy accounts’ share of revenue', m('vintage.legacy_share_of_revenue'), None, 'from ' ~ m('vintage.legacy_share_of_accounts') ~ ' of active accounts', featured=True) }}
+        {{ k.kpi('Annual revenue per legacy account', m('vintage.legacy_avg_annual_net'), None, 'an account acquired last year: ' ~ m('vintage.newest_avg_annual_net')) }}
+      </div>
+      {% elif 'vintage' in pending %}
+      {{ p.pending('vintage', pending.vintage) }}
+      {% else %}
+      <div class="kpi-grid">
+        {{ k.kpi('Legacy accounts’ share of revenue', m('vintage.pre2018_share_of_revenue'), None, 'from ' ~ m('vintage.pre2018_share_of_accounts') ~ ' of active accounts', featured=True) }}
+        {{ k.kpi('Annual revenue per legacy account', m('vintage.pre2018_avg_annual_net'), None, 'an account acquired last year: ' ~ m('vintage.band_2025_avg_annual_net')) }}
+      </div>
+      <p class="section-note">{{ c('vintage.basis_story') }}</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{# ---- 7. Spend against plan -------------------------------------------- #}
+<section class="section" aria-labelledby="spend-h">
+  <div class="section-head">
+    <h2 id="spend-h">Marketing spend against the approved plan</h2>
+    <span class="section-when"><time datetime="{{ report.ytd_iso }}">{{ report.ytd_label }}</time></span>
+  </div>
+  {% if 'budget' in pending %}
+  {{ p.pending('budget', pending.budget) }}
   {% else %}
-  {{ b.band_label('Legacy accounts', 'published basis; refresh pending') }}
-  <div class="tile-grid">
-    {{ t.tile('Legacy accounts', m('vintage.pre2018_accounts'), None, 'Acquired before the NetSuite migration, on the published Sage created-date basis.') }}
-    {{ t.tile('Their share of active accounts', m('vintage.pre2018_share_of_accounts'), None, 'Active accounts in the year:', m('vintage.active_accounts')) }}
-    {{ t.tile('Their share of revenue', m('vintage.pre2018_share_of_revenue')) }}
-    {{ t.tile('Average annual NET per legacy account', m('vintage.pre2018_avg_annual_net'), None, 'Against an account acquired last year:', m('vintage.band_2025_avg_annual_net')) }}
+  <div class="kpi-grid">
+    {{ k.kpi('Spent to date', m(ytd ~ '.spend'), None, c(B ~ '.vs_plan_story'), featured=True) }}
+    {{ k.kpi('Plan to date', m(B ~ '.ytd_effective'), None, 'approved lines, less lines the business cancelled') }}
+    {{ k.kpi('Approved for the year', m(B ~ '.annual_approved'), None, 'effective ' ~ m(B ~ '.annual_effective') ~ ' after ' ~ m(B ~ '.released_by_cancellation') ~ ' released by cancellation') }}
+    {{ k.kpi('Cost per new customer to date', m(ytd ~ '.cost_per_customer'), delta_between(ytd ~ '.cost_per_customer', pytd ~ '.cost_per_customer'), 'last year ' ~ m(pytd ~ '.cost_per_customer')) }}
   </div>
-  <div class="callout">{{ c('vintage.basis_story') }}</div>
+  <p class="section-note">Spend to date is {{ m(ytd ~ '.spend_share_of_revenue') }} of the first-month revenue it produced; lower is better.</p>
+  <details class="appendix">
+    <summary>Budget versus actual, line by line</summary>
+    <div class="appendix-body">
+      <p class="section-note">Actuals as posted in the ledger. Highlighted rows have postings but no approved budget line; every dollar of actual spend appears.</p>
+      {{ tb.table('budget_vs_actual', tables.budget_vs_actual.columns, tables.budget_vs_actual.rows, total_label='Total marketing') }}
+    </div>
+  </details>
   {% endif %}
-
-  {{ narrative.section('year-over-year-headline') }}
 </section>
 
-{# ---- Are we connecting with people online? ---------------------------- #}
-<section class="section" aria-labelledby="online-h">
-  <h2 id="online-h">Are we connecting with people online?</h2>
-  <p class="section-explain">Indirect indicators of brand health: how many people see us, click through, and engage. Three windows so a single month cannot masquerade as a trend. Rates carry their denominators.</p>
-  {% if 'online' in pending %}
-  {{ p.pending('online', pending.online) }}
-  {% else %}
-  {{ tb.table('online', tables.online.columns, tables.online.rows) }}
-  {% endif %}
-  {{ narrative.section('are-we-connecting-with-people-online') }}
+{# ---- 8. Decisions ------------------------------------------------------ #}
+<section class="section" aria-labelledby="decide-h">
+  <h2 id="decide-h">What needs a decision</h2>
+  <div class="decision-list">
+    {% if 'asks' in pending %}
+    {{ p.pending('asks', pending.asks) }}
+    {% else %}
+    <div class="decision">
+      <div class="decision-kicker">Approve</div>
+      <div class="decision-body">
+        <p>A {{ m(A ~ '.total') }} reallocation inside the approved plan for {{ m(A ~ '.period') }}, funded from the {{ m(B ~ '.released_by_cancellation') }} the business released this year. No new money. Prices include the agency’s {{ m(A ~ '.agency_rate') }} fee on media.</p>
+        {{ tb.table('asks', tables.asks.columns[:2], tables.asks.rows, total_label='Total') }}
+      </div>
+    </div>
+    {% endif %}
+    {% if 'pace' not in pending and 'budget' not in pending %}
+    <div class="decision decision-know">
+      <div class="decision-kicker">Know</div>
+      <div class="decision-body">
+        <p>{{ c(fy ~ '.on_track') }} Closing the {{ m(fy ~ '.gap_at_run_rate') }} gap through new-customer acquisition alone would take about {{ m(fy ~ '.spend_to_close_at_marketing_return') }} of additional media at this year’s return per dollar, or {{ m(fy ~ '.spend_to_close_conservative') }} at a cautious one, against {{ m(fy ~ '.available_within_plan') }} available inside the plan. The gap is a conversation about the existing customer base, which carries most of the revenue, not a marketing budget ask.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
 </section>
 
-{# ---- What needs attention -------------------------------------------- #}
+{# ---- 9. Watch list ------------------------------------------------------ #}
 <section class="section" aria-labelledby="attention-h">
-  <h2 id="attention-h">What needs attention</h2>
-  <p class="section-explain">Red is urgent. Amber is monitor. Green is working well. Blue is a change we made whose result is still pending.</p>
-  <div class="flag-list">
+  <div class="section-head">
+    <h2 id="attention-h">Watch list</h2>
+    <span class="section-when">Red: act. Amber: monitor. Blue: changed, result pending. Green: working.</span>
+  </div>
+  <div class="flag-list flag-list-tight">
     {% for flag in flags %}
     {{ f.flag_row(flag.severity, flag.title, flag.body) }}
     {% endfor %}
   </div>
-  {{ narrative.section('what-needs-attention') }}
 </section>
 
-{# ---- What changed in how we count ------------------------------------- #}
-{% if narrative.has('what-changed-in-how-we-count') or narrative.not_carried %}
-<section class="section" aria-labelledby="changes-h">
-  <h2 id="changes-h">What changed in how we count</h2>
-  {{ narrative.section('what-changed-in-how-we-count') }}
-  {% if narrative.not_carried %}
-  {{ b.band_label('Not carried forward from the previous build', 'retired findings, with the reason') }}
-  {{ narrative.not_carried_forward() }}
+{# ---- 10. Twelve-month record ------------------------------------------- #}
+<section class="section record" aria-labelledby="record-h">
+  <div class="section-head">
+    <h2 id="record-h">Twelve-month record</h2>
+    <span class="section-when">As published. Closed months are frozen and do not move.</span>
+  </div>
+  {{ tb.table('record_12m', tables.record_12m.columns, tables.record_12m.rows) }}
+  <p class="section-note">Marketing spend is on the true operating basis (credits pushed back to the month they belong to; prior-year items excluded). A dash means the figure does not exist for that month.</p>
+</section>
+
+{# ---- 11. Behind the numbers -------------------------------------------- #}
+<section class="section" aria-labelledby="behind-h">
+  <div class="section-head">
+    <h2 id="behind-h">Behind the numbers</h2>
+    <span class="section-when">Supporting detail, for questions. Nothing here changes the story above.</span>
+  </div>
+
+  <details class="appendix">
+    <summary>The month’s story in full</summary>
+    <div class="appendix-body">
+      {{ b.band_label('Are we growing?') }}
+      {{ narrative.section('are-we-growing') }}
+      {{ b.band_label('Where are customers coming from?') }}
+      {{ narrative.section('where-are-customers-coming-from') }}
+      {{ b.band_label('Are we spending wisely?') }}
+      {{ narrative.section('are-we-spending-wisely') }}
+      {{ b.band_label('Year over year') }}
+      {{ narrative.section('year-over-year-headline') }}
+      {{ b.band_label('What needs attention') }}
+      {{ narrative.section('what-needs-attention') }}
+    </div>
+  </details>
+
+  <details class="appendix">
+    <summary>First ninety days of the latest closed cohort</summary>
+    <div class="appendix-body">
+      {% if 'm13_quality' in pending %}
+      {{ p.pending('m13_quality', pending.m13_quality) }}
+      {% else %}
+      <p class="section-note">The {{ term('first90') }} window is reported only once every customer in the cohort has had ninety days. Latest closed cohort: {{ m('m13.latest.cohort') }}.</p>
+      <div class="kpi-grid">
+        {{ k.kpi('Customers in cohort', m('m13.latest.customers')) }}
+        {{ k.kpi('First-month revenue', m('m13.latest.m1_net')) }}
+        {{ k.kpi('First-ninety-days revenue', m('m13.latest.first90_net')) }}
+        {{ k.kpi('Multiple of month one', m('m13.latest.multiple'), None, 'above one means customers came back') }}
+      </div>
+      {% endif %}
+    </div>
+  </details>
+
+  <details class="appendix">
+    <summary>Online reach and engagement: this month against three and six months</summary>
+    <div class="appendix-body">
+      <p class="section-note">Indirect indicators of brand health, not revenue. Three windows so a single month cannot masquerade as a trend. Platform-reported spend is shown for context and is never treated as revenue.</p>
+      {% if 'online' in pending %}
+      {{ p.pending('online', pending.online) }}
+      {% else %}
+      {{ tb.table('online', tables.online.columns, tables.online.rows) }}
+      {% endif %}
+      {{ narrative.section('are-we-connecting-with-people-online') }}
+    </div>
+  </details>
+
+  {% if report.vintage_basis == 'computed' %}
+  <details class="appendix">
+    <summary>Legacy accounts by acquisition year</summary>
+    <div class="appendix-body">
+      {{ tb.table('vintage_bands', tables.vintage_bands.columns, tables.vintage_bands.rows, total_label='All active accounts') }}
+      <p class="section-note">{{ c('vintage.basis_story') }} Accounts dated from Sage: {{ m('vintage.sage_dated_accounts') }} of {{ m('vintage.active_accounts') }} active accounts; legacy accounts: {{ m('vintage.legacy_accounts') }}.</p>
+    </div>
+  </details>
+  {% endif %}
+
+  {% if narrative.has('what-changed-in-how-we-count') or narrative.not_carried %}
+  <details class="appendix">
+    <summary>How the numbers are counted, and what changed</summary>
+    <div class="appendix-body">
+      {{ narrative.section('what-changed-in-how-we-count') }}
+      {% if narrative.not_carried %}
+      {{ b.band_label('Not carried forward from the previous build', 'retired findings, with the reason') }}
+      {{ narrative.not_carried_forward() }}
+      {% endif %}
+    </div>
+  </details>
   {% endif %}
 </section>
-{% endif %}
 
 {% endblock %}

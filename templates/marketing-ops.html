@@ -155,6 +155,9 @@
   {{ b.band_label('Budget versus actual, by ledger account', 'total computed from the rows') }}
   {{ tb.table('budget_vs_actual', tables.budget_vs_actual.columns, tables.budget_vs_actual.rows, total_label='Total marketing') }}
 
+  {{ b.band_label('Twelve-month record', 'every month as published; the executive scorecard steps through the same rows') }}
+  <div class="record">{{ tb.table('record_12m', tables.record_12m.columns, tables.record_12m.rows) }}</div>
+
   {{ b.band_label('Year on year, by ledger account', 'same months, both years') }}
   {% if 'yoy_channel' in pending %}
   {{ p.pending('yoy_channel', pending.yoy_channel) }}

@@ -174,3 +174,36 @@ Do not place the logo on Aqua, only on Deep Blue or white.
 - No percentage-point differences, anywhere. That is a methodology rule,
   but it shapes the design: a percentage tile shows a range or a relative
   change, never "+10 pts".
+
+
+## The executive brief: layout rules (2026-09-06)
+
+The executive page is read by people who will not read. It was rebuilt as
+a one-screen brief; these are the rules it follows and the reasons.
+
+- **One verdict first.** The dark band answers the only question that
+  matters (are we on target?) with a status pill, one sentence, four
+  figures and a pace bar. Nothing above it but the title.
+- **Headlines, then evidence.** The month's story is three complete
+  sentences; each opens to its paragraphs. `narrative.brief()` renders
+  this from the `###` headings in the content file (see `content/README.md`).
+- **A tile is a label, a figure, a comparison and a trend.** `kpi()` in
+  `templates/components/kpi.html`. No italic explanation inside the tile;
+  if a figure needs a sentence it belongs in the appendix. Every comparison
+  names its basis ("vs July 2026", "last year $13,457,901").
+- **Sparklines are cues, not figures.** Drawn server-side as SVG
+  (`src/render/sparkline.py`) from the same Decimals as the record table;
+  no axis, no text, so nothing in them can go stale.
+- **The month picker steps the scorecard only.** The verdict, the
+  year-to-date row and the charts are for the reporting month; the
+  month-by-month row carries `data-month` blocks for the trailing twelve
+  and the picker sits inside that section, not at the top of the page.
+- **Every month is on the record.** The twelve-month record table lists
+  the same figures for every month as published, so any number on any
+  past deck can be checked against the page without a request.
+- **Detail is one click away, never gone.** Tables with more than a handful
+  of rows, cohort quality, online indicators, legacy detail and the notes
+  on how we count sit in closed `<details class="appendix">` blocks. They
+  are in the DOM, so the validator still traces every figure in them.
+- **Quieter type.** Only the page title and band labels are uppercase;
+  section headings are sentence case. Status colours stay off-palette.

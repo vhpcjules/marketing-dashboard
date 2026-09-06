@@ -57,6 +57,7 @@ CONTENT = REPO_ROOT / "content"
 _FRONT = re.compile(r"\A---[ \t]*\n(.*?)\n---[ \t]*\n", re.S)
 _H1 = re.compile(r"^\s*<h1[^>]*>.*?</h1>\s*", re.S)
 _H2_SPLIT = re.compile(r"<h2[^>]*>(.*?)</h2>", re.S)
+_H3_SPLIT = re.compile(r"<h3>(.*?)</h3>", re.S)
 _TAGS = re.compile(r"<[^>]+>")
 _ASSERT = re.compile(r"^\s*(positive|negative|nonzero|between|at_least|at_most)\s*(?:\(\s*([^)]*)\))?\s*$")
 
@@ -328,6 +329,29 @@ class RenderedNarrative:
         if slug not in self.sections:
             return Markup("")
         return Markup(f'<div class="narrative" data-narrative="{escape(slug)}">{self.sections[slug][1]}</div>')
+
+    def brief(self, slug: str) -> Markup:
+        """The same section as headlines the reader can expand.
+
+        Each `###` heading becomes the summary line of a <details> block and
+        the paragraphs under it become the body, closed by default. The
+        reader who will not read gets the three sentences; the reader who
+        asks "why?" opens one. Prose before the first `###` stays visible as
+        the lead. The figures inside keep their data-metric spans, so a
+        collapsed paragraph is exactly as traceable as an open one.
+        """
+        self._placed.add(slug)
+        if slug not in self.sections:
+            return Markup("")
+        parts = _H3_SPLIT.split(self.sections[slug][1])
+        lead = parts[0].strip()
+        items = []
+        for i in range(1, len(parts), 2):
+            heading, body = parts[i].strip(), parts[i + 1].strip()
+            items.append(f'<details class="brief"><summary>{heading}</summary>'
+                         f'<div class="brief-body">{body}</div></details>')
+        return Markup(f'<div class="narrative narrative-brief" data-narrative="{escape(slug)}">'
+                      f'{lead}{"".join(items)}</div>')
 
     def intro(self) -> Markup:
         self._placed.add("__intro__")

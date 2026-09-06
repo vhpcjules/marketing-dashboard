@@ -1,6 +1,8 @@
-# Direct deploy to Cloudflare Pages, for when the Pages Git integration is
-# not connected to this repository (it was connected to the v1 repository;
-# this one began on 2026-09-04 and Pages never saw it).
+# Direct deploy to Cloudflare Pages, a fallback for when the Pages Git
+# integration is not connected to this repository. Since 2026-09-06 the
+# project IS connected (production branch main), so this workflow normally
+# just builds and gates, then skips the upload because the secrets are not
+# set. Add the secrets only if the Git integration has to be turned off.
 #
 # Runs on push to main only, AFTER the same build-and-gate the Pages build
 # command would run. If the gate fails nothing is uploaded. If the two
@@ -10,7 +12,8 @@
 # Secrets (repository settings -> Secrets and variables -> Actions):
 #   CLOUDFLARE_API_TOKEN   an API token with the "Cloudflare Pages: Edit" permission
 #   CLOUDFLARE_ACCOUNT_ID  the account that owns the Pages project
-# The project name below is the existing project (marketing-ca5.pages.dev,
+# The project name below is the existing Pages project, named "marketing"
+# in the Cloudflare dashboard (it serves marketing-ca5.pages.dev and
 # dashboards.versatile.net); deploying to it keeps the custom domain and the
 # Access policy.
 name: deploy
@@ -33,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      PAGES_PROJECT: marketing-ca5
+      PAGES_PROJECT: marketing
     steps:
       - uses: actions/checkout@v4
 

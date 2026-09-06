@@ -84,6 +84,17 @@ for fails the build: prose that was written is shown or deliberately removed,
 never lost. The slots each template offers are listed in its header comment.
 The `#` title line is dropped (the page shell carries the title).
 
+**Headlines that expand.** A template may place a section with
+`narrative.brief(slug)` instead of `section(slug)`. The executive page does
+this for "The three things to take from this month": each `###` heading
+becomes a closed line the reader can open, and the paragraphs under it are
+the evidence. Write those `###` headings as complete sentences that stand on
+their own ("August rebounded; July was a dip, not a trend"), because for
+most of the room the heading is all that will be read. Prose before the first
+`###` stays visible as the lead. Figures inside the body keep their
+`data-metric` spans, so a collapsed paragraph is exactly as traceable as an
+open one.
+
 ## Not carried forward
 
 ```yaml

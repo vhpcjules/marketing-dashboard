@@ -23,6 +23,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from decimal import Decimal, ROUND_HALF_UP
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
 from .data.cohorts import Cohort, CohortSet
@@ -43,6 +44,7 @@ RUN_RATE_MONTHS = 4          # forecast run rate = mean M1 of the last four mont
 CONSERVATIVE_RETURN = Decimal("2.5")   # $ back per $1 assumed for the cautious version of the ask
 NOISE_Z = Decimal("1.96")    # two-proportion test: below this the rep spread is noise
 _MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+_ASSETS = Path(__file__).resolve().parents[1] / "assets"
 
 SRC_COHORTS = "netsuite:cohorts_m1"
 SRC_SPEND = "netsuite:marketing_spend"
@@ -177,14 +179,30 @@ class Core:
     charts: dict[str, dict] = field(default_factory=dict)
     tables: dict[str, dict] = field(default_factory=dict)
     report: dict[str, str] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)      # layout data that is not a figure (bar widths, sparkline series)
     chart_spec: Callable[..., dict] = field(default=lambda *a, **k: {}, repr=False)
 
-    def base_context(self, page: dict, data_sources: list[str], inp: "Inputs") -> dict:
+    def base_context(self, page: dict, data_sources: list[str], inp: "Inputs", *,
+                     month_picker: bool = False) -> dict:
+        """The context every page shares.
+
+        `month_picker=True` lists the trailing twelve months so the page's
+        `data-month` blocks (the executive scorecard) can be stepped back to
+        any published month. Pages without such blocks pass False and the
+        shell hides the picker rather than showing pills that do nothing.
+        Flags carry an optional `pages` tuple; a flag for the operations
+        audience never reaches the executive page.
+        """
+        slug = page["slug"]
+        rank = {"red": 0, "amber": 1, "blue": 2, "green": 3}
+        flags = [f for f in self.flags if f.get("pages") is None or slug in f["pages"]]
+        flags.sort(key=lambda f: rank.get(f["severity"], 9))
         return {
             "page": page,
             "ids": self.ids,
-            "months": [{"id": self.rm, "label": _short(self.rm)}],
+            "months": [{"id": m, "label": _short(m)} for m in self.window] if month_picker else [],
             "active_month": self.rm,
+            "logo_available": (_ASSETS / "logo" / "vhpc-white.png").exists(),
             "prepared": {"iso": inp.as_of.isoformat(),
                          "label": f"{month_label(inp.as_of.isoformat()[:7]).split()[0]} {inp.as_of.day}, {inp.as_of.year}"},
             "data_sources": data_sources,
@@ -192,8 +210,9 @@ class Core:
             "report": dict(self.report),
             "charts": dict(self.charts),
             "tables": dict(self.tables),
-            "flags": list(self.flags),
+            "flags": [{k: v for k, v in f.items() if k != "pages"} for f in flags],
             "pending": dict(self.pending),
+            **self.extra,
         }
 
 
@@ -298,6 +317,8 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
         problems.append(f"true-operating spend {ytd_label} is not positive")
 
     # -- the budget as a plan --------------------------------------------------
+    if not inp.spend.budget["accounts"]:
+        pending["budget"] = "The approved budget file for this year carries no account lines; plan figures are pending."
     if inp.spend.budget["accounts"]:
         approved = inp.spend.budget_window(f"{y}-01", f"{y}-12", honour_cancellations=False)
         effective = inp.spend.budget_window(f"{y}-01", f"{y}-12", honour_cancellations=True)
@@ -345,6 +366,7 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
                            f"{_range_label(pfy_months[0], rm)}; not yet ingested for {len(missing_rt)} month(s) "
                            f"({missing_rt[0]}..{missing_rt[-1]}). Run 'python -m src.ingest write revenue_total'. "
                            f"Nothing is estimated in its place.")
+        core.report["pace_status"] = "pending"
         r.claim(f"{FY}.pace_story", lambda: True,
                 render=lambda _: ("Pace against the total-revenue target is not yet measurable in this build: "
                                   "monthly total NET revenue has not been ingested. New-customer revenue is shown "
@@ -398,6 +420,18 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
                       note="positive means new money is needed beyond the approved plan")
                 r.cur(f"{FY}.shortfall_after_available_conservative", to_close_cons - available, fy_label,
                       higher_is_better=False)
+        core.report["pace_status"] = "behind" if not pace.on_track else "on_track"
+        # Layout data for the pace bar: shares of the target, whole percent, capped at the bar.
+        def _share(x: Decimal) -> int:
+            return int(min(Decimal(100), x / target_amount * 100).quantize(Decimal(1), rounding=ROUND_HALF_UP))
+        core.extra["pace_bar"] = {"ytd": _share(ytd_total), "forecast": _share(pace.forecast_at_run_rate.amount),
+                                  "last_year": _share(pfy_total),
+                                  "elapsed": int((Decimal(elapsed) / 12 * 100).quantize(Decimal(1)))}
+        core.charts["total_net_yoy"] = chart_spec(
+            "bar", [_MON[i] for i in range(elapsed)],
+            [{"label": fy_label, "values": [_d(rt[m]["net_revenue"]) for m in ytd_months]},
+             {"label": pfy_label, "values": [_d(rt[m]["net_revenue"]) for m in prior_ytd_months]}],
+            y_format="usd")
         behind = lambda: not pace.on_track  # noqa: E731
         r.claim(f"{FY}.pace_story", behind,
                 render=lambda b: ("Behind the total-revenue target at the current run rate: the remaining months "
@@ -481,6 +515,73 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
     else:
         problems.append(f"cohorts_m1 missing for part of the twelve-month window {window[0]}..{window[-1]}")
 
+    # -- the trailing twelve, month by month --------------------------------------
+    # The month picker's scorecard and the twelve-month record table. Every
+    # month in the window carries the same figures the reporting month does,
+    # so a reader can step back to any published month and see the number the
+    # deck carried then. Frozen months never move, so it is the same number.
+    spend_by_month: dict[str, Decimal] = {m: v.amount for m, v in true_monthly.items()}
+    if inp.prior_spend is not None:
+        for m, v in inp.prior_spend.monthly(Basis.TRUE_OPERATING).items():
+            spend_by_month.setdefault(m, v.amount)
+    scorecard: list[dict] = []
+    record_rows: list[dict] = []
+    sparks: dict[str, list[Decimal | None]] = {k: [] for k in
+                                               ("new_customers", "m1_net", "avg_first_order", "m1_return_per_dollar",
+                                                "spend_true", "total_net")}
+    for i, m in enumerate(window):
+        c = inp.cohorts.get(m)
+        if c is None:
+            continue                                   # already recorded as a problem above
+        pid, prev = _pid(m), shift_month(m, -1)
+        for month, p in ((m, pid), (prev, _pid(prev))):
+            cc = inp.cohorts.get(month)
+            if cc is None or r.have(f"{p}.new_customers"):
+                continue
+            r.cnt(f"{p}.new_customers", cc.customers, month)
+            r.cur(f"{p}.m1_net", cc.m1_net, month)
+            r.cur(f"{p}.avg_first_order", cc.m1_net / Decimal(cc.customers), month)
+        spend_m = spend_by_month.get(m)
+        has_spend = spend_m is not None and spend_m > 0
+        if has_spend:
+            if not r.have(f"{pid}.spend_true"):
+                r.cur(f"{pid}.spend_true", spend_m, m, higher_is_better=False, source=SRC_SPEND,
+                      note="true operating basis")
+            if not r.have(f"{pid}.m1_return_per_dollar"):
+                r.rat(f"{pid}.m1_return_per_dollar", c.m1_net / spend_m, m, source="computed:cohorts_m1/marketing_spend")
+        has_total = m in inp.revenue_total
+        if has_total and not r.have(f"{pid}.total_net"):
+            r.cur(f"{pid}.total_net", _d(inp.revenue_total[m]["net_revenue"]), m, source="netsuite:revenue_total")
+        scorecard.append({"id": m, "pid": pid, "index": i, "label": month_label(m),
+                          "prev": _pid(prev) if prev in inp.cohorts else None, "prev_id": prev,
+                          "prev_label": month_label(prev),
+                          "has_spend": has_spend, "has_total": has_total})
+        record_rows.append({"month": _short(m), "customers": f"{pid}.new_customers", "m1": f"{pid}.m1_net",
+                            "avg": f"{pid}.avg_first_order", "spend": f"{pid}.spend_true" if has_spend else None,
+                            "ret": f"{pid}.m1_return_per_dollar" if has_spend else None,
+                            "total": f"{pid}.total_net" if has_total else None,
+                            "status": "warn" if m == rm else None})
+        sparks["new_customers"].append(Decimal(c.customers))
+        sparks["m1_net"].append(c.m1_net)
+        sparks["avg_first_order"].append(c.m1_net / Decimal(c.customers))
+        sparks["m1_return_per_dollar"].append(c.m1_net / spend_m if has_spend else None)
+        sparks["spend_true"].append(spend_m if has_spend else None)
+        sparks["total_net"].append(_d(inp.revenue_total[m]["net_revenue"]) if has_total else None)
+    core.extra["scorecard"] = scorecard
+    core.extra["sparks"] = sparks
+    core.tables["record_12m"] = {
+        "columns": [
+            {"key": "month", "label": "Month", "kind": "time"},
+            {"key": "customers", "label": "New customers", "kind": "metric", "align": "right"},
+            {"key": "m1", "label": "First-month revenue", "kind": "metric", "align": "right"},
+            {"key": "avg", "label": "Average first order", "kind": "metric", "align": "right"},
+            {"key": "spend", "label": "Marketing spend", "kind": "metric", "align": "right"},
+            {"key": "ret", "label": "Return per dollar, first month", "kind": "metric", "align": "right"},
+            {"key": "total", "label": "Total NET revenue", "kind": "metric", "align": "right"},
+        ],
+        "rows": record_rows,
+    }
+
     # -- corrections -----------------------------------------------------------
     C = f"corr{ids['yy']}"
     for c in inp.spend.corrections:
@@ -488,6 +589,8 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
               higher_is_better=False, source="manual:corrections", note=c.get("kind"))
 
     # -- budget asks ------------------------------------------------------------
+    if inp.asks is None or isinstance(inp.asks, MissingManualInput):
+        pending["asks"] = "No budget asks file (data/manual/<year>/budget_asks.json) for this year."
     if inp.asks is not None and not isinstance(inp.asks, MissingManualInput):
         A = f"ask{ids['yy']}"
         a_start, a_end = str(inp.asks["_meta"]["period"]).split("..")
@@ -512,6 +615,17 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
                 total += _d(ask["amount"])
         r.cur(f"{A}.total", total, a_label, source="computed:budget_asks")
         r.pct(f"{A}.agency_rate", Decimal("20"), fy_label, source=f"{SRC_BUDGET}.derived_lines")
+        r.txt(f"{A}.period", a_label, a_label, source="manual:budget_asks")
+        core.tables["asks"] = {
+            "columns": [
+                {"key": "ask", "label": "Ask", "kind": "metric"},
+                {"key": "price", "label": "Price, all-in", "kind": "metric", "align": "right", "total": True},
+                {"key": "basis", "label": "Basis", "kind": "metric"},
+                {"key": "success", "label": "Success measure", "kind": "metric"},
+            ],
+            "rows": [{"ask": f"{A}.{a['id']}.label", "price": f"{A}.{a['id']}.all_in", "basis": f"{A}.{a['id']}.basis",
+                      "success": f"{A}.{a['id']}.success", "status": None} for a in inp.asks["asks"]],
+        }
 
     # -- retention ------------------------------------------------------------
     if inp.retention is not None:
@@ -569,6 +683,10 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
             rows.append({"band": f"vintage.band.{key}.label", "accounts": f"vintage.band.{key}.accounts",
                          "revenue": f"vintage.band.{key}.net_revenue", "share": f"vintage.band.{key}.share_of_revenue",
                          "per_account": f"vintage.band.{key}.per_account", "status": None})
+        core.extra["vintage_bar"] = [
+            {"key": b["band"].replace(" ", "_"), "legacy": b["band"] == LEGACY_BAND,
+             "width": int(_d(b["share_of_revenue_pct"]).quantize(Decimal(1), rounding=ROUND_HALF_UP))}
+            for b in vt["bands"]]
         core.tables["vintage_bands"] = {
             "columns": [
                 {"key": "band", "label": "Acquired", "kind": "metric"},
@@ -687,12 +805,13 @@ def register_core(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict], *,
             r.pct("build.drift_max_move", worst, f"live pull {inp.as_of.isoformat()}", higher_is_better=False,
                   source="computed:freeze.detect_drift", note="largest relative move of any frozen figure")
         core.flags.append({"severity": "amber", "title": "Frozen figures have moved in the ledger",
-                           "body": reg.c("build.drift_story")})
+                           "body": reg.c("build.drift_story"), "pages": ("marketing-ops", "sales")})
     missing_manual = [d.upper() for d, v in inp.manual.items() if isinstance(v, MissingManualInput)]
     if missing_manual:
         core.flags.append({"severity": "amber", "title": "Manual inputs pending",
                            "body": f"{' and '.join(missing_manual)} exports for the month have not been added under "
-                                   f"data/manual; their sections show as pending until they are."})
+                                   f"data/manual; their sections show as pending until they are.",
+                           "pages": ("marketing-ops", "sales")})
     return core
 
 
@@ -801,6 +920,7 @@ def _online_table(r: R, inp: "Inputs", core: Core) -> None:
                                   f"({', '.join(absent)}); see src/ingest/README.md.")
         return
     rows = []
+    readings: dict[str, Decimal] = {}
     for series in _online_series(inp):
         d = series["domain"]
         if rm not in bodies[d]:
@@ -826,6 +946,7 @@ def _online_table(r: R, inp: "Inputs", core: Core) -> None:
             cid = f"online.{series['key']}.read"
             hib = series.get("hib", True)
             if avg6 > 0:
+                readings[series["key"]] = delta(month_v, avg6)
                 r.claim(cid, lambda mv=month_v, av=avg6: delta(mv, av),
                         render=lambda ch, hib=hib: (
                             "In line with its six-month average." if abs(ch) < 10 else
@@ -837,6 +958,20 @@ def _online_table(r: R, inp: "Inputs", core: Core) -> None:
             cid = None
         rows.append({"metric": series["label"], "month": cells.get("month"), "three": cells.get("three"),
                      "six": cells.get("six"), "read": cid, "status": None})
+    # One finding for the executive page: paid reach falling while paid spend holds.
+    paid = {k: readings.get(k) for k in ("fa_impressions", "aw_clicks", "fa_spend", "aw_cost")}
+    if all(v is not None for v in paid.values()):
+        falling = [k for k in ("fa_impressions", "aw_clicks") if paid[k] <= -10]
+        spend_flat = all(abs(paid[k]) < 10 for k in ("fa_spend", "aw_cost"))
+        if falling and spend_flat:
+            whole = lambda x: abs(x.quantize(Decimal("1"), rounding=ROUND_HALF_UP))  # noqa: E731
+            r.claim("online.paid_reach_story", lambda: (paid["fa_impressions"], paid["aw_clicks"]),
+                    assert_fn=lambda t: t[0] <= -10 or t[1] <= -10,
+                    render=lambda t: (f"Meta impressions are {whole(t[0])}% and Google Ads clicks {whole(t[1])}% below "
+                                      f"their six-month averages while platform spend held in line. Each dollar is "
+                                      f"buying less reach than in the spring; detail is on the Marketing Ops page."))
+            core.flags.append({"severity": "amber", "title": "Paid reach is falling on flat spend",
+                               "body": r.reg.c("online.paid_reach_story")})
     core.tables["online"] = {
         "columns": [
             {"key": "metric", "label": "Indicator", "kind": "text"},
@@ -1034,9 +1169,11 @@ def populate_executive(reg: Any, inp: "Inputs", chart_spec: Callable[..., dict],
     core.tables["online"] = {"columns": [], "rows": []}
     _online_table(r, inp, core)
     context = core.base_context(
-        {"title": "Executive dashboard", "slug": "executive",
-         "subtitle": "New customers, marketing return on both bases, and pace against the target. All revenue is NET."},
-        ["NetSuite (SuiteQL via MCP)", "Approved marketing budget (manual transcription)"], inp)
+        {"title": "Executive brief", "slug": "executive",
+         "subtitle": "Where the company stands against the year's target, what marketing is producing, and what "
+                     "needs a decision. All revenue is NET."},
+        ["NetSuite (SuiteQL via MCP)", "Approved marketing budget (manual transcription)",
+         "Supermetrics (Meta, Google Ads, LinkedIn, Instagram, Google Analytics)"], inp, month_picker=True)
     return context, core.problems
 
 
@@ -1254,22 +1391,7 @@ def populate_marketing_ops(reg: Any, inp: "Inputs", chart_spec: Callable[..., di
             "rows": rows,
         }
 
-    # -- budget asks table ----------------------------------------------------------
-    if inp.asks is None or isinstance(inp.asks, MissingManualInput):
-        pending["asks"] = "No budget asks file (data/manual/<year>/budget_asks.json) for this year."
-    else:
-        A = f"ask{ids['yy']}"
-        rows = [{"ask": f"{A}.{a['id']}.label", "price": f"{A}.{a['id']}.all_in", "basis": f"{A}.{a['id']}.basis",
-                 "success": f"{A}.{a['id']}.success", "status": None} for a in inp.asks["asks"]]
-        core.tables["asks"] = {
-            "columns": [
-                {"key": "ask", "label": "Ask", "kind": "metric"},
-                {"key": "price", "label": "Price, all-in", "kind": "metric", "align": "right", "total": True},
-                {"key": "basis", "label": "Basis", "kind": "metric"},
-                {"key": "success", "label": "Success measure", "kind": "metric"},
-            ],
-            "rows": rows,
-        }
+    # (the budget asks table is built in register_core; both pages show it)
 
     context = core.base_context(
         {"title": "Marketing operations", "slug": "marketing-ops",
