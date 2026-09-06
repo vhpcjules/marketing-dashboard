@@ -102,6 +102,22 @@ Below, `2026-08` is the reporting month and `2026-09-05` the as-of date.
 
 ## Cloudflare Pages settings
 
+Two ways to publish; either is enough.
+
+**Git integration.** The Pages project `marketing-ca5` was created against the
+v1 repository. This repository began on 2026-09-04, so until the project is
+reconnected to `vhpcjules/marketing-dashboard` (Pages project -> Settings ->
+Builds & deployments -> Source) no push here reaches Cloudflare. Reconnecting
+keeps the custom domain and the Access policy.
+
+**Direct upload from GitHub Actions.** `.github/workflows/deploy.yml` builds,
+gates and uploads `dist` to the same project on every push to `main`. It needs
+two repository secrets: `CLOUDFLARE_API_TOKEN` (a token with "Cloudflare
+Pages: Edit") and `CLOUDFLARE_ACCOUNT_ID`. Without them the job builds and
+gates but skips the upload with a notice.
+
+Settings for the Git integration, if used:
+
 - Production branch: `main`. Build command: `python3 -m src.build && python3 -m src.validate.gate dist`.
   Output directory: `dist`. Both commands default to today's date, so no
   arguments are needed; the reporting month is the month before the build.
