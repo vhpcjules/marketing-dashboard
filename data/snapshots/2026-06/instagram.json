@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "domain": "instagram",
+    "frozen": false,
+    "period": "2026-06",
+    "pulled_at": "2026-09-06T13:19:07+00:00",
+    "query_hash": "9fcbd070a11679e1",
+    "query_id": "supermetrics:instagram",
+    "row_count": 31,
+    "source": "Supermetrics MCP (data_query -> get_async_query_results); Instagram Insights 17841402384139665"
+  },
+  "days_covered": 30,
+  "engagement_components": {
+    "comments": 7,
+    "likes": 63,
+    "saves": 5,
+    "shares": 2
+  },
+  "engagements": 77,
+  "note": "reach_unique_month is the platform's unique accounts for the month from an undated query; daily reach figures are never summed. profile_views is the platform's 'account-wide content views (reels, posts, stories)', not profile-page visits. Engagement components are per-media counts on the day a post was published; days without a post are NULL, not zero. impressions and follower counts are not available from this source for a closed month.",
+  "profile_views": 22245,
+  "reach_daily_mean": 302,
+  "reach_daily_peak": 408,
+  "reach_unique_month": 3732
+}

@@ -109,8 +109,13 @@ _LINKEDIN_PAGE_METRICS = frozenset(LINKEDIN_PAGE_FIELDS) - {"date"}
 # component-list check (likes + comments + saves + shares = engagements)
 # can hold on the page. Confirm ids with field_discovery(ds_id="IGI") if the
 # API rejects a name; do not guess a substitute.
-INSTAGRAM_FIELDS = ("date", "reach", "impressions", "profile_views", "follower_count",
-                    "likes", "comments", "saved", "shares")
+INSTAGRAM_FIELDS = ("date", "reach", "profile_views", "likes", "comments", "saved", "shares")
+# Instagram, field_discovery 2026-09-06: `impressions` is retired (NULL every
+# day), `follower_count` is "New followers" and only serves the last 30 days,
+# so neither is pulled. `reach` is non-aggregatable (unique accounts per
+# day): the daily rows give a mean and a peak, and the MONTH figure comes
+# from a second, undated query so nobody sums thirty days of uniques.
+INSTAGRAM_REACH_FIELDS = ("reach",)
 
 # Meta Ads.
 META_LEAD_FIELD = "onsite_conversion.lead_grouped"
@@ -203,6 +208,10 @@ def guard_fields(source: Source, fields: Sequence[str]) -> None:
                 "LinkedIn: total_share_impressions cannot be broken down by date; drop the "
                 "date dimension for the share query"
             )
+    if source.ds_id == INSTAGRAM.ds_id:
+        if "impressions" in fs or "follower_count" in fs:
+            raise FieldGuardError("Instagram: impressions is retired and follower_count serves only the last 30 days; "
+                                  "neither can be pulled for a closed month")
     if source.ds_id == META_ADS.ds_id:
         bad = fs & META_FORBIDDEN_FIELDS
         if bad:
@@ -285,6 +294,12 @@ def linkedin_share_spec(month: str) -> QuerySpec:
 def instagram_spec(month: str) -> QuerySpec:
     a, b = _range(month)
     return QuerySpec(INSTAGRAM, INSTAGRAM_FIELDS, a, b, {}, "instagram")
+
+
+def instagram_reach_spec(month: str) -> QuerySpec:
+    """Unique reach for the whole month: undated, one row, never a sum of days."""
+    a, b = _range(month)
+    return QuerySpec(INSTAGRAM, INSTAGRAM_REACH_FIELDS, a, b, {}, "instagram_reach")
 
 
 def meta_ads_spec(month: str) -> QuerySpec:
@@ -372,22 +387,32 @@ class SupermetricsAdapter:
                     query_hash(page_spec.fingerprint() + "+" + share_spec.fingerprint()))
 
     def pull_instagram(self, month: str, *, as_of: date) -> Pull:
-        spec = instagram_spec(month)
+        spec, reach_spec = instagram_spec(month), instagram_reach_spec(month)
         result, days = self._run(spec, month, as_of)
+        reach, _ = self._run(reach_spec, month, as_of)
         _require(result.rows, INSTAGRAM_FIELDS, "instagram")
+        reach_rows = list(reach.rows)
+        if len(reach_rows) != 1:
+            raise SupermetricsError(f"instagram reach: expected one undated row, got {len(reach_rows)}")
         by_date = sorted(result.rows, key=_row_date)
+        daily_reach = [dec(r["reach"], "reach") for r in by_date if r.get("reach") not in (None, "")]
         likes, comments, saves, shares = (_sum(by_date, k) for k in ("likes", "comments", "saved", "shares"))
         body = {
-            "reach": _sum(by_date, "reach"),
-            "impressions": _sum(by_date, "impressions"),
+            "reach_unique_month": dec(reach_rows[0]["reach"], "reach"),
+            "reach_daily_mean": (sum(daily_reach, Decimal(0)) / Decimal(len(daily_reach))).quantize(Decimal("1"))
+            if daily_reach else None,
+            "reach_daily_peak": max(daily_reach) if daily_reach else None,
             "profile_views": _sum(by_date, "profile_views"),
-            # follower_count is a level, not a flow: take the last day's value.
-            "followers_end_of_month": dec(by_date[-1]["follower_count"], "follower_count"),
             "engagement_components": {"likes": likes, "comments": comments, "saves": saves, "shares": shares},
             "engagements": likes + comments + saves + shares,
             "days_covered": days,
+            "note": ("reach_unique_month is the platform's unique accounts for the month from an undated query; "
+                     "daily reach figures are never summed. profile_views is the platform's 'account-wide content "
+                     "views (reels, posts, stories)', not profile-page visits. Engagement components are per-media "
+                     "counts on the day a post was published; days without a post are NULL, not zero. impressions "
+                     "and follower counts are not available from this source for a closed month."),
         }
-        return Pull(jsonable(body), len(result.rows), spec.fingerprint())
+        return Pull(jsonable(body), len(result.rows) + 1, query_hash(spec.fingerprint() + "+" + reach_spec.fingerprint()))
 
     def pull_meta_ads(self, month: str, *, as_of: date) -> Pull:
         spec = meta_ads_spec(month)
@@ -505,7 +530,7 @@ def specs_for(domain: str, month: str) -> list[QuerySpec]:
     if domain == "linkedin":
         return [linkedin_page_spec(month), linkedin_share_spec(month)]
     if domain == "instagram":
-        return [instagram_spec(month)]
+        return [instagram_spec(month), instagram_reach_spec(month)]
     if domain == "meta_ads":
         return [meta_ads_spec(month)]
     if domain == "google_ads":
