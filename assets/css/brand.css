@@ -278,7 +278,7 @@ dfn.term { font-style: inherit; }
 @media print {
   body { background: #fff; font-size: 11pt; color: #000; }
   .internal-banner { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .site-header, .exec-summary { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .site-header, .exec-summary, .verdict, .pace-fill, .stack-seg { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .site-nav, .month-picker { display: none; }
   .section, .tile, .flag-row, .callout { break-inside: avoid; border: 1px solid #bbb; }
   .chart-wrap { height: 240px; }

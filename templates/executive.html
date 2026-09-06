@@ -135,7 +135,7 @@
              delta_between(sc.pid ~ '.avg_first_order', sc.prev ~ '.avg_first_order') if sc.prev else None,
              'vs', prev_t, spark(sparks.avg_first_order, sc.index)) }}
     {{ k.kpi('Marketing spend in the month', m(sc.pid ~ '.spend_true') if sc.has_spend else None, None,
-             'true operating basis', None, spark(sparks.spend_true, sc.index)) }}
+             'ledger spend, credits returned to their month', None, spark(sparks.spend_true, sc.index)) }}
     {{ k.kpi('First-month revenue per dollar of spend', m(sc.pid ~ '.m1_return_per_dollar') if sc.has_spend else None, None,
              'repeat orders arrive later and are not in this figure', None, spark(sparks.m1_return_per_dollar, sc.index)) }}
   </div>
