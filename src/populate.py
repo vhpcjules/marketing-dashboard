@@ -779,6 +779,10 @@ def _online_series(inp: "Inputs") -> list[dict]:
          "get": lambda b: fa(b, "engaged_sessions"), "src": "supermetrics:ga4"},
         {"key": "ga_new_users", "label": "New website users", "domain": "ga4", "kind": "count",
          "get": lambda b: fa(b, "new_users"), "src": "supermetrics:ga4"},
+        {"key": "ig_profile_views", "label": "Instagram content views", "domain": "instagram", "kind": "count",
+         "get": lambda b: fa(b, "profile_views"), "src": "supermetrics:instagram"},
+        {"key": "ig_engagements", "label": "Instagram engagements (likes, comments, saves, shares)",
+         "domain": "instagram", "kind": "count", "get": lambda b: fa(b, "engagements"), "src": "supermetrics:instagram"},
     ]
 
 
@@ -790,16 +794,17 @@ def _online_table(r: R, inp: "Inputs", core: Core) -> None:
     bodies = {"linkedin": inp.linkedin, "meta_ads": inp.meta_ads, "instagram": inp.instagram,
               "google_ads": inp.google_ads, "ga4": inp.ga4}
     six = _window_months(rm, 6)
-    present = {d: [m for m in six if m in bodies[d]] for d in ("linkedin", "meta_ads", "google_ads", "ga4")}
+    present = {d: [m for m in six if m in bodies[d]] for d in ("linkedin", "meta_ads", "google_ads", "ga4", "instagram")}
     absent = [d for d in ("linkedin", "meta_ads", "google_ads", "ga4", "instagram") if rm not in bodies[d]]
-    if any(d in absent for d in ("linkedin", "meta_ads", "google_ads", "ga4")):
+    if absent:
         core.pending["online"] = (f"Social and advertising snapshots for {core.labels['month']} have not been ingested "
                                   f"({', '.join(absent)}); see src/ingest/README.md.")
         return
     rows = []
     for series in _online_series(inp):
         d = series["domain"]
-        months_have = present[d]
+        if rm not in bodies[d]:
+            continue
         cells = {}
         for n, key in ONLINE_WINDOWS:
             window = _window_months(rm, n)
@@ -842,9 +847,33 @@ def _online_table(r: R, inp: "Inputs", core: Core) -> None:
         ],
         "rows": rows,
     }
-    if "instagram" in absent:
-        core.pending["instagram"] = (f"Instagram Insights for {core.labels['month']} is not ingested: the Supermetrics "
-                                     f"connection has expired and needs to be renewed before it can be pulled.")
+
+
+def _register_instagram(r: R, inp: "Inputs", core: Core) -> None:
+    rm, P, Pp = core.rm, core.ids["cur"], core.ids["prev"]
+    body = inp.instagram.get(rm)
+    if body is None:
+        core.pending["instagram"] = (f"Instagram Insights for {core.labels['month']} has not been ingested; see "
+                                     f"src/ingest/README.md.")
+        return
+    S = "supermetrics:instagram"
+    r.cnt(f"{P}.ig.reach", body["reach_unique_month"], rm, source=S,
+          note="unique accounts reached in the month, from an undated query; never a sum of daily reach")
+    r.cnt(f"{P}.ig.profile_views", body["profile_views"], rm, source=S,
+          note="the platform's account-wide content views (reels, posts, stories), not profile-page visits")
+    r.cnt(f"{P}.ig.engagements", body["engagements"], rm, source=S,
+          note="likes + comments + saves + shares on media published in the month")
+    if body.get("reach_daily_peak") is not None:
+        r.cnt(f"{P}.ig.reach_daily_peak", body["reach_daily_peak"], rm, source=S)
+    if core.pm in inp.instagram:
+        prev = inp.instagram[core.pm]
+        r.cnt(f"{Pp}.ig.reach", prev["reach_unique_month"], core.pm, source=S)
+        r.cnt(f"{Pp}.ig.profile_views", prev["profile_views"], core.pm, source=S)
+    six = [m for m in _window_months(rm, 6) if m in inp.instagram]
+    if len(six) >= 2:
+        core.charts["ig_reach_6m"] = core_chart(core, "bar", [_short(m) for m in six],
+                                                [_d(inp.instagram[m]["reach_unique_month"]) for m in six],
+                                                emphasis_index=len(six) - 1, y_format="count")
 
 
 def _register_meta_ads(r: R, inp: "Inputs", core: Core) -> None:
@@ -986,9 +1015,6 @@ def _register_linkedin(r: R, inp: "Inputs", core: Core) -> None:
         core.charts["li_impressions_6m"] = core_chart(core, "bar", [_short(m) for m in six],
                                                       [_d(inp.linkedin[m]["page_statistics"]["page_impressions"]) for m in six],
                                                       emphasis_index=len(six) - 1, y_format="count")
-    if rm not in inp.instagram:
-        core.pending["instagram"] = (f"Instagram Insights for {core.labels['month']} is not ingested: the Supermetrics "
-                                     f"connection has expired and needs to be renewed before it can be pulled.")
 
 
 def core_chart(core: Core, *args, **kw) -> dict:
@@ -1099,6 +1125,7 @@ def populate_marketing_ops(reg: Any, inp: "Inputs", chart_spec: Callable[..., di
     # -- channels not yet ingested ----------------------------------------------
     _register_meta_ads(r, inp, core)
     _register_linkedin(r, inp, core)
+    _register_instagram(r, inp, core)
     _register_google(r, inp, core)
     pending["initiatives"] = ("Initiative status is a manual input and no data/manual/<year>/initiatives.json has been "
                               "added for this month. The previous deck's table is not repeated here as if current.")

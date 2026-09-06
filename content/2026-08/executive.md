@@ -244,8 +244,8 @@ in line with their six-month averages while impressions and clicks sit well
 below them, which means each dollar is buying less reach than it did in the
 spring. That is consistent with the cost-per-thousand and cost-per-click
 figures on the Marketing Ops page, and it is inference from two platforms,
-not a measured cause. Instagram is missing because its connection has
-expired.
+not a measured cause. Instagram reached {{ m("online.ig_profile_views.month") }}
+content views in August; it is a small channel and is read in the same way.
 
 ## What changed in how we count
 

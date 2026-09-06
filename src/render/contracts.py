@@ -159,6 +159,8 @@ MARKETING_OPS = PageContract(
         + _m({"{cur}.meta.spend": "currency", "{cur}.meta.cpm": "ratio"}, hib=False, section="meta_ads")
         + _m({"{cur}.li.impressions": "count", "{cur}.li.engagements": "count", "{cur}.li.engagement_rate": "pct"},
              section="social")
+        + _m({"{cur}.ig.reach": "count", "{cur}.ig.profile_views": "count", "{cur}.ig.engagements": "count"},
+             section="instagram")
         + _m({"{cur}.aw.impressions": "count", "{cur}.aw.clicks": "count", "{cur}.aw.ctr": "pct",
               "{cur}.aw.platform_conversion_value": "currency", "{cur}.ga.sessions": "count",
               "{cur}.ga.engaged_sessions": "count", "{cur}.ga.engagement_rate": "pct", "{cur}.ga.new_users": "count",
@@ -179,7 +181,7 @@ MARKETING_OPS = PageContract(
               "{fy}.shortfall_after_available_conservative": "currency"}, hib=False, section="pace")
     ),
     claims=("{fy}.on_track", "budget{yy}.vs_plan_story"),
-    charts=("m13_first90_12", "meta_spend_6m", "li_impressions_6m", "aw_cost_6m", "ga_sessions_6m"),
+    charts=("m13_first90_12", "meta_spend_6m", "li_impressions_6m", "ig_reach_6m", "aw_cost_6m", "ga_sessions_6m"),
     tables=("paid_media_recon", "budget_vs_actual", "yoy_channel", "m13_cohorts", "cohorts_by_age",
             "retention_bands", "asks", "meta_adsets", "aw_channel_types"),
     pendable_sections=("paid_media", "meta_ads", "social", "instagram", "google_web", "initiatives", "yoy_channel",

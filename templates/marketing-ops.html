@@ -93,8 +93,19 @@
     {% if 'li_impressions_6m' in charts %}{{ ch.chart('li_impressions_6m', charts.li_impressions_6m, 'LinkedIn page impressions by month') }}{% endif %}
   </div>
   {% endif %}
-  {{ b.band_label('Instagram (organic)') }}
-  {% if 'instagram' in pending %}{{ p.pending('instagram', pending.instagram) }}{% endif %}
+  {{ b.band_label('Instagram (organic)', 'reach is unique accounts for the month, never summed by day') }}
+  {% if 'instagram' in pending %}
+  {{ p.pending('instagram', pending.instagram) }}
+  {% else %}
+  <div class="two-col">
+    <div class="tile-grid tile-grid-narrow">
+      {{ t.tile('Accounts reached', m(cur ~ '.ig.reach'), delta_between(cur ~ '.ig.reach', prev ~ '.ig.reach') if (prev ~ '.ig.reach') in registered_ids else None, 'Busiest single day:', m(cur ~ '.ig.reach_daily_peak') if (cur ~ '.ig.reach_daily_peak') in registered_ids else None) }}
+      {{ t.tile('Content views', m(cur ~ '.ig.profile_views'), delta_between(cur ~ '.ig.profile_views', prev ~ '.ig.profile_views') if (prev ~ '.ig.profile_views') in registered_ids else None, 'Reels, posts and stories; not profile-page visits.') }}
+      {{ t.tile('Engagements', m(cur ~ '.ig.engagements'), None, 'Likes, comments, saves and shares on posts published in the month.') }}
+    </div>
+    {% if 'ig_reach_6m' in charts %}{{ ch.chart('ig_reach_6m', charts.ig_reach_6m, 'Instagram accounts reached by month') }}{% endif %}
+  </div>
+  {% endif %}
   {{ b.band_label('Google Ads and the website', 'conversion value is platform-reported, never revenue') }}
   {% if 'google_web' in pending %}
   {{ p.pending('google_web', pending.google_web) }}

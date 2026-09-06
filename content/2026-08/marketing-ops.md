@@ -97,8 +97,15 @@ is never treated as NetSuite revenue. The website (versatile.net) took
 {{ m("aug26.ga.engagement_rate") }}; key events are {{ term("ga4") }} configured events,
 not orders.
 
-Instagram is not shown this month: the Supermetrics connection to Instagram
-Insights has expired and must be renewed before it can be pulled.
+Instagram reached {{ m("aug26.ig.reach") }} unique accounts in August with
+{{ m("aug26.ig.profile_views") }} content views and
+{{ m("aug26.ig.engagements") }} engagements on the month's posts. Reach is
+the platform's unique count for the whole month from a single query; daily
+reach figures are never added together, because the same account counted on
+two days is one account. Impressions and follower counts are not available
+from this source for a closed month and are not shown. The March reach spike
+in the chart is real platform data and unexplained; it coincides with no
+campaign we ran and is treated as an outlier, not a baseline.
 
 ## Spend detail
 
